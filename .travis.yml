@@ -18,4 +18,4 @@ install:
     - platformio update
 
 script:
-    - platformio ci --board=kt1260 
+    - platformio run 
