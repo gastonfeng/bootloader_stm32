@@ -3,15 +3,11 @@ python:
     - "3.6"
 
 # Cache PlatformIO packages using Travis CI container-based infrastructure
-sudo: false
+sudo: true
 cache:
     directories:
         - "~/.platformio"
 
-env:
-    - PLATFORMIO_CI_SRC=path/to/test/file.c
-    - PLATFORMIO_CI_SRC=examples/file.ino
-    - PLATFORMIO_CI_SRC=path/to/test/directory
 
 install:
     - pip install -U platformio
