@@ -22,5 +22,5 @@ script:
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
-  file: "FILE TO UPLOAD"
+  file: .pio/build/kt1260/firmware.bin .pio/build/kt1260/firmware.elf
   skip_cleanup: true
