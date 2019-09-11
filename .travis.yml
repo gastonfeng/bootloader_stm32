@@ -21,6 +21,6 @@ script:
     
 deploy:
   provider: releases
-  api_key: "GITHUB OAUTH TOKEN"
+  api_key: $GITHUB_OAUTH_TOKEN
   file: "FILE TO UPLOAD"
   skip_cleanup: true
