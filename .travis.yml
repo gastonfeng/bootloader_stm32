@@ -17,7 +17,7 @@ env:
 
 script:
     - platformio run 
-    - curl -k https://www.kaikong.cn/swinfo?binfile=https://github.com/gastonfeng/bootloader_stm32/releases/download/$TRAVIS_BRANCH/firmware.bin&build=$TRAVIS_BUILD_NUMBER
+    - curl -k https://www.kaikong.cn/swinfo?binfile=https://github.com/gastonfeng/bootloader_stm32/releases/download/$TRAVIS_TAG/firmware.bin\&build=$TRAVIS_BUILD_NUMBER
 
     
 deploy:
