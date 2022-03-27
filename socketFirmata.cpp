@@ -416,7 +416,7 @@ void socketFirmata::report()
 {
     firm->report(this);
 }
-int socketFirmata::connect(const char *host, int port){
+int socketFirmata::connect_server(const char *host, int port){
 
 }
 #ifdef RTE_APP

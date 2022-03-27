@@ -171,12 +171,12 @@ public:
 
     int set_flag(u16 cmd);
 
-    u8 respose[FM_LAST / 8 + 1];
+    u8 respose[FM_LAST / 8 + 1]{};
 
     int getValue(Stream *pStream, int index, u8 *value_buf);
 
-    u8 valueBuf[8];
-    char valueLen;
+    u8 valueBuf[8]{};
+    char valueLen{};
 };
 
 extern mFirmata ifirmata;

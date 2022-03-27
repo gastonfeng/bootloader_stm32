@@ -3,12 +3,16 @@
 #if defined(USE_LWIP) || defined(windows_x86) || defined(SYLIXOS)
 
 #include <vector>
+
 #ifdef RTE_APP
+
 #include "smodule.h"
 #include "logger_rte.h"
 #include "plc_rte.h"
 #include "rtos.h"
+
 #endif
+
 #include "mFirmata.h"
 
 
@@ -57,11 +61,15 @@ public:
     int begin(mFirmata *);
 
 #ifdef RTE_APP
+
     int begin(u32 tick) override;
+
     int run(u32 tick) override;
 
     int diag(u32 tick) override;
+
 #endif
+
     size_t write(u8 c) override;
 
     int available() override;
@@ -83,9 +91,8 @@ public:
 
     int loop();
 
-    [[noreturn]] static void thread(const void *arg)
-    {
-        auto *debug = (socketFirmata *)arg;
+    [[noreturn]] static void thread(const void *arg) {
+        auto *debug = (socketFirmata *) arg;
 
         debug->loop();
     }
@@ -93,7 +100,8 @@ public:
     void flush() override;
 
     void report();
-int connect(const char *host, int port);
+
+    int connect_server(const char *host, int port);
 private:
     std::vector<u8> txbuf;
     mFirmata *firm;

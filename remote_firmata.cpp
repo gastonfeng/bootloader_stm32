@@ -1,4 +1,7 @@
+#include "firmata_client.h"
+
 #ifdef RTE_APP
+
 #include <remote.h>
 
 const remote_abi remote = {
@@ -9,7 +12,6 @@ const remote_abi remote = {
 #else
 #define NO_OBJECT -1
 #endif
-#include "firmata_client.h"
 
 int firmata_client::get_var_bool(int index, u8 *value) {
     if (!firmata)return NO_OBJECT;
