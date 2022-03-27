@@ -3,11 +3,14 @@
 #if defined(USE_LWIP) || defined(windows_x86) || defined(SYLIXOS)
 
 #include <vector>
+#ifdef RTE_APP
 #include "smodule.h"
-#include "mFirmata.h"
 #include "logger_rte.h"
-
 #include "plc_rte.h"
+#include "rtos.h"
+#endif
+#include "mFirmata.h"
+
 
 #ifdef USE_LWIP
 
@@ -16,7 +19,6 @@
 
 #endif
 
-#include "rtos.h"
 
 #ifdef SYLIXOS
 
@@ -43,7 +45,10 @@ extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t c
 #undef close
 
 
-class socketFirmata : public Stream, public smodule
+class socketFirmata : public Stream
+#ifdef RTE_APP
+        , public smodule
+#endif
 {
 
 public:
@@ -51,12 +56,12 @@ public:
 
     int begin(mFirmata *);
 
+#ifdef RTE_APP
     int begin(u32 tick) override;
-
     int run(u32 tick) override;
 
     int diag(u32 tick) override;
-
+#endif
     size_t write(u8 c) override;
 
     int available() override;

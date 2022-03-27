@@ -4,8 +4,12 @@
 #undef read
 
 #include "Firmata.h"
+#include "../firmata/Firmata.h"
+
+#ifdef RTE_APP
 #include "plc_rte.h"
 #include <smodule.h>
+#endif
 
 #define I2C_WRITE B00000000
 #define I2C_READ B00001000
@@ -18,7 +22,9 @@
 #define I2C_RESTART_TX 0
 #define I2C_MAX_QUERIES 3
 #define I2C_REGISTER_NOT_SPECIFIED -1
-
+using u8 = unsigned char;
+using u16 = unsigned short;
+using u32 = unsigned int;
 struct i2c_device_info {
     byte addr;
     int reg;
@@ -97,7 +103,11 @@ enum {
     FM_LAST
 };
 
-class mFirmata : public firmata::FirmataClass, public smodule {
+class mFirmata : public firmata::FirmataClass
+#ifdef RTE_APP
+    , public smodule
+#endif
+{
 public:
     mFirmata();
 
@@ -105,18 +115,19 @@ public:
 
     int loop(Stream *FirmataStream);
 
+#ifdef RTE_APP
     int run(u32 tick) override { return 0; }
 
     int begin(u32 tick) override { return 0; }
+    int diag(u32 tick) override {
+        return 0;
+    }
+#endif
 
     void begin(Stream *FirmataStream) {
         //
     }
 
-
-    int diag(u32 tick) override {
-        return 0;
-    }
 
     void report(Stream *FirmataStream);
 
@@ -142,7 +153,9 @@ public:
 
     void outputPort(Stream *FirmataStream, byte portNumber, byte portValue, byte forceSend);
 
+#ifdef USE_MEMBLOCK
     mem_block *dev = nullptr;
+#endif
     //时序数据库操作
 #ifdef USE_KVDB
     struct tsdb_sec_info sector{};

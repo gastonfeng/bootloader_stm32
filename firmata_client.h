@@ -4,6 +4,8 @@
 
 #include "mFirmata.h"
 
+using u8 = unsigned char;
+
 class firmata_client {
 
 public:
