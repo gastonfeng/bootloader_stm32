@@ -93,7 +93,7 @@ public:
     void flush() override;
 
     void report();
-
+int connect(const char *host, int port);
 private:
     std::vector<u8> txbuf;
     mFirmata *firm;

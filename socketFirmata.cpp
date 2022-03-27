@@ -416,6 +416,9 @@ void socketFirmata::report()
 {
     firm->report(this);
 }
+int socketFirmata::connect(const char *host, int port){
+
+}
 #ifdef RTE_APP
 int socketFirmata::begin(u32 tick) {
     return begin(&ifirmata);
