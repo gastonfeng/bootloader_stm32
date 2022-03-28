@@ -1,6 +1,6 @@
 #include"mFirmata.h"
 
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
 #include <plc_rte.h>
 #include <iec_types.h>
 #include <kSerial.h>
@@ -111,7 +111,7 @@ void *get_dbg(int i);
 int dbg_size();
 
 void reportAnalogCallback(firmata::FirmataClass *fm, Stream *stream, byte analogPin, int value) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     if (analogPin < ANALOGVALUE_LENGTH) {
         if (value == 0) {
             analogInputsToReport[analogPin / 8] &= ~(1 << (analogPin % 8));
@@ -131,7 +131,7 @@ void reportAnalogCallback(firmata::FirmataClass *fm, Stream *stream, byte analog
 }
 
 void reportDigitalCallback(firmata::FirmataClass *fm, Stream *, byte port, int value) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     if (port < IO_XI_NRS + IO_YO_NRS) {
         reportPINs[port] = value;
         // Send port value immediately. This is helpful when connected via
@@ -150,7 +150,7 @@ void reportDigitalCallback(firmata::FirmataClass *fm, Stream *, byte port, int v
 }
 
 void setPinValueCallback(firmata::FirmataClass *fm, Stream *, byte pin, int value) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     if (pin < IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS) { //&& fm->getPinMode(pin) == OUTPUT
         fm->setPinState(pin, value);
         board.outputPort(pin, value);
@@ -159,7 +159,7 @@ void setPinValueCallback(firmata::FirmataClass *fm, Stream *, byte pin, int valu
 }
 
 void systemResetCallback(firmata::FirmataClass *fm, Stream *) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     isResetting = true;
     logger.debug("systemResetCallback");
 #ifdef FIRMATA_SERIAL_FEATURE
@@ -408,7 +408,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     auto *mfm = (mFirmata *) fm;
     switch (command) {
         case firmata::ARE_YOU_THERE:
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
             core_debug_uart(false);
             logger.disable(logger_t::LOGGER_SERIAL);
 #endif
@@ -422,7 +422,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             if (mfm->i_am_here_cb)
                 mfm->i_am_here_cb(mfm, FirmataStream);
             break;
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
             case SAMPLING_INTERVAL:
                 if (argc > 1) {
                     rte.info.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
@@ -649,7 +649,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 break;
 #endif
 #endif
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
             case CB_SET_FORCE:
                 for (int i = 0; i < argc;) {
                     const u16 *byte = (u16 *) &argv[i];
@@ -742,7 +742,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 kSerial::get_serial(port2)->set_low();
                 break;
 #endif
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
             case FM_GET_TASK_NRS:
                 fm->sendSysex(FirmataStream, FM_GET_TASK_NRS, 1, &(rte.info.plc_task_cnt));
                 break;
@@ -851,7 +851,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 soem_scan(fm, FirmataStream);
                 break;
 #endif
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
             case CB_SET_PLC_FILE:
                 app.setPLCDLL((char *) argv);
                 fm->write(FirmataStream, START_SYSEX);
@@ -876,7 +876,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 fm->sendSysex(FirmataStream, CB_WIFI_SET_PASS, 0, argv);
                 break;
 #endif
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
 #ifndef PLC
             case FM_PUT_DATA_BLOCK:
                 u32 crc, crc_r;
@@ -1005,7 +1005,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 fm->sendSysex(FirmataStream, FM_SET_DBG, 0, nullptr);
                 break;
 #endif
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
             case FM_LOG_SET_LEVEL:
                 rte.plc_config.log_level = argv[0];
                 fm->sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 0, nullptr);
@@ -1020,7 +1020,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 fm->sendSysex(FirmataStream, FM_GET_CPU_SN, 12, (byte *) sn);
                 break;
 #endif
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
             case FM_READ_MEM:
                 decodedLen = decodeByteStream(argc, argv, decodeBuf);
                 indexv = 0;
@@ -1074,7 +1074,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             decodedLen = decodeByteStream(argc, argv, decodeBuf);
 
             break;
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
             case FM_READ_LOC:
                 decodedLen = decodeByteStream(argc, argv, (byte *) decodeBuf);
                 len = board.get_input(decodeBuf[0], decodeBuf[1], decodeBuf[2], decodeBuf[3], (char *) decodeBuf);
@@ -1095,14 +1095,14 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 }
 
 void analogWriteCallback(firmata::FirmataClass *fm, Stream *, byte i, int val) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     auto v = (u16) val;
     board.set_aout(i, &v);
 #endif
 }
 
 void digitalWriteCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte port, int value) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     byte lastPin, pinValue, mask = 1, pinWriteMask = 0;
 
     if (port < IO_XI_NRS + IO_YO_NRS) {
@@ -1160,7 +1160,7 @@ mFirmata::mFirmata() {
 }
 
 void mFirmata::report(Stream *FirmataStream) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     u32 currentMillis = rtos::ticks();
 
     if (currentMillis - previousMillis > rte.plc_config.reportInterval) {
@@ -1226,13 +1226,13 @@ int mFirmata::setValue(Stream *FirmataStream, int index, void *valBuf, u8 size) 
     memcpy(&buf[4], valBuf, size);
     sendSysex(FirmataStream, FM_WRITE_VALUE, size + 4, (byte *) buf);
     free(buf);
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     u32 tick = rtos::ticks() + 100;
 #else
     u32 tick = ticks() + 100;
 #endif
     while (get_flag(FM_WRITE_VALUE) == 0) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
         rtos::Delay(1);
         if (rtos::ticks() > tick)
 #else
@@ -1263,13 +1263,13 @@ int mFirmata::set_flag(u16 cmd) {
 
 int mFirmata::getValue(Stream *pStream, int index, u8 *value_buf) {
     sendSysex(pStream, FM_READ_VALUE, 4, (byte *) &index);
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
     u32 tick = rtos::ticks() + 100;
 #else
     u32 tick = ticks() + 100;
 #endif
     while (get_flag(FM_READ_VALUE) == 0) {
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
         rtos::Delay(1);
         if (rtos::ticks() > tick)
 #else

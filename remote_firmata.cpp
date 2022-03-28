@@ -1,6 +1,6 @@
 #include "firmata_client.h"
 
-#ifdef RTE_APP
+#if defined(RTE_APP)||defined(PLC)
 
 #include <remote.h>
 
