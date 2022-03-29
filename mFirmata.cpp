@@ -427,9 +427,9 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #if defined(RTE_APP) || defined(PLC)
         case SAMPLING_INTERVAL:
             if (argc > 1) {
-                rte.info.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
-                if (rte.info.samplingInterval < rte.plc_config.MINIMUM_SAMPLING_INTERVAL) {
-                    rte.info.samplingInterval = rte.plc_config.MINIMUM_SAMPLING_INTERVAL;
+                plc_var.info.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
+                if (plc_var.info.samplingInterval < plc_var.config.MINIMUM_SAMPLING_INTERVAL) {
+                    plc_var.info.samplingInterval = plc_var.config.MINIMUM_SAMPLING_INTERVAL;
                 }
             } else {
                 // sendString("Not enough data");
@@ -492,7 +492,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #endif
             break;
         case CB_GET_REMAIN_MEM:
-            fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &rte.info.remain_mem);
+            fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
             break;
         case CB_GET_RTE_VERSION:
             fm->sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver), (uint8_t *) &rte_ver);
@@ -514,8 +514,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->flush(FirmataStream);
             break;
         case REPORT_PLC_MD5:
-            if (rte.info.plc_curr_app)
-                fm->sendSysex(FirmataStream, REPORT_PLC_MD5, 32, (byte *) rte.info.plc_curr_app->id);
+            if (plc_var.info.plc_curr_app)
+                fm->sendSysex(FirmataStream, REPORT_PLC_MD5, 32, (byte *) plc_var.info.plc_curr_app->id);
             else
                 fm->sendSysex(FirmataStream, REPORT_PLC_MD5, 0, (byte *) "");
             break;
@@ -548,7 +548,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
         case CB_GET_RTC:
-            fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &rte.info.rtc);
+            fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
             break;
         case CB_SET_RTC:
             new_time.tm_year = *(u16 *) &argv[0];
@@ -568,16 +568,16 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             case CB_SET_IP:
                 byte ip[4];
                 decodeByteStream(argc, (const byte *) argv, ip);
-                rte.plc_config.ip.ip1 = ip[0];
-                rte.plc_config.ip.ip2 = ip[1];
-                rte.plc_config.ip.ip3 = ip[2];
-                rte.plc_config.ip.ip4 = ip[3];
+                plc_var.config.ip.ip1 = ip[0];
+                plc_var.config.ip.ip2 = ip[1];
+                plc_var.config.ip.ip3 = ip[2];
+                plc_var.config.ip.ip4 = ip[3];
                 board.setip();
-                fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&rte.plc_config.ip));
+                fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
                 break;
 #endif
             case CB_GET_IP:
-                fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&rte.plc_config.ip));
+                fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
                 break;
             case FM_GET_NET_BUF_STAT:
                 buffer = (char *) malloc(13 * MEMP_MAX);
@@ -657,8 +657,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 const u16 *byte = (u16 *) &argv[i];
                 u8 len = argv[i + 2];
                 index = *byte;
-                if (rte.info.plc_state == PLC_STATUS::Started) {
-                    rte.info.plc_curr_app->dbg_set_force(index, len ? &argv[i + 3] : nullptr);
+                if (plc_var.info.plc_state == (u8)PLC_STATUS::Started) {
+                    plc_var.info.plc_curr_app->dbg_set_force(index, len ? &argv[i + 3] : nullptr);
                 }
                 i += len + 3;
             }
@@ -670,11 +670,11 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 
         case CB_CLEAR_V:
-            if (rte.info.plc_state == PLC_STATUS::Started) {
-                rte.info.plc_curr_app->dbg_vars_reset(__IEC_DEBUG_FLAG);
+            if (plc_var.info.plc_state ==(u8) PLC_STATUS::Started) {
+                plc_var.info.plc_curr_app->dbg_vars_reset(__IEC_DEBUG_FLAG);
                 logger.debug("monitor var reset.");
             } else {
-                logger.debug("monitor var not reset.plc_state=0x%x ", rte.info.plc_state);
+                logger.debug("monitor var not reset.plc_state=0x%x ", plc_var.info.plc_state);
             }
             fm->write(FirmataStream, START_SYSEX);
             fm->write(FirmataStream, CB_CLEAR_V);
@@ -690,8 +690,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 const u16 *byte = (u16 *) &bufs[i];
                 indexv = *byte;
                 logger.debug("%d", indexv);
-                if (rte.info.plc_state == PLC_STATUS::Started) {
-                    rte.info.plc_curr_app->dbg_var_register(indexv);
+                if (plc_var.info.plc_state ==(u8) PLC_STATUS::Started) {
+                    plc_var.info.plc_curr_app->dbg_var_register(indexv);
                 }
             }
             fm->write(FirmataStream, START_SYSEX);
@@ -707,9 +707,9 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             tick = 0;
             len = 0;
             data = nullptr;
-            if (rte.info.plc_state == PLC_STATUS::Started) {
-                rte.info.plc_curr_app->dbg_data_get(&tick, (u32 *) &len, (void **) &data);
-                rte.info.plc_curr_app->dbg_data_free();
+            if (plc_var.info.plc_state ==(u8) PLC_STATUS::Started) {
+                plc_var.info.plc_curr_app->dbg_data_get(&tick, (u32 *) &len, (void **) &data);
+                plc_var.info.plc_curr_app->dbg_data_free();
             }
 
             fm->write(FirmataStream, START_SYSEX);
@@ -746,7 +746,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_GET_TASK_NRS:
-            fm->sendSysex(FirmataStream, FM_GET_TASK_NRS, 1, &(rte.info.plc_task_cnt));
+            fm->sendSysex(FirmataStream, FM_GET_TASK_NRS, 1, &(plc_var.info.plc_task_cnt));
             break;
         case FM_GET_TASK_NAME:
             fm->sendSysex(FirmataStream, FM_GET_TASK_NAME, (byte) strlen(tasks[argv[0]]->name),
@@ -756,18 +756,18 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->sendSysex(FirmataStream, FM_GET_TASK_DETAIL, 24, tasks[argv[0]]->mata());
             break;
         case FM_GET_PLC_STATE:
-            fm->sendSysex(FirmataStream, FM_GET_PLC_STATE, 1, (byte *) (&rte.info.plc_state));
+            fm->sendSysex(FirmataStream, FM_GET_PLC_STATE, 1, (byte *) (&plc_var.info.plc_state));
             break;
         case FM_GET_PLC_INFO:
-            if (rte.info.plc_curr_app) {
-                info.build = rte.info.plc_curr_app->buildnumber;
-                strcpy(info.name, rte.info.plc_curr_app->app_name);
+            if (plc_var.info.plc_curr_app) {
+                info.build = plc_var.info.plc_curr_app->buildnumber;
+                strcpy(info.name, plc_var.info.plc_curr_app->app_name);
                 fm->sendSysex(FirmataStream, FM_GET_PLC_INFO, sizeof(info), (byte *) &info);
             } else
                 fm->sendSysex(FirmataStream, FM_GET_PLC_INFO, 0, (byte *) &info);
             break;
         case CB_GET_LOG_NUMBER:
-            fm->sendSysex(FirmataStream, CB_GET_LOG_NUMBER, 5, (byte *) (&rte.info.plc_state));
+            fm->sendSysex(FirmataStream, CB_GET_LOG_NUMBER, 5, (byte *) (&plc_var.info.plc_state));
             break;
         case CB_GET_LOG:
             fm->write(FirmataStream, START_SYSEX);
@@ -863,12 +863,12 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->flush(FirmataStream);
             break;
         case CB_CPU_USAGE:
-            fm->sendSysex(FirmataStream, CB_CPU_USAGE, 1, (byte *) &rte.info.cpu_usage);
+            fm->sendSysex(FirmataStream, CB_CPU_USAGE, 1, (byte *) &plc_var.info.cpu_usage);
             break;
 #endif
 #ifdef USE_WIFI
             case CB_WIFI_LIST:
-                fm->sendSysex(FirmataStream, CB_WIFI_LIST, rte.info.wifi_size, (byte *)&rte.info.wifi_list);
+                fm->sendSysex(FirmataStream, CB_WIFI_LIST, plc_var.info.wifi_size, (byte *)&plc_var.info.wifi_list);
                 break;
             case CB_WIFI_SET_PASS:
                 int plen;
@@ -933,18 +933,18 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 break;
 #endif
         case FM_GET_LOC_SIZE:
-            if (rte.info.plc_curr_app) {
-                fm->sendSysex(FirmataStream, FM_GET_LOC_SIZE, 2, (byte *) &rte.info.plc_curr_app->l_sz);
+            if (plc_var.info.plc_curr_app) {
+                fm->sendSysex(FirmataStream, FM_GET_LOC_SIZE, 2, (byte *) &plc_var.info.plc_curr_app->l_sz);
             } else {
-                fm->sendSysex(FirmataStream, FM_GET_LOC_SIZE, 0, (byte *) &rte.info.plc_curr_app->l_sz);
+                fm->sendSysex(FirmataStream, FM_GET_LOC_SIZE, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
             }
             break;
         case FM_GET_LOC:
             u32 l_index;
             if (argc == 5) {
                 decodeByteStream(argc, argv, (byte *) &l_index);
-                if (rte.info.plc_curr_app && l_index < rte.info.plc_curr_app->l_sz) {
-                    plc_loc_tbl_t loc = rte.info.plc_curr_app->l_tab[l_index];
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz) {
+                    plc_loc_tbl_t loc = plc_var.info.plc_curr_app->l_tab[l_index];
                     len = (int) sizeof(plc_loc_dsc_t) + loc->a_size + loc->v_size;
                     buffer = (char *) malloc(len);
                     buffer[0] = loc->v_type;
@@ -958,26 +958,26 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                     break;
                 }
             }
-            fm->sendSysex(FirmataStream, FM_GET_LOC, 0, (byte *) &rte.info.plc_curr_app->l_sz);
+            fm->sendSysex(FirmataStream, FM_GET_LOC, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
             break;
         case FM_SET_LOC:
             if (argc == 5) {
                 decodeByteStream(argc, argv, (byte *) &l_index);
-                if (rte.info.plc_curr_app && l_index < rte.info.plc_curr_app->l_sz) {
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz) {
                     fm->sendSysex(FirmataStream, FM_SET_LOC, sizeof(plc_loc_tbl_t),
-                                  (byte *) &rte.info.plc_curr_app->l_tab[l_index]);
+                                  (byte *) &plc_var.info.plc_curr_app->l_tab[l_index]);
                     break;
                 }
             }
-            fm->sendSysex(FirmataStream, FM_SET_LOC, 0, (byte *) &rte.info.plc_curr_app->l_sz);
+            fm->sendSysex(FirmataStream, FM_SET_LOC, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
             break;
 #endif
 #ifdef ONLINE_DEBUG
             case FM_GET_DBG_SIZE:
-                if (rte.info.plc_curr_app)
+                if (plc_var.info.plc_curr_app)
                 {
                     fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
-                                  (byte *)&rte.info.plc_curr_app->data->size_dbgvardsc);
+                                  (byte *)&plc_var.info.plc_curr_app->data->size_dbgvardsc);
                 }
                 else
                 {
@@ -999,7 +999,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 if (argc == 5)
                 {
                     decodeByteStream(argc, argv, (byte *)&lG_index);
-                    if (rte.info.plc_curr_app && l_index < rte.info.plc_curr_app->l_sz)
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz)
                     {
                         break;
                     }
@@ -1009,7 +1009,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_LOG_SET_LEVEL:
-            rte.plc_config.log_level = argv[0];
+            plc_var.config.log_level = argv[0];
             fm->sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 0, nullptr);
             break;
 #endif
@@ -1176,8 +1176,8 @@ void mFirmata::report(Stream *FirmataStream) {
 #if defined(RTE_APP) || defined(PLC)
     u32 currentMillis = rtos::ticks();
 
-    if (currentMillis - previousMillis > rte.plc_config.reportInterval) {
-        previousMillis += rte.plc_config.reportInterval;
+    if (currentMillis - previousMillis > plc_var.config.reportInterval) {
+        previousMillis += plc_var.config.reportInterval;
         /* ANALOGREAD - do all analogReads() at the configured sampling interval */
         board.readAnalogValue(this, FirmataStream, analogInputsToReport, sizeof(analogInputsToReport));
         for (byte pin = 0; pin < IO_XI_NRS + IO_YO_NRS; pin++) {
