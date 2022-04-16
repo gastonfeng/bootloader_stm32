@@ -1,3 +1,4 @@
+#ifdef USE_REMOTE_WITH_FIRMATA
 #include "firmata_client.h"
 
 #if defined(RTE_APP)||defined(PLC)
@@ -51,3 +52,4 @@ int firmata_client::set_var_float(int index, float value) {
     int res = firmata->setValue(stream, index, (u8 *) &value, 4);
     return res;
 }
+#endif
