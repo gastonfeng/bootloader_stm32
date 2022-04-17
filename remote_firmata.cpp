@@ -1,3 +1,4 @@
+#ifdef USE_REMOTE_WITH_FIRMATA
 #include "firmata_client.h"
 
 #if defined(RTE_APP) || defined(PLC)
@@ -55,3 +56,4 @@ void firmata_client::thd_loop(void *arg) {
 }
 
 firmata_client fm_client;
+#endif

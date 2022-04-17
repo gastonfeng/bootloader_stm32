@@ -3,6 +3,7 @@
 #undef write
 #undef read
 
+#include <smodule.h>
 #include "Firmata.h"
 #include "../firmata/Firmata.h"
 
@@ -106,7 +107,7 @@ enum {
 };
 
 class mFirmata : public firmata::FirmataClass
-#if defined(RTE_APP)||defined(PLC)
+#if defined(USE_RTOS_CLASS)
     , public smodule
 #endif
 {
@@ -117,7 +118,7 @@ public:
 
     int loop(Stream *FirmataStream);
 
-#if defined(RTE_APP)||defined(PLC)
+#if defined(USE_RTOS_CLASS)
     int run(u32 tick) override { return 0; }
 
     int begin(u32 tick) override { return 0; }
