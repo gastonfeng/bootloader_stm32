@@ -6,12 +6,11 @@
 
 using u8 = unsigned char;
 
-class firmata_client {
+class firmata_client : public mFirmata {
 
 public:
-    int begin(mFirmata *f, Stream *s) {
-        firmata = f;
-        stream = s;
+    int begin(Stream *s) {
+        rtos::create_thread_run("fc", 512, PriorityNormal, (void *) thd_loop, s);
         return 0;
     }
 
@@ -27,9 +26,11 @@ public:
 
     static int set_var_float(int index, float value);
 
-    static mFirmata *firmata;
+    void *thd{};
     static Stream *stream;
+    [[noreturn]] static void thd_loop(void *arg);
+
 };
 
-
+extern firmata_client fm_client;
 #endif //RTE_KB1277_REMOTE
