@@ -11,6 +11,7 @@
 
 #include <ctime>
 #include <SerialFirmata.h>
+#include <plc_rte.h>
 #include "hwboard.h"
 
 #ifdef USE_SERVO
@@ -1166,7 +1167,6 @@ mFirmata::mFirmata() {
 }
 
 void mFirmata::report(Stream *FirmataStream) {
-#if defined(RTE_APP) || defined(PLC)
     u32 currentMillis = rtos::ticks();
 
     if (currentMillis - previousMillis > plc_var.config.reportInterval) {
@@ -1187,7 +1187,6 @@ void mFirmata::report(Stream *FirmataStream) {
     //         readAndReportData(Firmata, query[i].addr, query[i].reg, query[i].bytes, query[i].stopTX);
     //     }
     // }
-#endif
 }
 
 void mFirmata::outputPort(Stream *FirmataStream, byte portNumber, byte portValue, byte forceSend) {
