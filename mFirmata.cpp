@@ -1157,7 +1157,7 @@ mFirmata::mFirmata() {
     attach(START_SYSEX, sysexCallback);
     // attach(ANALOG_MESSAGE, analogWriteCallback);
     // attach(DIGITAL_MESSAGE, digitalWriteCallback);
-    // attach(REPORT_ANALOG, reportAnalogCallback);
+    attach(REPORT_ANALOG, reportAnalogCallback);
     // attach(REPORT_DIGITAL, reportDigitalCallback);
     // attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
     // attach(SET_PIN_MODE, setPinModeCallback);
