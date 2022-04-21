@@ -1167,7 +1167,9 @@ mFirmata::mFirmata() {
     // attach(SET_PIN_MODE, setPinModeCallback);
     // attach(SYSTEM_RESET, systemResetCallback);
     i_am_here_cb = nullptr;
+    #ifdef FIRMATA_SERIAL_FEATURE
     serialFeature = new SerialFirmata();
+    #endif
 }
 
 void mFirmata::report(Stream *FirmataStream) {
