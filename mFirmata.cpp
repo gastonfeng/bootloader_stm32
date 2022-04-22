@@ -884,6 +884,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         case FM_PUT_DATA_BLOCK:
             u32 crc, crc_r;
             byte *buffer_data;
+            if (argc < 12)break;
             buffer_data = (byte *) malloc(argc);
 
             len_data = decodeByteStream(argc, argv, buffer_data);
