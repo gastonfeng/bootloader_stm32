@@ -11,7 +11,6 @@
 
 #include <ctime>
 #include <SerialFirmata.h>
-#include <plc_rte.h>
 #include "hwboard.h"
 
 #ifdef USE_SERVO
@@ -541,7 +540,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         case FM_FLASH_CLEAR:
             fm->sendSysex(FirmataStream, FM_FLASH_CLEAR, 0, nullptr);
             board.flashClear();
-            board.reset();
+            hwboard::reset();
             break;
 // #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
@@ -671,11 +670,11 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 
         case CB_CLEAR_V:
-            if (plc_var.info.plc_state == (u8) PLC_STATUS::Started) {
+            if (plc_var.info.plc_curr_app&&(plc_var.info.plc_state == (u8) PLC_STATUS::Started)) {
                 plc_var.info.plc_curr_app->dbg_vars_reset(__IEC_DEBUG_FLAG);
-                logger.debug("monitor var reset.");
+                // logger.debug("monitor var reset.");
             } else {
-                logger.debug("monitor var not reset.plc_state=0x%x ", plc_var.info.plc_state);
+                // logger.debug("monitor var not reset.plc_state=0x%x ", plc_var.info.plc_state);
             }
             fm->write(FirmataStream, START_SYSEX);
             fm->write(FirmataStream, CB_CLEAR_V);
@@ -686,11 +685,11 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         case CB_SET_V:
             // decodedLen = base64_dec_len((char *)argv, argc);
             decodedLen = base64_decode(bufs, (char *) argv, argc);
-            logger.debug("set_v %d -> %d", argc, decodedLen);
+            // logger.debug("set_v %d -> %d", argc, decodedLen);
             for (int i = 0; i < decodedLen; i += 2) {
                 const u16 *byte = (u16 *) &bufs[i];
                 indexv = *byte;
-                logger.debug("%d", indexv);
+                // logger.debug("%d", indexv);
                 if (plc_var.info.plc_state == (u8) PLC_STATUS::Started) {
                     plc_var.info.plc_curr_app->dbg_var_register(indexv);
                 }
@@ -728,17 +727,17 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #ifdef ARDUINO
         case CB_SET_SERIAL_RX:
             u16 port;
-            port = *(uint16_t *) argv;
+            // port = *(uint16_t *) argv;
 //            kSerial::get_serial(port)->set_rx();
             break;
         case CB_SET_SERIAL_TX_HIGH:
             u16 port1;
-            port1 = *(uint16_t *) argv;
+            // port1 = *(uint16_t *) argv;
 //            kSerial::get_serial(port1)->set_high();
             break;
         case CB_SET_SERIAL_TX_LOW:
             u16 port2;
-            port2 = *(uint16_t *) argv;
+            // port2 = *(uint16_t *) argv;
 //            kSerial::get_serial(port2)->set_low();
             break;
 #endif
@@ -911,7 +910,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                             if (state > 0 && state > ifirmata.parser.dataBufferSize * 7 / 8 - 4) {
                                 state = (int) (ifirmata.parser.dataBufferSize * 7 / 8 - 4);
                             }
-                            logger.info("recv %s ,size= %d", &buffer_data[12], *(u32 *) &buffer_data[8]);
+                            // logger.info("recv %s ,size= %d", &buffer_data[12], *(u32 *) &buffer_data[8]);
                         }
                     }
                 } else if (block == -1) {
@@ -920,7 +919,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                     } else {
                         state = 1;
                         rte.set_state(PLC_STATUS::APP_FLASH_END);
-                        logger.info("recv end.");
+                        // logger.info("recv end.");
                     }
                 } else {
                     if (ifirmata.dev->Write(&buffer_data[4], len_data - 8) < 0) {
