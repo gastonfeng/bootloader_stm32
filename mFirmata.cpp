@@ -592,7 +592,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #endif
         case CB_RESET:
             fm->sendSysex(FirmataStream, CB_RESET, 0, nullptr);
-            rte.reset();
+            // rte.reset();
             break;
         case CB_GOTO_IAP:
             fm->sendSysex(FirmataStream, CB_GOTO_IAP, 0, nullptr);
