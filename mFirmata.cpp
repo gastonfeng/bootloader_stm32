@@ -483,11 +483,11 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->flush(FirmataStream);
             break;
 
-        case SERIAL_MESSAGE:
 #ifdef FIRMATA_SERIAL_FEATURE
-            serialFeature->handleSysex(fm, command, argc, argv);
-#endif
+        case SERIAL_MESSAGE:
+            serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
             break;
+#endif
         case CB_GET_REMAIN_MEM:
             fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
             break;
