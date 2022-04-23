@@ -77,7 +77,7 @@ int socketFirmata::begin(mFirmata *fm)
     firm = fm;
 
 #ifdef RTE_APP
-    rtos::create_thread_run("socketFirmata", 512, PriorityNormal, (void *)&socketFirmata::thread, this);
+    rtos::create_thread_run("socketFirmata", 768, PriorityNormal, (void *) &socketFirmata::thread, this);
 #endif
      return 0;
 }
