@@ -5,10 +5,10 @@
 #endif
 #ifdef RTE_APP
 #include "plc_rte.h"
-#include "rtos.h"
 #endif
 #include "socketFirmata.h"
-
+#include "rtos.h"
+#include"logger_rte.h"
 #ifdef USE_LWIP
 
 #include "lwip/tcpip.h"
@@ -46,10 +46,10 @@ typedef struct
     struct sockaddr_in addres;
 
     /* The same for the receiving message. */
-    char receiving_buffer[DATA_MAXSIZE]{};
+    char receiving_buffer[DATA_MAXSIZE] {};
     size_t current_receiving_byte{};
 } peer_t;
-peer_t connection_list[MAX_CLIENTS]{};
+peer_t connection_list[MAX_CLIENTS] {};
 peer_t *cur_peer{};
 u16 rxinx{};
 int listen_sock{};
@@ -76,10 +76,8 @@ int socketFirmata::begin(mFirmata *fm)
 {
     firm = fm;
 
-#ifdef RTE_APP
     rtos::create_thread_run("socketFirmata", 768, PriorityNormal, (void *) &socketFirmata::thread, this);
-#endif
-     return 0;
+    return 0;
 }
 
 #undef write
@@ -129,16 +127,12 @@ int socketFirmata::receive_from_peer(void *p)
                           len_to_receive, MSG_DONTWAIT);
     if (received_count < 0)
     {
-#ifdef RTE_APP
         logger.error("Failed recv %d %d,%s", received_count, errno, strerror(errno));
-#endif
     }
     // If recv() returns 0, it means that peer gracefully shutdown. Shutdown client.
     else if (received_count == 0)
     {
-#ifdef RTE_APP
         logger.error("recv() 0 bytes. Peer gracefully shutdown.\n");
-#endif
         return -1;
     }
     else if (received_count > 0)
@@ -161,18 +155,14 @@ int socketFirmata::start_listen_socket(int *sock)
     *sock = socket(AF_INET, SOCK_STREAM, 0);
     if (*sock < 0)
     {
-        #ifdef RTE_APP
         logger.error("socket %d", errno);
-        #endif
         return -1;
     }
 #ifndef ARDUINO
     int reuse = 1;
     if (setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&reuse, sizeof(reuse)) != 0)
     {
-        #ifdef RTE_APP
         logger.error("setsockopt");
-        #endif
         return -1;
     }
 #endif
@@ -187,17 +177,13 @@ int socketFirmata::start_listen_socket(int *sock)
 #endif
     if (bind(*sock, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) != 0)
     {
-#ifdef RTE_APP \
 logger.error("bind %d", errno);
-#endif
         return -1;
     }
     socklen_t len = sizeof(my_addr);
     if (getsockname(*sock, (struct sockaddr *)&my_addr, &len) == -1)
     {
-#ifdef RTE_APP \
 logger.error("getsockname");
-#endif
         return -2;
     }
 #ifdef RTE_APP
@@ -206,12 +192,10 @@ logger.error("getsockname");
     // start accept client connections
     if (listen(*sock, 10) != 0)
     {
-#ifdef RTE_APP \
 logger.error("listen");
-#endif
         return -1;
     }
-#ifdef RTE_APP \
+#ifdef RTE_APP
 logger.info("Accepting connections on port %d.\n", (int)plc_var.info.debug_port);
 #endif
     return 0;
@@ -226,9 +210,7 @@ void socketFirmata::shutdown_properly(int code)
         if (i.socket != -1)
             closesocket(i.socket);
 
-#ifdef RTE_APP
     logger.error("Shutdown server properly.\n");
-#endif
 }
 
 int build_fd_sets(fd_set *read_fds, fd_set *write_fds, fd_set *except_fds)
@@ -259,9 +241,7 @@ int socketFirmata::handle_new_connection()
     int new_client_sock = accept(listen_sock, (struct sockaddr *)&client_addr, &client_len);
     if (new_client_sock < 0)
     {
- #ifdef RTE_APP
-       logger.error("accept error=%d", errno);
- #endif
+        logger.error("accept error=%d", errno);
         return -1;
     }
     int optval = 1;
@@ -293,9 +273,7 @@ int socketFirmata::handle_new_connection()
 
 int close_client_connection(peer_t *client)
 {
-#ifdef RTE_APP
     logger.debug("Close client socket for %s.\n", peer_get_addres_str(client));
-#endif
     closesocket(client->socket);
     client->socket = -1;
     client->current_receiving_byte = 0;
@@ -322,9 +300,7 @@ int socketFirmata::loop()
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0)
     {
-#ifdef RTE_APP
         logger.error("WSAStartup failed: %d\n", iResult);
-#endif
         return -1;
     }
 #endif
@@ -336,9 +312,7 @@ int socketFirmata::loop()
         i.socket = -1;
         create_peer(&i);
     }
-#ifdef RTE_APP
     logger.debug("Waiting for incoming connections.\n");
-#endif
     while (true)
     {
 
@@ -357,16 +331,12 @@ int socketFirmata::loop()
         switch (activity)
         {
         case -1:
-#ifdef RTE_APP \
 logger.error("select()");
             shutdown_properly(EXIT_FAILURE);
-#endif
             break;
         case 0:
             // you should never get here
-            #ifdef RTE_APP
             logger.error("select() returns 0.\n");
-            #endif
             shutdown_properly(EXIT_FAILURE);
             break;
         default:
@@ -378,9 +348,7 @@ logger.error("select()");
 
             if (FD_ISSET(listen_sock, &except_fds))
             {
-                #ifdef RTE_APP
                 logger.error("Exception listen socket fd.\n");
-                #endif
                 shutdown_properly(EXIT_FAILURE);
             }
 
@@ -394,9 +362,7 @@ logger.error("select()");
 
                 if (i.socket != -1 && FD_ISSET(i.socket, &except_fds))
                 {
-                    #ifdef RTE_APP
                     logger.error("Exception client fd.\n");
-                    #endif
                     close_client_connection(&i);
                     continue;
                 }
@@ -411,25 +377,24 @@ void socketFirmata::flush()
         send(cur_peer->socket, (const char *)txbuf.data(), txbuf.size(), 0);
     txbuf.clear();
 }
-
+#if defined(RTE_APP) || defined(PLC)
 void socketFirmata::report()
 {
     firm->report(this);
 }
-int socketFirmata::connect_server(const char *host, int port){
-
-}
-#ifdef RTE_APP
-int socketFirmata::begin(u32 tick) {
+#endif
+int socketFirmata::begin(u32 tick)
+{
     return begin(&ifirmata);
 }
 
-int socketFirmata::run(u32 tick) {
+int socketFirmata::run(u32 tick)
+{
     return 0;
 }
 
-int socketFirmata::diag(u32 tick) {
+int socketFirmata::diag(u32 tick)
+{
     return 0;
 }
-#endif
 #endif

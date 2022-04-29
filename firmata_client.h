@@ -3,13 +3,17 @@
 
 
 #include "mFirmata.h"
+#include "rtos.h"
 
 using u8 = unsigned char;
 
-class firmata_client : public mFirmata {
+class firmata_client : public mFirmata
+{
 
 public:
-    int begin(Stream *s) {
+    int begin(Stream *s)
+    {
+        stream=s;
         rtos::create_thread_run("fc", 512, PriorityNormal, (void *) thd_loop, s);
         return 0;
     }
@@ -28,6 +32,7 @@ public:
 
     void *thd{};
     static Stream *stream;
+
     [[noreturn]] static void thd_loop(void *arg);
 
 };
