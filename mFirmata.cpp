@@ -1,6 +1,6 @@
 #include "mFirmata.h"
-#include "../plc_rte/rtos.h"
-#include "../plc_rte/plc_const.h"
+#include "rtos.h"
+#include "plc_const.h"
 
 #if defined(RTE_APP) || defined(PLC)
 
@@ -411,8 +411,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     switch (command) {
         case firmata::ARE_YOU_THERE:
 #if defined(RTE_APP) || defined(PLC)
-            core_debug_uart(false);
-            logger.disable(logger_t::LOGGER_SERIAL);
+            // core_debug_uart(false);
+            // logger.disable(logger_t::LOGGER_SERIAL);
 #endif
             fm->write(FirmataStream, START_SYSEX);
             fm->write(FirmataStream, firmata::I_AM_HERE);
