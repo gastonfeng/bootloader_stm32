@@ -7,7 +7,7 @@
 #include "Firmata.h"
 #include "../firmata/Firmata.h"
 
-#if defined(RTE_APP)||defined(PLC)
+#if defined(RTE_APP) || defined(PLC)
 #include "plc_rte.h"
 #include <smodule.h>
 #endif
@@ -117,6 +117,7 @@ public:
     int run(u32 tick) override { return 0; }
 
     int begin(u32 tick) override { return 0; }
+
     int diag(u32 tick) override {
         return 0;
     }

@@ -50,10 +50,10 @@ typedef struct
     struct sockaddr_in addres;
 
     /* The same for the receiving message. */
-    char receiving_buffer[DATA_MAXSIZE]{};
+    char receiving_buffer[DATA_MAXSIZE] {};
     size_t current_receiving_byte{};
 } peer_t;
-peer_t connection_list[MAX_CLIENTS]{};
+peer_t connection_list[MAX_CLIENTS] {};
 peer_t *cur_peer{};
 u16 rxinx{};
 int listen_sock{};
@@ -388,20 +388,18 @@ void socketFirmata::report() {
 }
 
 #endif
-
-int socketFirmata::connect_server(const char *host, int port) {
-
-}
-
-int socketFirmata::begin(u32 tick) {
+int socketFirmata::begin(u32 tick)
+{
     return begin(&ifirmata);
 }
 
-int socketFirmata::run(u32 tick) {
+int socketFirmata::run(u32 tick)
+{
     return 0;
 }
 
-int socketFirmata::diag(u32 tick) {
+int socketFirmata::diag(u32 tick)
+{
     return 0;
 }
 #endif

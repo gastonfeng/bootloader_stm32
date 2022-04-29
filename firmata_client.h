@@ -7,7 +7,8 @@
 
 using u8 = unsigned char;
 
-class firmata_client : public mFirmata {
+class firmata_client : public mFirmata
+{
 
 public:
     int begin(Stream *s) {
@@ -30,6 +31,7 @@ public:
 
     void *thd{};
     static Stream *stream;
+
     [[noreturn]] static void thd_loop(void *arg);
 
 };

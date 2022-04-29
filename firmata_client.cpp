@@ -1,7 +1,7 @@
-#ifdef USE_REMOTE_WITH_FIRMATA
 #include "firmata_client.h"
+#ifdef USE_REMOTE_WITH_FIRMATA
 
-#if defined(RTE_APP) || defined(PLC)
+#if (defined(RTE_APP) || defined(PLC))
 
 #include <remote.h>
 
@@ -11,7 +11,7 @@ const remote_abi remote = {
         firmata_client::set_var_float,
 };
 #else
-#define NO_OBJECT -1
+#define NO_OBJECT (-1)
 #endif
 
 int firmata_client::get_var_bool(int index, u8 *value) {
