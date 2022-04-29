@@ -1,4 +1,6 @@
 #include "mFirmata.h"
+#include "../plc_rte/rtos.h"
+#include "../plc_rte/plc_const.h"
 
 #if defined(RTE_APP) || defined(PLC)
 
@@ -7,12 +9,11 @@
 #include <kSerial.h>
 #include <Base64.h>
 
+#include "hwboard.h"
+
 #endif
 
 #include <ctime>
-#include <SerialFirmata.h>
-#include <plc_rte.h>
-#include "hwboard.h"
 
 #ifdef USE_SERVO
 #include <Servo.h>
@@ -22,6 +23,8 @@
 #include <Wire.h>
 #endif
 #ifdef FIRMATA_SERIAL_FEATURE
+
+#include <SerialFirmata.h>
 SerialFirmata *serialFeature;
 #endif
 
@@ -484,11 +487,11 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->flush(FirmataStream);
             break;
 
-        case SERIAL_MESSAGE:
 #ifdef FIRMATA_SERIAL_FEATURE
-            serialFeature->handleSysex(fm, command, argc, argv);
-#endif
+        case SERIAL_MESSAGE:
+            serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
             break;
+#endif
         case CB_GET_REMAIN_MEM:
             fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
             break;
@@ -536,14 +539,13 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->write(FirmataStream, END_SYSEX);
             fm->flush(FirmataStream);
             break;
-#endif
 // #ifdef USE_LFS
         case FM_FLASH_CLEAR:
             fm->sendSysex(FirmataStream, FM_FLASH_CLEAR, 0, nullptr);
             board.flashClear();
-            board.reset();
+            hwboard::reset();
             break;
-// #endif
+#endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
             case CB_GET_RTC:
                 fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
@@ -569,27 +571,27 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 plc_var.config.ip.ip1 = ip[0];
                 plc_var.config.ip.ip2 = ip[1];
                 plc_var.config.ip.ip3 = ip[2];
-                plc_var.config.ip.ip4 = ip[3];
-                eth1.set_ip();
-                fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
-                break;
+            plc_var.config.ip.ip4 = ip[3];
+            eth1.set_ip();
+            fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
+            break;
 #endif
-            case CB_GET_IP:
-                fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
-                break;
-            case FM_GET_NET_BUF_STAT:
-                buffer = (char *) malloc(13 * MEMP_MAX);
-                for (int i = 0; i < MEMP_MAX; i++) {
-                    *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
-                    *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
-                    *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
-                    *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
-                    *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
-                    memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
-                }
-                fm->sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
-                free(buffer);
-                break;
+        case CB_GET_IP:
+            fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
+            break;
+        case FM_GET_NET_BUF_STAT:
+            buffer = (char *) malloc(13 * MEMP_MAX);
+            for (int i = 0; i < MEMP_MAX; i++) {
+                *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
+                *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
+                *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
+                *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
+                *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
+                memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
+            }
+            fm->sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
+            free(buffer);
+            break;
 #endif
         case CB_RESET:
             fm->sendSysex(FirmataStream, CB_RESET, 0, nullptr);
@@ -671,7 +673,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 
         case CB_CLEAR_V:
-            if (plc_var.info.plc_state == (u8) PLC_STATUS::Started) {
+            if (plc_var.info.plc_curr_app && (plc_var.info.plc_state == (u8) PLC_STATUS::Started)) {
                 plc_var.info.plc_curr_app->dbg_vars_reset(__IEC_DEBUG_FLAG);
                 logger.debug("monitor var reset.");
             } else {
@@ -728,17 +730,17 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #ifdef ARDUINO
         case CB_SET_SERIAL_RX:
             u16 port;
-            port = *(uint16_t *) argv;
+            // port = *(uint16_t *) argv;
 //            kSerial::get_serial(port)->set_rx();
             break;
         case CB_SET_SERIAL_TX_HIGH:
             u16 port1;
-            port1 = *(uint16_t *) argv;
+            // port1 = *(uint16_t *) argv;
 //            kSerial::get_serial(port1)->set_high();
             break;
         case CB_SET_SERIAL_TX_LOW:
             u16 port2;
-            port2 = *(uint16_t *) argv;
+            // port2 = *(uint16_t *) argv;
 //            kSerial::get_serial(port2)->set_low();
             break;
 #endif
@@ -885,6 +887,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         case FM_PUT_DATA_BLOCK:
             u32 crc, crc_r;
             byte *buffer_data;
+            if (argc < 12)
+                break;
             buffer_data = (byte *) malloc(argc);
 
             len_data = decodeByteStream(argc, argv, buffer_data);
@@ -1074,7 +1078,11 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 #if defined(RTE_APP) || defined(PLC)
         case FM_READ_LOC:
+            if (argc < 5)
+                break;
             decodedLen = decodeByteStream(argc, argv, (byte *) decodeBuf);
+            if (decodedLen < 5)
+                break;
             len = board.get_input(decodeBuf[0], decodeBuf[1], decodeBuf[2], decodeBuf[3], (char *) decodeBuf);
             fm->sendSysex(FirmataStream, FM_READ_LOC, len, (byte *) decodeBuf);
             break;
@@ -1084,7 +1092,6 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                                    decodedLen - 4);
             fm->sendSysex(FirmataStream, FM_READ_LOC, len, (byte *) decodeBuf);
             break;
-#endif
         case FM_GET_LOCATION:
             decodedLen = decodeByteStream(argc, argv, decodeBuf);
             len = board.get_input(decodeBuf[1], decodeBuf[2], decodeBuf[3], 0, (char *) bufs);
@@ -1096,6 +1103,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                                    decodeBuf[4]);
             fm->sendSysex(FirmataStream, FM_SET_LOCATION, 4, (byte *) &len);
             break;
+#endif
         default:
             len = -1;
             fm->sendSysex(FirmataStream, command, 4, (byte *) &len);
@@ -1150,7 +1158,9 @@ int mFirmata::loop(Stream *FirmataStream) {
     while (available(FirmataStream)) {
         processInput(FirmataStream);
     }
+#if defined(RTE_APP) || defined(PLC)
     report(FirmataStream);
+#endif
     return 0;
 }
 
@@ -1167,9 +1177,12 @@ mFirmata::mFirmata() {
     // attach(SET_PIN_MODE, setPinModeCallback);
     // attach(SYSTEM_RESET, systemResetCallback);
     i_am_here_cb = nullptr;
+#ifdef FIRMATA_SERIAL_FEATURE
     serialFeature = new SerialFirmata();
+#endif
 }
 
+#if defined(RTE_APP) || defined(PLC)
 void mFirmata::report(Stream *FirmataStream) {
     u32 currentMillis = rtos::ticks();
 
@@ -1193,6 +1206,7 @@ void mFirmata::report(Stream *FirmataStream) {
     // }
 }
 
+#endif
 void mFirmata::outputPort(Stream *FirmataStream, byte portNumber, byte portValue, byte forceSend) {
     // pins not configured as INPUT are cleared to zeros
     //    portValue = portValue & portConfigInputs[portNumber];
@@ -1240,19 +1254,10 @@ int mFirmata::setValue(Stream *FirmataStream, int index, void *valBuf, u8 size) 
     memcpy(&buf[4], valBuf, size);
     sendSysex(FirmataStream, FM_WRITE_VALUE, size + 4, (byte *) buf);
     free(buf);
-#if defined(USE_RTOS_CLASS)
-    u32 tick = rtos::ticks() + 100;
-#else
-    u32 tick = ticks() + 100;
-#endif
+    u32 tick = rtos::ticks() + 1000;
     while (get_flag(FM_WRITE_VALUE) == 0) {
-#if defined(USE_RTOS_CLASS)
         rtos::Delay(1);
         if (rtos::ticks() > tick)
-#else
-            Delay(1);
-            if (ticks() > tick)
-#endif
             return TIMEOUT;
     }
     return 0;
@@ -1277,19 +1282,10 @@ int mFirmata::set_flag(u16 cmd) {
 
 int mFirmata::getValue(Stream *pStream, int index, u8 *value_buf) {
     sendSysex(pStream, FM_READ_VALUE, 4, (byte *) &index);
-#if defined(USE_RTOS_CLASS)
-    u32 tick = rtos::ticks() + 100;
-#else
-    u32 tick = ticks() + 100;
-#endif
+    u32 tick = rtos::ticks() + 1000;
     while (get_flag(FM_READ_VALUE) == 0) {
-#if defined(USE_RTOS_CLASS)
         rtos::Delay(1);
         if (rtos::ticks() > tick)
-#else
-            Delay(1);
-            if (ticks() > tick)
-#endif
             return TIMEOUT;
     }
     memcpy(value_buf, valueBuf, valueLen);

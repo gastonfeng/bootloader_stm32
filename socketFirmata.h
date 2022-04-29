@@ -49,18 +49,13 @@ extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t c
 #undef close
 
 
-class socketFirmata : public Stream
-#ifdef RTE_APP
-        , public smodule
-#endif
-{
+class socketFirmata : public Stream, public smodule {
 
 public:
     virtual ~socketFirmata() = default;
 
     int begin(mFirmata *);
 
-#ifdef RTE_APP
 
     int begin(u32 tick) override;
 
@@ -68,7 +63,6 @@ public:
 
     int diag(u32 tick) override;
 
-#endif
 
     size_t write(u8 c) override;
 

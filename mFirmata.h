@@ -106,11 +106,7 @@ enum {
     FM_LAST
 };
 
-class mFirmata : public firmata::FirmataClass
-#if defined(USE_RTOS_CLASS)
-    , public smodule
-#endif
-{
+class mFirmata : public firmata::FirmataClass, public smodule {
 public:
     mFirmata();
 
@@ -118,14 +114,12 @@ public:
 
     int loop(Stream *FirmataStream);
 
-#if defined(USE_RTOS_CLASS)
     int run(u32 tick) override { return 0; }
 
     int begin(u32 tick) override { return 0; }
     int diag(u32 tick) override {
         return 0;
     }
-#endif
 
     void begin(Stream *FirmataStream) {
         //
