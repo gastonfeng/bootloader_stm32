@@ -80,7 +80,7 @@ int socketFirmata::begin(mFirmata *fm)
 {
     firm = fm;
 
-    rtos::create_thread_run("socketFirmata", 768, PriorityNormal, (void *) &socketFirmata::thread, this);
+    rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
      return 0;
 }
 
