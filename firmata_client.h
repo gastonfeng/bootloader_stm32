@@ -18,11 +18,11 @@ public:
         return 0;
     }
 
-    static int get_var_bool(int index, u8 *value);
+    static int get_var_bool(int index, u8 *value, u16 len);
 
-    static int get_var_int(int index, short *value);
+    static int get_var_int(int index, short *value, u16 len);
 
-    static int get_var_float(int index, float *value);
+    static int get_var_float(int index, float *value, u16 len);
 
     static int set_var_bool(int index, u8 value);
 

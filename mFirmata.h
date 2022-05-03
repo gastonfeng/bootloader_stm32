@@ -100,6 +100,10 @@ enum {
     FM_READ_VALUE_REP,
     FM_WRITE_VALUE,
     FM_WRITE_VALUE_REP,
+    FM_READ_BIT,
+    FM_READ_BIT_REP,
+    FM_WRITE_BIT,
+    FM_WRITE_BIT_REP,
     FM_GET_NET_BUF_STAT,
     FM_GET_LOCATION,
     FM_SET_LOCATION,
@@ -171,7 +175,9 @@ public:
 
     u8 respose[FM_LAST / 8 + 1]{};
 
-    int getValue(Stream *pStream, int index, u8 *value_buf);
+    int getValue(Stream *pStream, int index, u8 *value_buf, u16 len);
+
+    int getBit(Stream *pStream, int index, u8 *value_buf, u16 len);
 
     u8 valueBuf[8]{};
     char valueLen{};

@@ -14,18 +14,18 @@ const remote_abi remote = {
 #define NO_OBJECT (-1)
 #endif
 
-int firmata_client::get_var_bool(int index, u8 *value) {
-    int res = fm_client.getValue(stream, index, value);
+int firmata_client::get_var_bool(int index, u8 *value,u16 len) {
+    int res = fm_client.getBit(stream, index, value,len);
     return res;
 }
 
-int firmata_client::get_var_int(int index, short *value) {
-    int res = fm_client.getValue(stream, index, (u8 *) value);
+int firmata_client::get_var_int(int index, short *value,u16 len) {
+    int res = fm_client.getValue(stream, index, (u8 *) value,len*2);
     return res;
 }
 
-int firmata_client::get_var_float(int index, float *value) {
-    int res = fm_client.getValue(stream, index, (u8 *) value);
+int firmata_client::get_var_float(int index, float *value,u16 len) {
+    int res = fm_client.getValue(stream, index, (u8 *) value,len);
     return res;
 }
 
@@ -51,7 +51,7 @@ void firmata_client::thd_loop(void *arg) {
     auto *fm = (Stream *) arg;
     while (true) {
         fm_client.loop(fm);
-        rtos::Delay(10);
+        rtos::Delay(1);
     }
 }
 
