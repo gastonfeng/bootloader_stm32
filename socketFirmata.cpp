@@ -4,11 +4,15 @@
 #define MSG_DONTWAIT 0x0
 #endif
 #ifdef RTE_APP
+
 #include "plc_rte.h"
+
 #endif
+
 #include "socketFirmata.h"
 #include "rtos.h"
 #include"logger_rte.h"
+
 #ifdef USE_LWIP
 
 #include "lwip/tcpip.h"
@@ -76,8 +80,8 @@ int socketFirmata::begin(mFirmata *fm)
 {
     firm = fm;
 
-    rtos::create_thread_run("socketFirmata", 768, PriorityNormal, (void *) &socketFirmata::thread, this);
-    return 0;
+    rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
+     return 0;
 }
 
 #undef write
@@ -241,7 +245,7 @@ int socketFirmata::handle_new_connection()
     int new_client_sock = accept(listen_sock, (struct sockaddr *)&client_addr, &client_len);
     if (new_client_sock < 0)
     {
-        logger.error("accept error=%d", errno);
+       logger.error("accept error=%d", errno);
         return -1;
     }
     int optval = 1;
@@ -371,17 +375,18 @@ logger.error("select()");
     }
 }
 
-void socketFirmata::flush()
-{
+void socketFirmata::flush() {
     if (cur_peer)
-        send(cur_peer->socket, (const char *)txbuf.data(), txbuf.size(), 0);
+        send(cur_peer->socket, (const char *) txbuf.data(), txbuf.size(), 0);
     txbuf.clear();
 }
+
 #if defined(RTE_APP) || defined(PLC)
-void socketFirmata::report()
-{
+
+void socketFirmata::report() {
     firm->report(this);
 }
+
 #endif
 int socketFirmata::begin(u32 tick)
 {

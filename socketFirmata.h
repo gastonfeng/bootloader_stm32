@@ -49,8 +49,7 @@ extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t c
 #undef close
 
 
-class socketFirmata : public Stream        , public smodule
-{
+class socketFirmata : public Stream, public smodule {
 
 public:
     virtual ~socketFirmata() = default;

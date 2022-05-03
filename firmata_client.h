@@ -11,9 +11,8 @@ class firmata_client : public mFirmata
 {
 
 public:
-    int begin(Stream *s)
-    {
-        stream=s;
+    int begin(Stream *s) {
+        stream = s;
         rtos::create_thread_run("fc", 512, PriorityNormal, (void *) thd_loop, s);
         return 0;
     }
