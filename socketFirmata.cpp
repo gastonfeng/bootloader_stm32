@@ -11,7 +11,7 @@
 
 #include "socketFirmata.h"
 #include "rtos.h"
-#include"logger_rte.h"
+#include "logger_rte.h"
 
 #ifdef USE_LWIP
 
@@ -19,7 +19,6 @@
 #include "lwip/sockets.h"
 
 #endif
-
 
 #ifdef SYLIXOS
 
@@ -50,10 +49,10 @@ typedef struct
     struct sockaddr_in addres;
 
     /* The same for the receiving message. */
-    char receiving_buffer[DATA_MAXSIZE] {};
+    char receiving_buffer[DATA_MAXSIZE]{};
     size_t current_receiving_byte{};
 } peer_t;
-peer_t connection_list[MAX_CLIENTS] {};
+peer_t connection_list[MAX_CLIENTS]{};
 peer_t *cur_peer{};
 u16 rxinx{};
 int listen_sock{};
@@ -80,8 +79,8 @@ int socketFirmata::begin(mFirmata *fm)
 {
     firm = fm;
 
-    rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
-     return 0;
+    rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *)&socketFirmata::thread, this);
+    return 0;
 }
 
 #undef write
@@ -120,15 +119,14 @@ int socketFirmata::peek()
 int socketFirmata::receive_from_peer(void *p)
 {
     //    logger.debug("Ready for recv() from %s.\n", peer_get_addres_str(peer));
-    peer_t *peer = (peer_t *) p;
+    peer_t *peer = (peer_t *)p;
     size_t len_to_receive;
     ssize_t received_count;
     size_t received_total = 0;
     len_to_receive = sizeof(peer->receiving_buffer) - peer->current_receiving_byte;
 
     // logger.error("Let's try to recv() %zd bytes... ", len_to_receive);
-    received_count = recv(peer->socket, (char *)&peer->receiving_buffer + peer->current_receiving_byte,
-                          len_to_receive, MSG_DONTWAIT);
+    received_count = recv(peer->socket, (char *)&peer->receiving_buffer, len_to_receive, MSG_DONTWAIT);
     if (received_count < 0)
     {
         logger.error("Failed recv %d %d,%s", received_count, errno, strerror(errno));
@@ -141,7 +139,7 @@ int socketFirmata::receive_from_peer(void *p)
     }
     else if (received_count > 0)
     {
-        peer->current_receiving_byte += received_count;
+        peer->current_receiving_byte = received_count;
         received_total += received_count;
         // logger.debug("recv() %zd bytes\n", received_count);
         rxinx = 0;
@@ -181,13 +179,13 @@ int socketFirmata::start_listen_socket(int *sock)
 #endif
     if (bind(*sock, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) != 0)
     {
-logger.error("bind %d", errno);
+        logger.error("bind %d", errno);
         return -1;
     }
     socklen_t len = sizeof(my_addr);
     if (getsockname(*sock, (struct sockaddr *)&my_addr, &len) == -1)
     {
-logger.error("getsockname");
+        logger.error("getsockname");
         return -2;
     }
 #ifdef RTE_APP
@@ -196,11 +194,11 @@ logger.error("getsockname");
     // start accept client connections
     if (listen(*sock, 10) != 0)
     {
-logger.error("listen");
+        logger.error("listen");
         return -1;
     }
 #ifdef RTE_APP
-logger.info("Accepting connections on port %d.\n", (int)plc_var.info.debug_port);
+    logger.info("Accepting connections on port %d.\n", (int)plc_var.info.debug_port);
 #endif
     return 0;
 }
@@ -245,7 +243,7 @@ int socketFirmata::handle_new_connection()
     int new_client_sock = accept(listen_sock, (struct sockaddr *)&client_addr, &client_len);
     if (new_client_sock < 0)
     {
-       logger.error("accept error=%d", errno);
+        logger.error("accept error=%d", errno);
         return -1;
     }
     int optval = 1;
@@ -335,7 +333,7 @@ int socketFirmata::loop()
         switch (activity)
         {
         case -1:
-logger.error("select()");
+            logger.error("select()");
             shutdown_properly(EXIT_FAILURE);
             break;
         case 0:
@@ -375,15 +373,20 @@ logger.error("select()");
     }
 }
 
-void socketFirmata::flush() {
+void socketFirmata::flush()
+{
     if (cur_peer)
-        send(cur_peer->socket, (const char *) txbuf.data(), txbuf.size(), 0);
+    {
+        cur_peer->current_receiving_byte = 0;
+        send(cur_peer->socket, (const char *)txbuf.data(), txbuf.size(), 0);
+    }
     txbuf.clear();
 }
 
 #if defined(RTE_APP) || defined(PLC)
 
-void socketFirmata::report() {
+void socketFirmata::report()
+{
     firm->report(this);
 }
 

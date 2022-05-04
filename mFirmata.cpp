@@ -153,7 +153,7 @@ void reportDigitalCallback(firmata::FirmataClass *fm, Stream *, byte port, int v
 
 void setPinValueCallback(firmata::FirmataClass *fm, Stream *, byte pin, int value) {
 #if defined(RTE_APP) || defined(PLC)
-    if (pin < IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS)   //&& fm->getPinMode(pin) == OUTPUT
+    if (pin < IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS) //&& fm->getPinMode(pin) == OUTPUT
     {
         fm->setPinState(pin, value);
         board.outputPort(pin, value);
@@ -390,6 +390,8 @@ extern "C" void core_debug_uart(bool v);
 
 int fill_dbg(int index, u8 *buf);
 
+void set_dbg(u32 index, byte *varp, int len);
+
 void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte command, uint16_t argc, byte *argv) {
     int len_data;
     int index;
@@ -413,8 +415,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     switch (command) {
         case firmata::ARE_YOU_THERE:
 #if defined(RTE_APP) || defined(PLC)
-            core_debug_uart(false);
-            logger.disable(logger_t::LOGGER_SERIAL);
+            // core_debug_uart(false);
+            // logger.disable(logger_t::LOGGER_SERIAL);
 #endif
             fm->write(FirmataStream, START_SYSEX);
             fm->write(FirmataStream, firmata::I_AM_HERE);
@@ -489,9 +491,9 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 
 #ifdef FIRMATA_SERIAL_FEATURE
-        case SERIAL_MESSAGE:
-            serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
-            break;
+            case SERIAL_MESSAGE:
+                serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
+                break;
 #endif
         case CB_GET_REMAIN_MEM:
             fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
@@ -547,20 +549,20 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
-        case CB_GET_RTC:
-            fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
-            break;
-        case CB_SET_RTC:
-            new_time.tm_year = *(u16 *) &argv[0];
-            new_time.tm_mon = argv[2];
-            new_time.tm_mday = argv[3];
-            new_time.tm_hour = argv[4];
-            new_time.tm_min = argv[5];
-            new_time.tm_sec = argv[6];
-            new_time.tm_wday = argv[7];
-            board.set_time(&new_time);
-            fm->sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
-            break;
+            case CB_GET_RTC:
+                fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *)&plc_var.info.rtc);
+                break;
+            case CB_SET_RTC:
+                new_time.tm_year = *(u16 *)&argv[0];
+                new_time.tm_mon = argv[2];
+                new_time.tm_mday = argv[3];
+                new_time.tm_hour = argv[4];
+                new_time.tm_min = argv[5];
+                new_time.tm_sec = argv[6];
+                new_time.tm_wday = argv[7];
+                board.set_time(&new_time);
+                fm->sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
+                break;
 #endif
 #ifdef ARDUINO
 #ifdef USE_LWIP
@@ -885,59 +887,78 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #endif
 #if defined(RTE_APP) || defined(PLC)
 #ifndef PLC
-        case FM_PUT_DATA_BLOCK:
-            u32 crc, crc_r;
-            byte *buffer_data;
-            if (argc < 12)
-                break;
-            buffer_data = (byte *) malloc(argc);
+            case FM_PUT_DATA_BLOCK:
+                u32 crc, crc_r;
+                byte *buffer_data;
+                if (argc < 12)
+                    break;
+                buffer_data = (byte *)malloc(argc);
 
-            len_data = decodeByteStream(argc, argv, buffer_data);
-            if (len_data > argc) {
-                crc = GenerateCRC32Sum((const u8 *) buffer_data, len_data - 4, 0);
-                crc_r = *(u32 *) (&buffer_data[len_data - 4]);
-            }
-            if (crc_r != crc) {
-                state = CRC_ERROR;
-            } else {
-                rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
-                int block = *(int *) &buffer_data[0];
-                if (block == 0) {
-                    // if (ifirmata.dev) {
-                    //     state = DEV_IS_OPEN;
-                    // } else
+                len_data = decodeByteStream(argc, argv, buffer_data);
+                if (len_data > argc)
+                {
+                    crc = GenerateCRC32Sum((const u8 *)buffer_data, len_data - 4, 0);
+                    crc_r = *(u32 *)(&buffer_data[len_data - 4]);
+                }
+                if (crc_r != crc)
+                {
+                    state = CRC_ERROR;
+                }
+                else
+                {
+                    rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
+                    int block = *(int *)&buffer_data[0];
+                    if (block == 0)
                     {
-                        u32 object = *(u32 *) &buffer_data[4];
-                        ifirmata.dev = mem_block::mems[object];
-                        if (!ifirmata.dev) {
-                            state = NO_DEVICE;
-                        } else {
-                            state = ifirmata.dev->begin(buffer_data, len);
-                            if (state > 0 && state > ifirmata.parser.dataBufferSize * 7 / 8 - 4) {
-                                state = (int) (ifirmata.parser.dataBufferSize * 7 / 8 - 4);
+                        // if (ifirmata.dev) {
+                        //     state = DEV_IS_OPEN;
+                        // } else
+                        {
+                            u32 object = *(u32 *)&buffer_data[4];
+                            ifirmata.dev = mem_block::mems[object];
+                            if (!ifirmata.dev)
+                            {
+                                state = NO_DEVICE;
                             }
-                            logger.info("recv %s ,size= %d", &buffer_data[12], *(u32 *) &buffer_data[8]);
+                            else
+                            {
+                                state = ifirmata.dev->begin(buffer_data, len);
+                                if (state > 0 && state > ifirmata.parser.dataBufferSize * 7 / 8 - 4)
+                                {
+                                    state = (int)(ifirmata.parser.dataBufferSize * 7 / 8 - 4);
+                                }
+                                logger.info("recv %s ,size= %d", &buffer_data[12], *(u32 *)&buffer_data[8]);
+                            }
                         }
                     }
-                } else if (block == -1) {
-                    if (ifirmata.dev->Shutdown() < 0) {
-                        state = DEVICE_SHUTDOWN_ERR;
-                    } else {
-                        state = 1;
-                        rte.set_state(PLC_STATUS::APP_FLASH_END);
-                        logger.info("recv end.");
+                    else if (block == -1)
+                    {
+                        if (ifirmata.dev->Shutdown() < 0)
+                        {
+                            state = DEVICE_SHUTDOWN_ERR;
+                        }
+                        else
+                        {
+                            state = 1;
+                            rte.set_state(PLC_STATUS::APP_FLASH_END);
+                            logger.info("recv end.");
+                        }
                     }
-                } else {
-                    if (ifirmata.dev->Write(&buffer_data[4], len_data - 8) < 0) {
-                        state = DEVICE_WRITE_ERR;
-                    } else {
-                        state = block;
+                    else
+                    {
+                        if (ifirmata.dev->Write(&buffer_data[4], len_data - 8) < 0)
+                        {
+                            state = DEVICE_WRITE_ERR;
+                        }
+                        else
+                        {
+                            state = block;
+                        }
                     }
                 }
-            }
-            fm->sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *) &state);
-            free(buffer_data);
-            break;
+                fm->sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *)&state);
+                free(buffer_data);
+                break;
 #endif
         case FM_GET_LOC_SIZE:
             if (plc_var.info.plc_curr_app) {
@@ -999,13 +1020,16 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->sendSysex(FirmataStream, FM_GET_DBG, 0, nullptr);
             break;
         case FM_SET_DBG:
-            if (argc == 5) {
-                decodeByteStream(argc, argv, (byte *) &lG_index);
+            len = 0;
+            if (argc > 5) {
+                decodedLen = decodeByteStream(argc, argv, (byte *) &decodeBuf);
+                l_index = *(u32 *) decodeBuf;
                 if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz) {
-                    break;
+                    set_dbg(l_index, &decodeBuf[4], decodedLen - 4);
+                    len = (int) fill_dbg((int) l_index, decodeBuf);
                 }
             }
-            fm->sendSysex(FirmataStream, FM_SET_DBG, 0, nullptr);
+            fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
             break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
@@ -1158,6 +1182,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     mfm->set_flag(command);
 }
 
+
 void analogWriteCallback(firmata::FirmataClass *fm, Stream *, byte i, int val) {
 #if defined(RTE_APP) || defined(PLC)
     auto v = (u16) val;
@@ -1230,7 +1255,6 @@ mFirmata::mFirmata() {
 
 #if defined(RTE_APP) || defined(PLC)
 
-
 void mFirmata::report(Stream *FirmataStream) {
     u32 currentMillis = rtos::ticks();
 
@@ -1255,7 +1279,6 @@ void mFirmata::report(Stream *FirmataStream) {
 }
 
 #endif
-
 
 void mFirmata::outputPort(Stream *FirmataStream, byte portNumber, byte portValue, byte forceSend) {
     // pins not configured as INPUT are cleared to zeros
