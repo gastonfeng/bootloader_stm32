@@ -6,9 +6,9 @@
 #include "rtos.h"
 
 using u8 = unsigned char;
+using namespace firmata;
 
-class firmata_client : public mFirmata
-{
+class firmata_client : public mFirmata {
 
 public:
     int begin(Stream *s) {
@@ -34,6 +34,13 @@ public:
 
     [[noreturn]] static void thd_loop(void *arg);
 
+    static int get_plc_var(int index);
+
+    void sendSysex(byte command, uint16_t bytec, byte *bytev) {
+        FirmataClass::sendSysex(stream, command, bytec, bytev);
+    }
+
+    static int set_plc_var(int index, byte *value, int);
 };
 
 extern firmata_client fm_client;

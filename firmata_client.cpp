@@ -1,4 +1,5 @@
 #include "firmata_client.h"
+
 #ifdef USE_REMOTE_WITH_FIRMATA
 
 #if (defined(RTE_APP) || defined(PLC))
@@ -56,4 +57,19 @@ void firmata_client::thd_loop(void *arg) {
 }
 
 firmata_client fm_client;
+
+int firmata_client::get_plc_var(int index) {
+    fm_client.sendSysex(FM_GET_DBG,4,(byte*)&index);
+    return 0;
+}
+int firmata_client::set_plc_var(int index, byte* varp,int len) {
+    byte *buf=(byte*)malloc(len+4);
+    *(int*)buf=index;
+    memcpy(&buf[4],varp,len);
+    fm_client.sendSysex(FM_SET_DBG,len+4,(byte*)buf);
+    free(buf);
+    return 0;
+}
 #endif
+
+
