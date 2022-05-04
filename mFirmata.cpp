@@ -1047,37 +1047,87 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 fm->sendSysex(FirmataStream, FM_WRITE_MEM, len, (byte *) indexv);
                 free(buffer);
                 break;
-            case FM_READ_VALUE:
-                decodedLen = decodeByteStream(argc, argv, decodeBuf);
-                indexv = 0;
-                len = 0;
-                if (decodedLen == 6) {
-                    indexv = *(u32 *) decodeBuf;
-                    len = *(u16 *) &decodeBuf[4];
-                }
-                fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
-                break;
-            case FM_WRITE_VALUE:
-                buffer = (char *) malloc(argc);
-                decodedLen = decodeByteStream(argc, argv, (byte *) buffer);
-                indexv = *(u32 *) buffer;
-                len = *(u16 *) &buffer[4];
-                if (len < (argc - 6)) {
-                    for (int i = 0; i < len; i++) {
-                        *(((uint8_t *) &plc_var) + indexv + i) = buffer[6 + i];
+                case FM_READ_VALUE:
+                    decodedLen = decodeByteStream(argc, argv, decodeBuf);
+                    indexv = 0;
+                    len = 0;
+                    if (decodedLen == 6)
+                    {
+                        indexv = *(u32 *) decodeBuf;
+                        len = *(u16 *) &decodeBuf[4];
                     }
-                }
-                fm->sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len, (byte *) ((uint8_t *) &plc_var) + indexv);
-                free(buffer);
-                break;
+                    fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
+                    break;
+                    case FM_WRITE_VALUE:
+                        buffer = (char *) malloc(argc);
+                        decodedLen = decodeByteStream(argc, argv, (byte *) buffer);
+                        indexv = *(u32 *) buffer;
+                        len = *(u16 *) &buffer[4];
+                        if (len < (argc - 6))
+                        {
+                            for (int i = 0; i < len; i++)
+                            {
+                                *(((uint8_t *) &plc_var) + indexv + i) = buffer[6 + i];
+                            }
+                        }
+                        fm->sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len, (byte *) ((uint8_t *) &plc_var) + indexv);
+                        free(buffer);
+                        break;
+                        case FM_READ_BIT:
+                            decodedLen = decodeByteStream(argc, argv, decodeBuf);
+                            indexv = 0;
+                            len = 0;
+                            if (decodedLen == 6)
+                            {
+                                indexv = *(u32 *) decodeBuf;
+                                len = *(u16 *) &decodeBuf[4];
+                            }
+                            buffer = (char *) malloc(len/8+1);
+                            for (int i = 0; i < len; i++){
+                                u8 b=plcVar.digitalValue(indexv+i);
+                                buffer[i/8]|=b<<i;
+                            }
+                            fm->sendSysex(FirmataStream, FM_READ_BIT_REP, (len)/8+1, buffer);
+                            break;
+                            case FM_WRITE_BIT:
+                                buffer = (char *) malloc(argc);
+                                decodedLen = decodeByteStream(argc, argv, (byte *) buffer);
+                                indexv = *(u32 *) buffer;
+                                len = *(u16 *) &buffer[4];
+                                if (len < (argc - 6))
+                                {
+                                    for (int i = 0; i < len; i++)
+                                    {
+                                        *(((uint8_t *) &plc_var) + indexv + i) = buffer[6 + i];
+                                    }
+                                }
+                                fm->sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len, (byte *) ((uint8_t *) &plc_var) + indexv);
+                                free(buffer);
+                                break;
 #endif
         case FM_READ_VALUE_REP:
-            decodedLen = decodeByteStream(argc, argv, decodeBuf);
-            memcpy(mfm->valueBuf, decodeBuf, decodedLen);
+            if (argc > 0) {
+                decodedLen = decodeByteStream(argc, argv, decodeBuf);
+                memcpy(mfm->valueBuf, decodeBuf, decodedLen);
+                mfm->valueLen = decodedLen;
+            }
             break;
         case FM_WRITE_VALUE_REP:
-            decodedLen = decodeByteStream(argc, argv, decodeBuf);
-
+            if (argc > 0 && argc < 8) {
+                decodedLen = decodeByteStream(argc, argv, decodeBuf);
+            }
+            break;
+        case FM_READ_BIT_REP:
+            if (argc > 0) {
+                decodedLen = decodeByteStream(argc, argv, decodeBuf);
+                memcpy(mfm->valueBuf, decodeBuf, decodedLen);
+                mfm->valueLen = decodedLen;
+            }
+            break;
+        case FM_WRITE_BIT_REP:
+            if (argc > 0 && argc < 8) {
+                decodedLen = decodeByteStream(argc, argv, decodeBuf);
+            }
             break;
 #if defined(RTE_APP) || defined(PLC)
             case FM_READ_LOC:
@@ -1253,10 +1303,11 @@ int mFirmata::setValue(Stream *FirmataStream, int index, void *valBuf, u8 size) 
     buf = (byte *) malloc(size + 4);
     *(int *) buf = index;
     memcpy(&buf[4], valBuf, size);
+    clr_flag(FM_WRITE_VALUE_REP);
     sendSysex(FirmataStream, FM_WRITE_VALUE, size + 4, (byte *) buf);
     free(buf);
     u32 tick = rtos::ticks() + 1000;
-    while (get_flag(FM_WRITE_VALUE) == 0) {
+    while (get_flag(FM_WRITE_VALUE_REP) == 0) {
         rtos::Delay(1);
         if (rtos::ticks() > tick)
             return TIMEOUT;
@@ -1281,14 +1332,42 @@ int mFirmata::set_flag(u16 cmd) {
     return -1;
 }
 
-int mFirmata::getValue(Stream *pStream, int index, u8 *value_buf) {
-    sendSysex(pStream, FM_READ_VALUE, 4, (byte *) &index);
+int mFirmata::getValue(Stream *pStream, int index, u8 *value_buf, u16 len) {
+    u8 buf[6];
+    *(int *) buf = index;
+    *(u16 *) &buf[4] = len;
+    clr_flag(FM_READ_VALUE_REP);
+    valueLen = 0;
+    sendSysex(pStream, FM_READ_VALUE, 6, (byte *) buf);
     u32 tick = rtos::ticks() + 1000;
-    while (get_flag(FM_READ_VALUE) == 0) {
+    while (get_flag(FM_READ_VALUE_REP) == 0) {
         rtos::Delay(1);
         if (rtos::ticks() > tick)
             return TIMEOUT;
     }
-    memcpy(value_buf, valueBuf, valueLen);
-    return valueLen;
+    if (valueLen == len) {
+        memcpy(value_buf, valueBuf, valueLen);
+        return valueLen;
+    }
+    return -1;
+}
+
+int mFirmata::getBit(Stream *pStream, int index, u8 *value_buf, u16 len) {
+    u8 buf[6];
+    *(int *) buf = index;
+    *(u16 *) &buf[4] = len;
+    clr_flag(FM_READ_BIT_REP);
+    valueLen = 0;
+    sendSysex(pStream, FM_READ_BIT, 6, (byte *) buf);
+    u32 tick = rtos::ticks() + 1000;
+    while (get_flag(FM_READ_BIT_REP) == 0) {
+        rtos::Delay(1);
+        if (rtos::ticks() > tick)
+            return TIMEOUT;
+    }
+    if (valueLen == len) {
+        memcpy(value_buf, valueBuf, valueLen);
+        return valueLen;
+    }
+    return -1;
 }
