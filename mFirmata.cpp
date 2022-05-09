@@ -1024,7 +1024,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             if (argc > 5) {
                 decodedLen = decodeByteStream(argc, argv, (byte *) &decodeBuf);
                 l_index = *(u32 *) decodeBuf;
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz) {
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
                     set_dbg(l_index, &decodeBuf[4], decodedLen - 4);
                     len = (int) fill_dbg((int) l_index, decodeBuf);
                 }
