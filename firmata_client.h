@@ -17,7 +17,7 @@ public:
         return 0;
     }
 
-    static int get_var_bool(int index, u8 *value, u16 len);
+    static int get_var_bool(int index, u16 len);
 
     static int get_var_int(int index, short *value, u16 len);
 
