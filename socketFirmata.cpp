@@ -247,6 +247,12 @@ int socketFirmata::handle_new_connection()
         return -1;
     }
     int optval = 1;
+    int flag = 1;
+    setsockopt(new_client_sock,
+               IPPROTO_TCP,   /* set option at TCP level */
+               TCP_NODELAY,   /* name of option */
+               (void *)&flag, /* the cast is historical cruft */
+               sizeof(int));  /* length of option value */
 #ifndef windows_x86
     setsockopt(new_client_sock, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
     char client_ipv4_str[INET_ADDRSTRLEN];
@@ -378,7 +384,7 @@ void socketFirmata::flush()
     if (cur_peer)
     {
         cur_peer->current_receiving_byte = 0;
-        send(cur_peer->socket, (const char *)txbuf.data(), txbuf.size(), 0);
+        send(cur_peer->socket, (const char *)txbuf.data(), txbuf.size(),MSG_DONTWAIT);
     }
     txbuf.clear();
 }
