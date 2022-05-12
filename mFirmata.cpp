@@ -1334,13 +1334,13 @@ mFirmata::mFirmata()
     setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
     attach(STRING_DATA, stringCallback);
     attach(START_SYSEX, sysexCallback);
-    // attach(ANALOG_MESSAGE, analogWriteCallback);
-    // attach(DIGITAL_MESSAGE, digitalWriteCallback);
+    attach(ANALOG_MESSAGE, analogWriteCallback);
+    attach(DIGITAL_MESSAGE, digitalWriteCallback);
     attach(REPORT_ANALOG, reportAnalogCallback);
-    // attach(REPORT_DIGITAL, reportDigitalCallback);
-    // attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
-    // attach(SET_PIN_MODE, setPinModeCallback);
-    // attach(SYSTEM_RESET, systemResetCallback);
+    attach(REPORT_DIGITAL, reportDigitalCallback);
+    attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
+    attach(SET_PIN_MODE, setPinModeCallback);
+    attach(SYSTEM_RESET, systemResetCallback);
     i_am_here_cb = nullptr;
 #ifdef FIRMATA_SERIAL_FEATURE
     serialFeature = new SerialFirmata();
