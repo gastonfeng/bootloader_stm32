@@ -1104,7 +1104,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #if defined(RTE_APP) || defined(PLC)
     case FM_LOG_SET_LEVEL:
         plc_var.config.log_level = argv[0];
-        fm->sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 0, nullptr);
+        fm->sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 1, &plc_var.config.log_level);
         break;
 #endif
 #ifdef ARDUINO_ARCH_STM32
