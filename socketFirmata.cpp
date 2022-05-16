@@ -13,13 +13,6 @@
 #include "rtos.h"
 #include "logger_rte.h"
 
-#ifdef USE_LWIP
-
-#include "lwip/tcpip.h"
-#include "lwip/sockets.h"
-
-#endif
-
 #ifdef SYLIXOS
 
 #include "lwip/tcpip.h"
@@ -28,7 +21,6 @@
 #define closesocket close
 #endif
 
-#include <csignal>
 
 #ifdef windows_x86
 #include <ws2tcpip.h>
@@ -46,7 +38,7 @@ extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t c
 typedef struct
 {
     int socket{};
-    struct sockaddr_in addres;
+    struct sockaddr_in addres{};
 
     /* The same for the receiving message. */
     char receiving_buffer[DATA_MAXSIZE]{};
@@ -119,7 +111,7 @@ int socketFirmata::peek()
 int socketFirmata::receive_from_peer(void *p)
 {
     //    logger.debug("Ready for recv() from %s.\n", peer_get_addres_str(peer));
-    peer_t *peer = (peer_t *)p;
+    auto *peer = (peer_t *) p;
     size_t len_to_receive;
     ssize_t received_count;
     size_t received_total = 0;
@@ -168,7 +160,7 @@ int socketFirmata::start_listen_socket(int *sock)
         return -1;
     }
 #endif
-    struct sockaddr_in my_addr;
+    struct sockaddr_in my_addr{};
     memset(&my_addr, 0, sizeof(my_addr));
     my_addr.sin_family = AF_INET;
     my_addr.sin_addr.s_addr = INADDR_ANY;
@@ -237,7 +229,7 @@ int build_fd_sets(fd_set *read_fds, fd_set *write_fds, fd_set *except_fds)
 
 int socketFirmata::handle_new_connection()
 {
-    struct sockaddr_in client_addr;
+    struct sockaddr_in client_addr{};
     memset(&client_addr, 0, sizeof(client_addr));
     socklen_t client_len = sizeof(client_addr);
     int new_client_sock = accept(listen_sock, (struct sockaddr *)&client_addr, &client_len);
