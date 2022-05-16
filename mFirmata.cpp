@@ -739,12 +739,12 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     case CB_SET_V:
         // decodedLen = base64_dec_len((char *)argv, argc);
         decodedLen = base64_decode(bufs, (char *)argv, argc);
-        logger.debug("set_v %d -> %d", argc, decodedLen);
+        // logger.debug("set_v %d -> %d", argc, decodedLen);
         for (int i = 0; i < decodedLen; i += 2)
         {
             const u16 *byte = (u16 *)&bufs[i];
             indexv = *byte;
-            logger.debug("%d", indexv);
+            // logger.debug("%d", indexv);
             if (plc_var.info.plc_state == (u8)PLC_STATUS::Started)
             {
                 plc_var.info.plc_curr_app->dbg_var_register(indexv);
@@ -1104,7 +1104,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #if defined(RTE_APP) || defined(PLC)
     case FM_LOG_SET_LEVEL:
         plc_var.config.log_level = argv[0];
-        fm->sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 0, nullptr);
+        fm->sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 1, &plc_var.config.log_level);
         break;
 #endif
 #ifdef ARDUINO_ARCH_STM32
