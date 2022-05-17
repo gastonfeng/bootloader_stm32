@@ -304,6 +304,7 @@ int socketFirmata::loop()
         return -1;
     }
 #endif
+    lwip_socket_thread_init();
     if (start_listen_socket(&listen_sock) != 0)
         return -2;
 
