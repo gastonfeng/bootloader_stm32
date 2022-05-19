@@ -243,7 +243,7 @@ int socketFirmata::handle_new_connection()
     setsockopt(new_client_sock,
                IPPROTO_TCP,   /* set option at TCP level */
                TCP_NODELAY,   /* name of option */
-               (void *)&flag, /* the cast is historical cruft */
+               (const char *)&flag, /* the cast is historical cruft */
                sizeof(int));  /* length of option value */
 #ifndef windows_x86
     setsockopt(new_client_sock, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
@@ -303,8 +303,11 @@ int socketFirmata::loop()
         logger.error("WSAStartup failed: %d\n", iResult);
         return -1;
     }
+
 #endif
+#ifdef USE_LWIP
     lwip_socket_thread_init();
+#endif
     if (start_listen_socket(&listen_sock) != 0)
         return -2;
 
