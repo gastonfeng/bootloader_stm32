@@ -766,6 +766,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         {
             void *b = &data[4];
             plc_var.info.plc_curr_app->dbg_data_get((u32*)&data[0], (u32 *)&len, (void **)&b);
+            memcpy(&data[4],b,len);
             plc_var.info.plc_curr_app->dbg_data_free();
         }
         fm->sendSysex(FirmataStream, CB_GET_V, len + 4, data);
