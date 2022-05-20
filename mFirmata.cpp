@@ -428,7 +428,6 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     char *buffer;
     int state;
     u32 start, end;
-    char bufs[256];
     u32 indexv;
     int decodedLen;
     u32 tick;
@@ -738,14 +737,16 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         break;
     case CB_SET_V:
         // decodedLen = base64_dec_len((char *)argv, argc);
-        decodedLen = base64_decode(bufs, (char *)argv, argc);
+        byte *bufs;
+        bufs = (byte *)malloc(argc);
+        decodedLen = decodeByteStream(argc, argv, bufs);
         // logger.debug("set_v %d -> %d", argc, decodedLen);
         for (int i = 0; i < decodedLen; i += 2)
         {
             const u16 *byte = (u16 *)&bufs[i];
             indexv = *byte;
-            // logger.debug("%d", indexv);
-            if (plc_var.info.plc_state == (u8)PLC_STATUS::Started)
+            // logger.debug("%d %d", i, indexv);
+            if (plc_var.info.plc_curr_app)
             {
                 plc_var.info.plc_curr_app->dbg_var_register(indexv);
             }
@@ -755,30 +756,20 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         fm->write(FirmataStream, decodedLen);
         fm->write(FirmataStream, END_SYSEX);
         fm->flush(FirmataStream);
+        free(bufs);
         break;
     case CB_GET_V:
         tick = 0;
         len = 0;
-        data = nullptr;
+        data = (u8*)malloc(512);
         if (plc_var.info.plc_state == (u8)PLC_STATUS::Started)
         {
-            plc_var.info.plc_curr_app->dbg_data_get(&tick, (u32 *)&len, (void **)&data);
+            void *b = &data[4];
+            plc_var.info.plc_curr_app->dbg_data_get((u32*)&data[0], (u32 *)&len, (void **)&b);
             plc_var.info.plc_curr_app->dbg_data_free();
         }
-
-        fm->write(FirmataStream, START_SYSEX);
-        fm->write(FirmataStream, CB_GET_V);
-        int bl;
-        bl = base64_enc_len(4);
-        char buf[8];
-        base64_encode(buf, (char *)&tick, 4);
-        fm->writeBytes(FirmataStream, (byte *)buf, bl);
-        bl = base64_enc_len(len);
-        char buf1[512];
-        base64_encode(buf1, (char *)data, len);
-        fm->writeBytes(FirmataStream, (byte *)buf1, bl);
-        fm->write(FirmataStream, END_SYSEX);
-        fm->flush(FirmataStream);
+        fm->sendSysex(FirmataStream, CB_GET_V, len + 4, data);
+        free(data);
         break;
 #endif
 #ifdef ARDUINO
@@ -1247,9 +1238,12 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         fm->sendSysex(FirmataStream, FM_READ_LOC, len, (byte *)decodeBuf);
         break;
     case FM_GET_LOCATION:
+        byte *buf_fgl;
+        buf_fgl = (byte *)malloc(32);
         decodedLen = decodeByteStream(argc, argv, decodeBuf);
-        len = board.get_input(decodeBuf[1], decodeBuf[2], decodeBuf[3], 0, (char *)bufs);
-        fm->sendSysex(FirmataStream, FM_GET_LOCATION, len, (byte *)bufs);
+        len = board.get_input(decodeBuf[1], decodeBuf[2], decodeBuf[3], 0, (char *)buf_fgl);
+        fm->sendSysex(FirmataStream, FM_GET_LOCATION, len, (byte *)buf_fgl);
+        free(buf_fgl);
         break;
     case FM_SET_LOCATION:
         decodedLen = decodeByteStream(argc, argv, decodeBuf);
@@ -1332,15 +1326,15 @@ mFirmata::mFirmata()
 {
     disableBlinkVersion();
     setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
-//    attach(STRING_DATA, stringCallback);
+    //    attach(STRING_DATA, stringCallback);
     attach(START_SYSEX, sysexCallback);
-//    attach(ANALOG_MESSAGE, analogWriteCallback);
-//    attach(DIGITAL_MESSAGE, digitalWriteCallback);
-//    attach(REPORT_ANALOG, reportAnalogCallback);
-//    attach(REPORT_DIGITAL, reportDigitalCallback);
-//    attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
-//    attach(SET_PIN_MODE, setPinModeCallback);
-//    attach(SYSTEM_RESET, systemResetCallback);
+    //    attach(ANALOG_MESSAGE, analogWriteCallback);
+    //    attach(DIGITAL_MESSAGE, digitalWriteCallback);
+    //    attach(REPORT_ANALOG, reportAnalogCallback);
+    //    attach(REPORT_DIGITAL, reportDigitalCallback);
+    //    attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
+    //    attach(SET_PIN_MODE, setPinModeCallback);
+    //    attach(SYSTEM_RESET, systemResetCallback);
     i_am_here_cb = nullptr;
 #ifdef FIRMATA_SERIAL_FEATURE
     serialFeature = new SerialFirmata();
