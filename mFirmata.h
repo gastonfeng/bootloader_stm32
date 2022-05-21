@@ -7,22 +7,11 @@
 #include "Firmata.h"
 #include "../firmata/Firmata.h"
 
-#if defined(RTE_APP)||defined(PLC)
+#if defined(RTE_APP) || defined(PLC)
 #include "plc_rte.h"
 #include <smodule.h>
 #endif
 
-#define I2C_WRITE B00000000
-#define I2C_READ B00001000
-#define I2C_READ_CONTINUOUSLY B00010000
-#define I2C_STOP_READING B00011000
-#define I2C_READ_WRITE_MODE_MASK B00011000
-#define I2C_10BIT_ADDRESS_MODE_MASK B00100000
-#define I2C_END_TX_MASK B01000000
-#define I2C_STOP_TX 1
-#define I2C_RESTART_TX 0
-#define I2C_MAX_QUERIES 3
-#define I2C_REGISTER_NOT_SPECIFIED -1
 using u8 = unsigned char;
 using u16 = unsigned short;
 using u32 = unsigned int;
@@ -100,17 +89,17 @@ enum {
     FM_READ_VALUE_REP,
     FM_WRITE_VALUE,
     FM_WRITE_VALUE_REP,
+    FM_READ_BIT,
+    FM_READ_BIT_REP,
+    FM_WRITE_BIT,
+    FM_WRITE_BIT_REP,
     FM_GET_NET_BUF_STAT,
     FM_GET_LOCATION,
     FM_SET_LOCATION,
     FM_LAST
 };
 
-class mFirmata : public firmata::FirmataClass
-#if defined(USE_RTOS_CLASS)
-    , public smodule
-#endif
-{
+class mFirmata : public firmata::FirmataClass, public smodule {
 public:
     mFirmata();
 
@@ -118,14 +107,13 @@ public:
 
     int loop(Stream *FirmataStream);
 
-#if defined(USE_RTOS_CLASS)
     int run(u32 tick) override { return 0; }
 
     int begin(u32 tick) override { return 0; }
+
     int diag(u32 tick) override {
         return 0;
     }
-#endif
 
     void begin(Stream *FirmataStream) {
         //
@@ -151,8 +139,6 @@ public:
     u32 previousMillis = 0;
     // u32 analogInputsToReport = 0;
     int queryIndex = -1;
-    /* for i2c read continuous more */
-    i2c_device_info query[I2C_MAX_QUERIES]{};
 
     void outputPort(Stream *FirmataStream, byte portNumber, byte portValue, byte forceSend);
 
@@ -176,7 +162,9 @@ public:
 
     u8 respose[FM_LAST / 8 + 1]{};
 
-    int getValue(Stream *pStream, int index, u8 *value_buf);
+    int getValue(Stream *pStream, int index, u8 *value_buf, u16 len);
+
+    int getBit(Stream *pStream, int index, u8 *value_buf, u16 len);
 
     u8 valueBuf[8]{};
     char valueLen{};
