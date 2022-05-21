@@ -11,6 +11,7 @@
 
 #include <ctime>
 #include <SerialFirmata.h>
+#include <plc_const.h>
 #include "hwboard.h"
 
 #ifdef USE_SERVO
