@@ -854,7 +854,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         size_t vlen;
         buffer = kvdb.get((const char *)argv);
         vlen = strlen(buffer);
-        if (vlen > 0)
+        if (buffer&&(vlen > 0))
             fm->sendSysex(FirmataStream, CB_READ_KEY, (byte)vlen, (byte *)buffer);
         else
             fm->sendSysex(FirmataStream, CB_READ_KEY, 0, (byte *)buffer);
@@ -863,7 +863,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         size_t key_len;
         key_len = strlen((const char *)argv);
         int rw;
-        rw = kvdb.set((const char *)argv, (const char *)argv + key_len + 1, (int)(argc - key_len - 1));
+        rw = kvdb.set((const char *)argv, (const char *)argv + key_len + 1, (int)(argc - key_len - 2));
         fm->sendSysex(FirmataStream, CB_WRITE_KEY, 4, (byte *)&rw);
         break;
     case CB_RM_KEY:
