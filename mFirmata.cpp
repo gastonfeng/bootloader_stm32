@@ -7,13 +7,13 @@
 #include <plc_rte.h>
 #include <iec_types.h>
 #include <kSerial.h>
-#include <Base64.h>
 
 #include "hwboard.h"
 
 #endif
 
 #include <ctime>
+#include <rte_rtc.h>
 
 #ifdef USE_SERVO
 #include <Servo.h>
@@ -597,9 +597,9 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         new_time.tm_hour = argv[4];
         new_time.tm_min = argv[5];
         new_time.tm_sec = argv[6];
-        new_time.tm_wday = argv[7];
-        board.set_time(&new_time);
-        fm->sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
+            new_time.tm_wday = argv[7];
+            rtc.set_time(&new_time);
+            fm->sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
         break;
 #endif
 #ifdef ARDUINO
