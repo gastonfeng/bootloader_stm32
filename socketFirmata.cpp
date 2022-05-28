@@ -28,7 +28,6 @@
 #endif
 #define MAX_CLIENTS 3
 
-#define DATA_MAXSIZE 512
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
