@@ -107,7 +107,7 @@ public:
 
     int loop(Stream *FirmataStream);
 
-    int run(u32 tick) override { return 0; }
+    int run(u32 tick) override;
 
     int begin(u32 tick) override { return 0; }
 
@@ -168,6 +168,7 @@ public:
 
     u8 valueBuf[8]{};
     char valueLen{};
+    u32 last_tick;
 };
 
 extern mFirmata ifirmata;
