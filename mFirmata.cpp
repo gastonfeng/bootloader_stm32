@@ -816,12 +816,13 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->sendSysex(FirmataStream, CB_RM_KEY, 0, argv);
             break;
         case CB_SET_TSL_RANGE:
-            key_len = strlen((const char *) argv);
+            decodedLen = decodeByteStream(argc, argv, decodeBuf);
+            key_len = strlen((const char *) decodeBuf);
             tsl_query q;
-            start = *(u32 *) &argv[key_len + 1];
-            end = *(u32 *) &argv[key_len + 1 + 4];
-            state = (int) *(u32 *) &argv[key_len + 1 + 8];
-            tsdb.query((const char *) argv, start, end, (fdb_tsl_status) (state), &q);
+            start = *(u32 *) &decodeBuf[key_len + 1];
+            end = *(u32 *) &decodeBuf[key_len + 1 + 4];
+            state = (int) *(u32 *) &decodeBuf[key_len + 1 + 8];
+            tsdb.query((const char *) decodeBuf, start, end, (fdb_tsl_status) (state), &q);
             fm->sendSysex(FirmataStream, CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *) &q);
             break;
         case CB_SET_TSL_END:
