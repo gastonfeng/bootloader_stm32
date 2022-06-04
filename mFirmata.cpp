@@ -795,6 +795,9 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #endif
 #endif
 #ifdef USE_KVDB
+        case FM_LIST_KEY:
+            kvdb.list(fm, FirmataStream);
+            break;
         case CB_READ_KEY:
             size_t vlen;
             buffer = kvdb.get((const char *) argv);

@@ -96,6 +96,7 @@ enum {
     FM_GET_NET_BUF_STAT,
     FM_GET_LOCATION,
     FM_SET_LOCATION,
+    FM_LIST_KEY,
     FM_LAST
 };
 
