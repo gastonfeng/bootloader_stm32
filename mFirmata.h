@@ -97,6 +97,8 @@ enum {
     FM_GET_LOCATION,
     FM_SET_LOCATION,
     FM_LIST_KEY,
+    FM_READ_KEY_BYTES,
+    FM_WRITE_KEY_BYTES,
     FM_LAST
 };
 
