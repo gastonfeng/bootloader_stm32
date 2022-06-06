@@ -808,8 +808,10 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 fm->sendSysex(FirmataStream, CB_READ_KEY, 0, (byte *) buffer);
             break;
         case FM_READ_KEY_BYTES:
-            len=kvdb.get((const char *) argv,(char *)decodeBuf,sizeof(decodeBuf));
-            fm->sendSysex(FirmataStream,FM_READ_KEY_BYTES,len, (byte *) decodeBuf);
+            data = (u8 *) malloc(256);
+            len = kvdb.get((const char *) argv, (char *) data, 256);
+            fm->sendSysex(FirmataStream, FM_READ_KEY_BYTES, len, (byte *) data);
+            free(data);
             break;
         case CB_WRITE_KEY:
             size_t key_len;
@@ -821,7 +823,10 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         case FM_WRITE_KEY_BYTES:
             decodedLen = decodeByteStream(argc, argv, decodeBuf);
             key_len = strlen((const char *) decodeBuf);
-            len = kvdb.set((const char *) decodeBuf, (const char *) decodeBuf + key_len + 1, (int) (decodedLen - key_len - 1));
+            uint32_t type;
+            type = *(uint32_t *) (decodeBuf + key_len + 1);
+            len = kvdb.set((const char *) decodeBuf, (const char *) (decodeBuf + key_len + 1 + 4),
+                           (int) (decodedLen - key_len - 1 - 4), type);
             fm->sendSysex(FirmataStream, FM_WRITE_KEY_BYTES, 4, (byte *) &len);
             break;
         case CB_RM_KEY:
@@ -858,7 +863,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         case CB_TSL_REMOVE:
             key_len = strlen((const char *) argv);
             // index = *(int *) &argv[key_len + 1];
-            state=tsdb.remove((const char *) (argv), 0);
+            state = tsdb.remove((const char *) (argv), 0);
             fm->sendSysex(FirmataStream, CB_TSL_REMOVE, (byte) sizeof(state), (byte *) &state);
             break;
 #endif
