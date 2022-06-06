@@ -809,8 +809,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
         case FM_READ_KEY_BYTES:
             data = (u8 *) malloc(256);
-            len = kvdb.get((const char *) argv, (char *) data, 256);
-            fm->sendSysex(FirmataStream, FM_READ_KEY_BYTES, len, (byte *) data);
+            len = kvdb.get((const char *) argv, (char *) data + 4, 256, (u32 *) data);
+            fm->sendSysex(FirmataStream, FM_READ_KEY_BYTES, len + 4, (byte *) data);
             free(data);
             break;
         case CB_WRITE_KEY:
