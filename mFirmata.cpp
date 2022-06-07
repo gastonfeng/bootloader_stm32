@@ -490,9 +490,9 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 
 #ifdef FIRMATA_SERIAL_FEATURE
-            case SERIAL_MESSAGE:
-                serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
-                break;
+        case SERIAL_MESSAGE:
+            serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
+            break;
 #endif
         case CB_GET_REMAIN_MEM:
             fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
@@ -566,34 +566,33 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #ifdef ARDUINO
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
-            case CB_SET_IP:
-                byte ip[4];
-                decodeByteStream(argc, (const byte *)argv, ip);
-                plc_var.config.ip.ip1 = ip[0];
-                plc_var.config.ip.ip2 = ip[1];
-                plc_var.config.ip.ip3 = ip[2];
-                plc_var.config.ip.ip4 = ip[3];
-                eth1.set_ip();
-                fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *)(&plc_var.config.ip));
-                break;
+        case CB_SET_IP:
+            byte ip[4];
+            decodeByteStream(argc, (const byte *) argv, ip);
+            plc_var.config.ip.ip1 = ip[0];
+            plc_var.config.ip.ip2 = ip[1];
+            plc_var.config.ip.ip3 = ip[2];
+            plc_var.config.ip.ip4 = ip[3];
+            eth1.set_ip();
+            fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
+            break;
 #endif
-            case CB_GET_IP:
-                fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *)(&plc_var.config.ip));
-                break;
-            case FM_GET_NET_BUF_STAT:
-                buffer = (char *)malloc(13 * MEMP_MAX);
-                for (int i = 0; i < MEMP_MAX; i++)
-                {
-                    *(u8 *)&buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
-                    *(u8 *)&buffer[1 + 13 * i] = memp_pools[i]->stats->err;
-                    *(u8 *)&buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
-                    *(u8 *)&buffer[3 + 13 * i] = memp_pools[i]->stats->max;
-                    *(u8 *)&buffer[4 + 13 * i] = memp_pools[i]->stats->used;
-                    memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
-                }
-                fm->sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *)buffer);
-                free(buffer);
-                break;
+        case CB_GET_IP:
+            fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
+            break;
+        case FM_GET_NET_BUF_STAT:
+            buffer = (char *) malloc(13 * MEMP_MAX);
+            for (int i = 0; i < MEMP_MAX; i++) {
+                *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
+                *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
+                *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
+                *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
+                *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
+                memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
+            }
+            fm->sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
+            free(buffer);
+            break;
 #endif
         case CB_RESET:
             fm->sendSysex(FirmataStream, CB_RESET, 0, nullptr);
@@ -604,15 +603,15 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             boardBase::goto_iap();
             break;
 #ifdef MONITOR_SERIAL
-        case CB_YMODEM:
-            u8 res;
-            res = 0;
-            fm->sendSysex(FirmataStream, CB_YMODEM, 1, &res);
-            rte.set_state(PLC_STATUS::Ymodem);
-            rtos::Delay(100);
-            board.start_ymodem();
-            rte.set_state(PLC_STATUS::Stopped);
-            break;
+            case CB_YMODEM:
+                u8 res;
+                res = 0;
+                fm->sendSysex(FirmataStream, CB_YMODEM, 1, &res);
+                rte.set_state(PLC_STATUS::Ymodem);
+                rtos::Delay(100);
+                board.start_ymodem();
+                rte.set_state(PLC_STATUS::Stopped);
+                break;
 #endif
 #ifdef USE_FREERTOS
         case CB_THREAD_INFO:
@@ -779,18 +778,18 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         case CB_GET_BOOT_VERSION:
 #ifdef BOOTINFO
             boot_t *b;
-            b = (boot_t *)BOOTINFO; // platformio.ini中定义
+            b = (boot_t *) BOOTINFO; // platformio.ini中定义
             if (b)
-                fm->sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *)b);
+                fm->sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *) b);
             else
 #endif
-        {
-            fm->write(FirmataStream, START_SYSEX);
-            fm->write(FirmataStream, CB_GET_BOOT_VERSION);
-            fm->write(FirmataStream, 0);
-            fm->write(FirmataStream, END_SYSEX);
-            fm->flush(FirmataStream);
-        }
+            {
+                fm->write(FirmataStream, START_SYSEX);
+                fm->write(FirmataStream, CB_GET_BOOT_VERSION);
+                fm->write(FirmataStream, 0);
+                fm->write(FirmataStream, END_SYSEX);
+                fm->flush(FirmataStream);
+            }
             break;
 #endif
 #endif
