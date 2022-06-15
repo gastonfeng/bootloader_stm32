@@ -356,16 +356,14 @@ extern FlashFs flash_fs;
 
 void stringCallback(firmata::FirmataClass *fc, Stream *Fs, char *myString) {
 #ifdef USE_LFS
-    if (strncmp(myString, "rm ", 3) == 0)
-    {
+    if (strncmp(myString, "rm ", 3) == 0) {
         if (flash_fs.unlink(&myString[3]) == 0)
             fc->sendString(Fs, "rm ok");
         else
             fc->sendString(Fs, "rm fail");
-    }
-    else
+    } else
 #endif
-    fc->sendString(Fs, "unknown input");
+        fc->sendString(Fs, "unknown input");
 }
 
 int decodeByteStream(size_t bytec, const byte *bytev, byte *buf) {
@@ -1002,14 +1000,14 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             }
             break;
         case FM_GET_DBG:
-            u32 lG_index;
+            len = 0;
             if (argc == 5) {
-                decodeByteStream(argc, argv, (byte *) &lG_index);
-                len = (int) fill_dbg((int) lG_index, decodeBuf);
-                fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
-                break;
+                decodeByteStream(argc, argv, (byte *) &l_index);
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                    len = (int) fill_dbg((int) l_index, decodeBuf);
+                }
             }
-            fm->sendSysex(FirmataStream, FM_GET_DBG, 0, nullptr);
+            fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
             break;
         case FM_SET_DBG:
             len = 0;
