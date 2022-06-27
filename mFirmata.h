@@ -171,7 +171,7 @@ public:
 
     u8 valueBuf[8]{};
     char valueLen{};
-    u32 last_tick;
+    u32 last_tick{};
 };
 
 extern mFirmata ifirmata;
