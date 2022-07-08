@@ -99,6 +99,7 @@ enum {
     FM_LIST_KEY,
     FM_READ_KEY_BYTES,
     FM_WRITE_KEY_BYTES,
+    FM_FLASH_BOOT,
     FM_LAST
 };
 
