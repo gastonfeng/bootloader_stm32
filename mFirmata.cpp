@@ -568,27 +568,28 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         app.unload();
         rte.load_app();
         break;
-    case CB_PLC_REPAIR:
-        rte.app_stop();
-        app.unload();
-        fm->write(FirmataStream, START_SYSEX);
-        fm->write(FirmataStream, CB_PLC_REPAIR);
-        fm->write(FirmataStream, 0);
-        fm->write(FirmataStream, END_SYSEX);
-        fm->flush(FirmataStream);
-        break;
-    case FM_FLASH_CLEAR:
-        fm->sendSysex(FirmataStream, FM_FLASH_CLEAR, 0, nullptr);
-        board.flashClear();
-        hwboard::reset();
-        break;
+        case CB_PLC_REPAIR:
+            rte.app_stop();
+            app.unload();
+            fm->write(FirmataStream, START_SYSEX);
+            fm->write(FirmataStream, CB_PLC_REPAIR);
+            fm->write(FirmataStream, 0);
+            fm->write(FirmataStream, END_SYSEX);
+            fm->flush(FirmataStream);
+            break;
+        case FM_FLASH_CLEAR:
+            len = 0;
+            fm->sendSysex(FirmataStream, FM_FLASH_CLEAR, 4, (byte *) &len);
+            board.flashClear();
+            hwboard::reset();
+            break;
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
-    case CB_GET_RTC:
-        fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *)&plc_var.info.rtc);
-        break;
-    case CB_SET_RTC:
-        new_time.tm_year = *(u16 *)&argv[0];
+        case CB_GET_RTC:
+            fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
+            break;
+        case CB_SET_RTC:
+            new_time.tm_year = *(u16 *) &argv[0];
         new_time.tm_mon = argv[2];
         new_time.tm_mday = argv[3];
         new_time.tm_hour = argv[4];
@@ -631,18 +632,19 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         free(buffer);
         break;
 #endif
-    case CB_RESET:
-        fm->sendSysex(FirmataStream, CB_RESET, 0, nullptr);
-        RTE::reset();
-        break;
-    case CB_GOTO_IAP:
-        fm->sendSysex(FirmataStream, CB_GOTO_IAP, 0, nullptr);
-        boardBase::goto_iap();
-        break;
+        case CB_RESET:
+            len = 0;
+            fm->sendSysex(FirmataStream, CB_RESET, 4, (byte *) &len);
+            RTE::reset();
+            break;
+        case CB_GOTO_IAP:
+            fm->sendSysex(FirmataStream, CB_GOTO_IAP, 0, nullptr);
+            boardBase::goto_iap();
+            break;
 #ifdef MONITOR_SERIAL
-    case CB_YMODEM:
-        u8 res;
-        res = 0;
+        case CB_YMODEM:
+            u8 res;
+            res = 0;
         fm->sendSysex(FirmataStream, CB_YMODEM, 1, &res);
         rte.set_state(PLC_STATUS::Ymodem);
         rtos::Delay(100);
