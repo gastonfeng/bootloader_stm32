@@ -1205,7 +1205,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 }
                 for (int i = 0; i < len; i++)
                 {
-                    memcpy(decodeBuf + 4 + i * 4, (u32 *)&plc_var.analogValue32 + i, 4);
+                    memcpy(decodeBuf + 4 + i * 4, ((u32 *)&plc_var.analogValue32) + i, 4);
                 }
                 fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len * 4 + 4, ((byte *)decodeBuf));
                 break;
