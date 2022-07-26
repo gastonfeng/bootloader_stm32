@@ -1184,7 +1184,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         if (decodedLen == 7 && decodeBuf[0] < 8)
         {
             region = decodeBuf[0];
-            indexv = *(u32 *)decodeBuf;
+            indexv = *(u32 *)&decodeBuf[1];
             len = *(u16 *)&decodeBuf[5];
             switch (region)
             {
@@ -1199,6 +1199,10 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 break;
             case 3: // analogValue32
                 *(u32 *)decodeBuf = indexv;
+                if(len>(sizeof(decodeBuf)/4+4))
+                {
+                    len=sizeof(decodeBuf)/4-1;
+                }
                 for (int i = 0; i < len; i++)
                 {
                     memcpy(decodeBuf + 4 + i * 4, (u32 *)&plc_var.analogValue32 + i, 4);
