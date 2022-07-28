@@ -119,6 +119,10 @@ public:
         return 0;
     }
 
+    int dev_test(u32 tick) override {
+        return 0;
+    }
+
     void begin(Stream *FirmataStream) {
         //
     }

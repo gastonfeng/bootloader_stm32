@@ -905,53 +905,57 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
         break;
     case CB_SET_TSL_STATUS:
         decodedLen = decodeByteStream(argc, argv, decodeBuf);
-        key_len = strlen((const char *)decodeBuf);
-        len = -1;
-        if (decodedLen == key_len + 13)
-        {
-            start = *(u32 *)&decodeBuf[key_len + 1];
-            end = *(u32 *)&decodeBuf[key_len + 1 + 4];
-            state = (int)*(u32 *)&decodeBuf[key_len + 1 + 8];
-            len = tsdb.set_status((const char *)decodeBuf, start, end, (fdb_tsl_status)(state));
-        }
-        fm->sendSysex(FirmataStream, CB_SET_TSL_STATUS, 4, (byte *)&len);
-        break;
-    case CB_GET_TSL:
-        char *tbuf;
-        int tlen;
-        tbuf = (char *)malloc(256);
-        tlen = tsdb.query_read((const char *)argv, (u32 *)&tbuf[0], (fdb_time_t *)&tbuf[4],
-                               (int *)(tbuf + 8),
-                               tbuf + 12, 256 - 12);
-        if (tlen < 0)
-            tlen = 0;
-        fm->sendSysex(FirmataStream, CB_GET_TSL, (byte)tlen, (byte *)tbuf);
-        free(tbuf);
-        break;
-    case CB_TSL_CLEAR:
-        key_len = strlen((const char *)argv);
-        // index = *(int *) &argv[key_len + 1];
-        state = TSL::remove((const char *)(argv), 0);
-        fm->sendSysex(FirmataStream, CB_TSL_CLEAR, (byte)sizeof(state), (byte *)&state);
-        break;
+            key_len = strlen((const char *) decodeBuf);
+            len = -1;
+            if (decodedLen == key_len + 13) {
+                start = *(u32 *) &decodeBuf[key_len + 1];
+                end = *(u32 *) &decodeBuf[key_len + 1 + 4];
+                state = (int) *(u32 *) &decodeBuf[key_len + 1 + 8];
+                len = tsdb.set_status((const char *) decodeBuf, start, end, (fdb_tsl_status) (state));
+            }
+            fm->sendSysex(FirmataStream, CB_SET_TSL_STATUS, 4, (byte *) &len);
+            break;
+        case CB_GET_TSL:
+            char *tbuf;
+            int tlen;
+            tbuf = (char *) malloc(256);
+            memset(tbuf, 0, 256);
+            tlen = tsdb.query_read((const char *) argv, (u32 *) &tbuf[0], (fdb_time_t *) &tbuf[4],
+                                   (int *) (tbuf + 8),
+                                   tbuf + 12, 256 - 12);
+            if (tlen < 0)
+                tlen = 0;
+            else {
+                *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
+                tlen += 4;
+            }
+            fm->sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen, (byte *) tbuf);
+            free(tbuf);
+            break;
+        case CB_TSL_CLEAR:
+            key_len = strlen((const char *) argv);
+            // index = *(int *) &argv[key_len + 1];
+            fm->sendSysex(FirmataStream, CB_TSL_CLEAR, (byte) sizeof(state), (byte *) &state);
+            state = TSL::clear((const char *) (argv));
+            break;
 #endif
 #ifdef USE_SOEM
-    case FM_SOEM_SCAN:
-        soem_scan(fm, FirmataStream);
-        break;
+            case FM_SOEM_SCAN:
+                soem_scan(fm, FirmataStream);
+                break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
-    case CB_SET_PLC_FILE:
-        app.setPLCDLL((char *)argv);
-        fm->write(FirmataStream, START_SYSEX);
-        fm->write(FirmataStream, CB_SET_PLC_FILE);
-        fm->write(FirmataStream, 0);
-        fm->write(FirmataStream, END_SYSEX);
-        fm->flush(FirmataStream);
-        break;
-    case CB_CPU_USAGE:
-        fm->sendSysex(FirmataStream, CB_CPU_USAGE, 1, (byte *)&plc_var.info.cpu_usage);
-        break;
+        case CB_SET_PLC_FILE:
+            app.setPLCDLL((char *) argv);
+            fm->write(FirmataStream, START_SYSEX);
+            fm->write(FirmataStream, CB_SET_PLC_FILE);
+            fm->write(FirmataStream, 0);
+            fm->write(FirmataStream, END_SYSEX);
+            fm->flush(FirmataStream);
+            break;
+        case CB_CPU_USAGE:
+            fm->sendSysex(FirmataStream, CB_CPU_USAGE, 1, (byte *) &plc_var.info.cpu_usage);
+            break;
 #endif
 #ifdef USE_WIFI
     case CB_WIFI_LIST:
