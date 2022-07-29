@@ -397,13 +397,16 @@ int socketFirmata::begin(u32 tick)
     return begin(&ifirmata);
 }
 
-int socketFirmata::run(u32 tick)
-{
+int socketFirmata::run(u32 tick) {
     return 0;
 }
 
-int socketFirmata::diag(u32 tick)
-{
+int socketFirmata::diag(u32 tick) {
     return 0;
 }
+
+int socketFirmata::dev_test(u32 tick) {
+    return 0;
+}
+
 #endif

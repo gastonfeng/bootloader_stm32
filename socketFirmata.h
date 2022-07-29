@@ -61,6 +61,8 @@ public:
 
     int run(u32 tick) override;
 
+    int dev_test(u32 tick) override;
+
     int diag(u32 tick) override;
 
 
