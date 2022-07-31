@@ -26,7 +26,7 @@
 #include <ws2tcpip.h>
 #define MSG_DONTWAIT 0x0
 #endif
-#define MAX_CLIENTS 3
+#define MAX_CLIENTS 2
 
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
