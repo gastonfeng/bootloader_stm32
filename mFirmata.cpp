@@ -413,7 +413,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     } info{};
     byte decodeBuf[16];
     auto *mfm = (mFirmata *) fm;
-    logger.debug("sysexCallback: %d", command);
+//    logger.debug("sysexCallback: %d", command);
     switch (command) {
         case firmata::ARE_YOU_THERE:
 #if defined(RTE_APP) || defined(PLC)

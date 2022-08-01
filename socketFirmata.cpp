@@ -200,8 +200,10 @@ void socketFirmata::shutdown_properly(int code)
     closesocket(listen_sock);
 
     for (auto &i : connection_list)
-        if (i.socket != -1)
+        if (i.socket != -1) {
             closesocket(i.socket);
+            i.socket = -1;
+        }
 
     logger.error("Shutdown server properly.\n");
 }
