@@ -1,3 +1,4 @@
+#ifdef USE_FIRMATA
 #include "mFirmata.h"
 #include "rtos.h"
 #include "plc_const.h"
@@ -1493,3 +1494,4 @@ int mFirmata::run(u32 tick) {
     }
     return 0;
 }
+#endif
