@@ -599,17 +599,6 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             free(buffer);
             break;
 #endif
-#ifdef MONITOR_SERIAL
-            case CB_YMODEM:
-                u8 res;
-                res = 0;
-                fm->sendSysex(FirmataStream, CB_YMODEM, 1, &res);
-                rte.set_state(PLC_STATUS::Ymodem);
-                rtos::Delay(100);
-                board.start_ymodem();
-                rte.set_state(PLC_STATUS::Stopped);
-                break;
-#endif
 #ifdef USE_FREERTOS
         case CB_THREAD_INFO:
             typedef struct {
