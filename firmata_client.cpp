@@ -16,12 +16,11 @@ const remote_abi remote =
 #define NO_OBJECT (-1)
 #endif
 
-int firmata_client::get_var_bool(int index, u16 len)
-{
+int firmata_client::get_var_bool(int index, u8 len) {
     byte buf[6];
-    *(int*)buf=index;
-    *(u16*)&buf[4]=len;
-    fm_client.sendSysex(FM_READ_BIT,6,(byte*)buf);
+    *(int *) buf = index;
+    *(u16 *) &buf[4] = len;
+    fm_client.sendSysex(FM_READ_BIT, 6, (byte *) buf);
     return 0;
 }
 
