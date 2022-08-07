@@ -1,4 +1,5 @@
 #ifdef USE_FIRMATA
+
 #include "mFirmata.h"
 #include "rtos.h"
 #include "plc_const.h"
@@ -15,6 +16,7 @@
 
 #include <ctime>
 #include <rte_rtc.h>
+#include <plc_var_class.h>
 
 #ifdef USE_SERVO
 #include <Servo.h>
@@ -553,20 +555,20 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
-        case CB_GET_RTC:
-            fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
-            break;
-        case CB_SET_RTC:
-            new_time.tm_year = *(u16 *) &argv[0];
-            new_time.tm_mon = argv[2];
-            new_time.tm_mday = argv[3];
-            new_time.tm_hour = argv[4];
-            new_time.tm_min = argv[5];
-            new_time.tm_sec = argv[6];
-            new_time.tm_wday = argv[7];
-            rtc.set_time(&new_time);
-            fm->sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
-            break;
+            case CB_GET_RTC:
+                fm->sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
+                break;
+            case CB_SET_RTC:
+                new_time.tm_year = *(u16 *) &argv[0];
+                new_time.tm_mon = argv[2];
+                new_time.tm_mday = argv[3];
+                new_time.tm_hour = argv[4];
+                new_time.tm_min = argv[5];
+                new_time.tm_sec = argv[6];
+                new_time.tm_wday = argv[7];
+                rtc.set_time(&new_time);
+                fm->sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
+                break;
 #endif
 #ifdef ARDUINO
 #ifdef USE_LWIP
@@ -1006,43 +1008,36 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 #endif
 #ifdef ONLINE_DEBUG
-            case FM_GET_DBG_SIZE:
-                if (plc_var.info.plc_curr_app)
-                {
-                    fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
-                                  (byte *)&plc_var.info.plc_curr_app->data->size_dbgvardsc);
+        case FM_GET_DBG_SIZE:
+            if (plc_var.info.plc_curr_app) {
+                fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
+                              (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
+            } else {
+                fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
+            }
+            break;
+        case FM_GET_DBG:
+            len = 0;
+            if (argc == 5) {
+                decodeByteStream(argc, argv, (byte *) &l_index);
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                    len = (int) fill_dbg((int) l_index, decodeBuf);
                 }
-                else
-                {
-                    fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
+            }
+            fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
+            break;
+        case FM_SET_DBG:
+            len = 0;
+            if (argc > 5) {
+                decodedLen = decodeByteStream(argc, argv, (byte *) &decodeBuf);
+                l_index = *(u32 *) decodeBuf;
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                    set_dbg(l_index, &decodeBuf[4], decodedLen - 4);
+                    len = (int) fill_dbg((int) l_index, decodeBuf);
                 }
-                break;
-            case FM_GET_DBG:
-                len = 0;
-                if (argc == 5)
-                {
-                    decodeByteStream(argc, argv, (byte *)&l_index);
-                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc)
-                    {
-                        len = (int)fill_dbg((int)l_index, decodeBuf);
-                    }
-                }
-                fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
-                break;
-            case FM_SET_DBG:
-                len = 0;
-                if (argc > 5)
-                {
-                    decodedLen = decodeByteStream(argc, argv, (byte *)&decodeBuf);
-                    l_index = *(u32 *)decodeBuf;
-                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc)
-                    {
-                        set_dbg(l_index, &decodeBuf[4], decodedLen - 4);
-                        len = (int)fill_dbg((int)l_index, decodeBuf);
-                    }
-                }
-                fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
-                break;
+            }
+            fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
+            break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_LOG_SET_LEVEL:
@@ -1084,54 +1079,69 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             }
             break;
         case FM_READ_VALUE:
-            u8 region;
+            u8 region, typ;
             decodedLen = decodeByteStream(argc, argv, decodeBuf);
             indexv = 0;
             len = 0;
-            if (decodedLen == 7 && decodeBuf[0] < 8) {
+            if (decodedLen == 8 && decodeBuf[0] < 8) {
                 region = decodeBuf[0];
                 indexv = *(u32 *) &decodeBuf[1];
-                len = *(u16 *) &decodeBuf[5];
+                typ = decodeBuf[5];
+                len = *(u16 *) &decodeBuf[6];
                 decodeBuf[0] = region;
-                *(u32 *) &decodeBuf[1] = indexv;
+                decodeBuf[1] = typ;
+                *(u32 *) &decodeBuf[2] = indexv;
 
                 switch (region) {
                     case 0: // byte from 0
-                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
-                        break;
                     case 1: // digitalValue
-                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
+                        if (len > (sizeof(decodeBuf) / 2 + 5)) {
+                            len = sizeof(decodeBuf) / 2 - 3;
+                        }
+                        const char *p;
+                        p = (const char *) &plc_var.digitalValue;
+                        memcpy(&decodeBuf[6], &p[indexv], len);
+                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
                     case 2: // analogValue
                         if (len > (sizeof(decodeBuf) / 2 + 5)) {
                             len = sizeof(decodeBuf) / 2 - 3;
                         }
-                        for (int i = 0; i < len; i++) {
-                            const char *p;
-                            p = (const char *) &plc_var.analogValue;
-                            memcpy(&decodeBuf[5 + i * 4], &p[(indexv + i) * 2], 2);
-                        }
-                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len * 2 + 5, (byte *) decodeBuf);
+                        p = (const char *) &plc_var.analogValue;
+                        memcpy(&decodeBuf[6], &p[indexv], len);
+                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
                     case 3: // analogValue32
                         if (len > (sizeof(decodeBuf) / 4 + 4)) {
                             len = sizeof(decodeBuf) / 4 - 1;
                         }
-                        for (int i = 0; i < len; i++) {
-                            const char *p;
-                            p = (const char *) &plc_var.analogValue32;
-                            memcpy(&decodeBuf[5 + i * 4], &p[(indexv + i) * 4], 4);
-                        }
-                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len * 4 + 5, ((byte *) decodeBuf));
+                        p = (const char *) &plc_var.analogValue32;
+                        memcpy(&decodeBuf[6], &p[indexv], len);
+                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, ((byte *) decodeBuf));
                         break;
                     case 4: // holdValue
-                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
+                        if (len > (sizeof(decodeBuf) / 2 + 5)) {
+                            len = sizeof(decodeBuf) / 2 - 3;
+                        }
+                        p = (const char *) &plc_var.holdValue;
+                        memcpy(&decodeBuf[6], &p[indexv], len);
+                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
                     case 5:
-                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
+                        if (len > (sizeof(decodeBuf) / 2 + 5)) {
+                            len = sizeof(decodeBuf) / 2 - 3;
+                        }
+                        p = (const char *) &plc_var.info;
+                        memcpy(&decodeBuf[6], &p[indexv], len);
+                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
                     case 6:
-                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
+                        if (len > (sizeof(decodeBuf) / 2 + 5)) {
+                            len = sizeof(decodeBuf) / 2 - 3;
+                        }
+                        p = (const char *) &plc_var.config;
+                        memcpy(&decodeBuf[6], &p[indexv], len);
+                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
                     case 7:
                         fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
@@ -1151,7 +1161,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                         *(((uint8_t *) &plc_var) + indexv + i) = buffer[6 + i];
                     }
                 }
-                fm->sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len, (byte *) ((uint8_t *) &plc_var) + indexv);
+                fm->sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len,
+                              (byte *) ((uint8_t *) &plc_var) + indexv);
                 free(buffer);
             }
             break;
@@ -1186,7 +1197,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                         *(((uint8_t *) &plc_var) + indexv + i) = buffer[6 + i];
                     }
                 }
-                fm->sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len, (byte *) ((uint8_t *) &plc_var) + indexv);
+                fm->sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len,
+                              (byte *) ((uint8_t *) &plc_var) + indexv);
                 free(buffer);
             }
             break;
@@ -1222,12 +1234,14 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             decodedLen = decodeByteStream(argc, argv, (byte *) decodeBuf);
             if (decodedLen < 5)
                 break;
-            len = board.get_input(decodeBuf[0], decodeBuf[1], decodeBuf[2], decodeBuf[3], (char *) decodeBuf);
+            len = board.get_input(decodeBuf[0], decodeBuf[1], decodeBuf[2], decodeBuf[3],
+                                  (char *) decodeBuf);
             fm->sendSysex(FirmataStream, FM_READ_LOC, len, (byte *) decodeBuf);
             break;
         case FM_WRITE_LOC:
             decodedLen = decodeByteStream(argc, argv, (byte *) decodeBuf);
-            len = board.set_output(decodeBuf[0], decodeBuf[1], decodeBuf[2], decodeBuf[3], (char *) &decodeBuf[4],
+            len = board.set_output(decodeBuf[0], decodeBuf[1], decodeBuf[2], decodeBuf[3],
+                                   (char *) &decodeBuf[4],
                                    decodedLen - 4);
             fm->sendSysex(FirmataStream, FM_READ_LOC, len, (byte *) decodeBuf);
             break;
@@ -1483,4 +1497,5 @@ int mFirmata::run(u32 tick) {
     }
     return 0;
 }
+
 #endif
