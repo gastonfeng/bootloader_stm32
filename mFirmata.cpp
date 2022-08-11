@@ -1492,7 +1492,7 @@ int mFirmata::getBit(Stream *pStream, int index, u8 *value_buf, u16 len) {
 }
 
 int mFirmata::run(u32 tick) {
-    if (tick > (last_tick + 5000)) {
+    if (tick > (last_tick + 30000)) {
         plc_var.info.task_busy &= (~0x2);
     }
     return 0;
