@@ -1093,6 +1093,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 *(u32 *) &decodeBuf[2] = indexv;
                 const char *p;
                 switch (region) {
+                    default:
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
                         p = (const char *) &plc_var.digitalValue;
@@ -1127,6 +1128,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 len = *(u16 *) &buffer[5];
                 const char *p;
                 switch (region) {
+                    default:
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
                         p = (const char *) &plc_var.digitalValue;
