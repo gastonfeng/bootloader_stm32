@@ -1127,23 +1127,23 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 len = *(u16 *) &buffer[5];
                 const char *p;
                 switch (region) {
-                    case 0: // byte from 0
-                    case 1: // digitalValue
+                    case REGION_XI: // byte from 0
+                    case REGION_DIGITAL: // digitalValue
                         p = (const char *) &plc_var.digitalValue;
                         break;
-                    case 2: // analogValue
+                    case REGION_16: // analogValue
                         p = (const char *) &plc_var.analogValue;
                         break;
-                    case 3: // analogValue32
+                    case REGION_32: // analogValue32
                         p = (const char *) &plc_var.analogValue32;
                         break;
-                    case 4: // holdValue
+                    case REGION_HOLDER: // holdValue
                         p = (const char *) &plc_var.holdValue;
                         break;
-                    case 5:
+                    case REGION_INFO:
                         p = (const char *) &plc_var.info;
                         break;
-                    case 6:
+                    case REGION_CONFIG:
                         p = (const char *) &plc_var.config;
                         break;
                 }
