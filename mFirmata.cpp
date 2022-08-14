@@ -1083,7 +1083,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             decodedLen = decodeByteStream(argc, argv, decodeBuf);
             indexv = 0;
             len = 0;
-            if (decodedLen == 8 && decodeBuf[0] < 8) {
+            if (decodedLen == 8 && decodeBuf[0] <= REGION_HOLDER) {
                 region = decodeBuf[0];
                 indexv = *(u32 *) &decodeBuf[1];
                 typ = decodeBuf[5];
