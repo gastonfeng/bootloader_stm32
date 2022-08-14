@@ -1093,8 +1093,8 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 *(u32 *) &decodeBuf[2] = indexv;
 
                 switch (region) {
-                    case 0: // byte from 0
-                    case 1: // digitalValue
+                    case REGION_XI: // byte from 0
+                    case REGION_DIGITAL: // digitalValue
                         if (len > (sizeof(decodeBuf) / 2 + 5)) {
                             len = sizeof(decodeBuf) / 2 - 3;
                         }
@@ -1103,7 +1103,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                         memcpy(&decodeBuf[6], &p[indexv], len);
                         fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
-                    case 2: // analogValue
+                    case REGION_16: // analogValue
                         if (len > (sizeof(decodeBuf) / 2 + 5)) {
                             len = sizeof(decodeBuf) / 2 - 3;
                         }
@@ -1111,7 +1111,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                         memcpy(&decodeBuf[6], &p[indexv], len);
                         fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
-                    case 3: // analogValue32
+                    case REGION_32: // analogValue32
                         if (len > (sizeof(decodeBuf) / 4 + 4)) {
                             len = sizeof(decodeBuf) / 4 - 1;
                         }
@@ -1119,7 +1119,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                         memcpy(&decodeBuf[6], &p[indexv], len);
                         fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, ((byte *) decodeBuf));
                         break;
-                    case 4: // holdValue
+                    case REGION_HOLDER: // holdValue
                         if (len > (sizeof(decodeBuf) / 2 + 5)) {
                             len = sizeof(decodeBuf) / 2 - 3;
                         }
@@ -1127,7 +1127,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                         memcpy(&decodeBuf[6], &p[indexv], len);
                         fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
-                    case 5:
+                    case REGION_INFO:
                         if (len > (sizeof(decodeBuf) / 2 + 5)) {
                             len = sizeof(decodeBuf) / 2 - 3;
                         }
@@ -1135,16 +1135,13 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                         memcpy(&decodeBuf[6], &p[indexv], len);
                         fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
                         break;
-                    case 6:
+                    case REGION_CONFIG:
                         if (len > (sizeof(decodeBuf) / 2 + 5)) {
                             len = sizeof(decodeBuf) / 2 - 3;
                         }
                         p = (const char *) &plc_var.config;
                         memcpy(&decodeBuf[6], &p[indexv], len);
                         fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
-                        break;
-                    case 7:
-                        fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
                         break;
                 }
             } else
