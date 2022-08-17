@@ -1080,17 +1080,19 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
         case FM_READ_VALUE:
             u8 region, typ;
-            decodedLen = decodeByteStream(argc, argv, decodeBuf);
+            byte *rdbuf;
+            rdbuf = (byte *) malloc(FirmataStream->tx_max_size());
+            decodedLen = decodeByteStream(argc, argv, rdbuf);
             indexv = 0;
             len = 0;
-            if (decodedLen == 8 && decodeBuf[0] <= REGION_HOLDER) {
-                region = decodeBuf[0];
-                indexv = *(u32 *) &decodeBuf[1];
-                typ = decodeBuf[5];
-                len = *(u16 *) &decodeBuf[6];
-                decodeBuf[0] = region;
-                decodeBuf[1] = typ;
-                *(u32 *) &decodeBuf[2] = indexv;
+            if (decodedLen == 8 && rdbuf[0] <= REGION_HOLDER) {
+                region = rdbuf[0];
+                indexv = *(u32 *) &rdbuf[1];
+                typ = rdbuf[5];
+                len = *(u16 *) &rdbuf[6];
+                rdbuf[0] = region;
+                rdbuf[1] = typ;
+                *(u32 *) &rdbuf[2] = indexv;
                 const char *p;
                 switch (region) {
                     default:
@@ -1114,10 +1116,11 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                         p = (const char *) &plc_var.config;
                         break;
                 }
-                memcpy(&decodeBuf[6], &p[indexv], len);
-                fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) decodeBuf);
+                memcpy(&rdbuf[6], &p[indexv], len);
+                fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) rdbuf);
             } else
                 fm->sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
+            free(rdbuf);
             break;
         case FM_WRITE_VALUE:
             if (argc > 7) {
