@@ -98,6 +98,11 @@ public:
     void report();
 
     int connect_server(const char *host, int port);
+
+    size_t tx_max_size() override {
+        return 536;
+    }
+
 private:
     std::vector<u8> txbuf;
     mFirmata *firm;
