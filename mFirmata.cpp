@@ -153,7 +153,7 @@ void reportDigitalCallback(firmata::FirmataClass *fm, Stream *, byte port, int v
     // pins configured as analog
 #endif
 }
-
+#ifdef USE_FULL_FIRMATA
 void setPinValueCallback(firmata::FirmataClass *fm, Stream *, byte pin, int value) {
 #if defined(RTE_APP) || defined(PLC)
     if (pin < IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS) //&& fm->getPinMode(pin) == OUTPUT
@@ -163,7 +163,7 @@ void setPinValueCallback(firmata::FirmataClass *fm, Stream *, byte pin, int valu
     }
 #endif
 }
-
+#endif
 void systemResetCallback(firmata::FirmataClass *fm, Stream *) {
 #if defined(RTE_APP) || defined(PLC)
     isResetting = true;
@@ -242,6 +242,7 @@ void detachServo(byte pin)
     servoPinMap[pin] = 255;
 }
 #endif
+#ifdef USE_FULL_FIRMATA
 #ifdef ARDUINO
 
 void setPinModeCallback(firmata::FirmataClass *fm, Stream *Fs, byte pin, int mode) {
@@ -344,7 +345,7 @@ void setPinModeCallback(firmata::FirmataClass *fm, Stream *Fs, byte pin, int mod
 }
 
 #endif
-
+#endif
 int soem_scan(firmata::FirmataClass *fm, Stream *);
 
 void analogWriteCallback(firmata::FirmataClass *fm, Stream *, byte i, int val) {
@@ -468,6 +469,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->write(FirmataStream, END_SYSEX);
             fm->flush(FirmataStream);
             break;
+#ifdef USE_FULL_FIRMATA
         case PIN_STATE_QUERY:
             if (argc > 0) {
                 byte pin = argv[0];
@@ -494,7 +496,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->write(FirmataStream, END_SYSEX);
             fm->flush(FirmataStream);
             break;
-
+#endif
 #ifdef FIRMATA_SERIAL_FEATURE
             case SERIAL_MESSAGE:
                 serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
@@ -1273,6 +1275,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     mfm->set_flag(command);
 }
 
+#ifdef USE_FULL_FIRMATA
 void digitalWriteCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte port, int value) {
 #if defined(RTE_APP) || defined(PLC)
     byte lastPin, pinValue, mask = 1, pinWriteMask = 0;
@@ -1307,7 +1310,7 @@ void digitalWriteCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte
     }
 #endif
 }
-
+#endif
 int mFirmata::loop(Stream *FirmataStream) {
     while (available(FirmataStream)) {
         processInput(FirmataStream);
@@ -1347,11 +1350,13 @@ void mFirmata::report(Stream *FirmataStream) {
         previousMillis += plc_var.config.reportInterval;
         /* ANALOGREAD - do all analogReads() at the configured sampling interval */
         board.readAnalogValue(this, FirmataStream, analogInputsToReport, sizeof(analogInputsToReport));
+#ifdef USE_FULL_FIRMATA
         for (byte pin = 0; pin < IO_XI_NRS + IO_YO_NRS; pin++) {
             if (reportPINs[pin]) {
                 outputPort(FirmataStream, pin, getPinState(pin), true);
             }
         }
+#endif
     }
 #ifdef FIRMATA_SERIAL_FEATURE
     serialFeature->update(this, FirmataStream);

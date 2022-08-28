@@ -129,11 +129,10 @@ public:
 
 
     void report(Stream *FirmataStream);
-
+#ifdef USE_FULL_FIRMATA
     int getPinState(byte pin) override {
         return pinState[pin];
     }
-
     /**
      * Set the pin state. The pin state of an output pin is the pin value. The state of an
      * input pin is 0, unless the pin has it's internal pull up resistor enabled, then the value is 1.
@@ -143,6 +142,7 @@ public:
     void setPinState(byte pin, int state) override {
         pinState[pin] = state;
     }
+#endif
 
     u32 previousMillis = 0;
     // u32 analogInputsToReport = 0;
