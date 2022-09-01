@@ -15,13 +15,15 @@
 using u8 = unsigned char;
 using u16 = unsigned short;
 using u32 = unsigned int;
-struct i2c_device_info {
+struct i2c_device_info
+{
     byte addr;
     int reg;
     byte bytes;
     byte stopTX;
 };
-enum {
+enum
+{
     CB_GET_LOG_NUMBER = 0x0,
     CB_GET_LOG,
     CB_GET_REMAIN_MEM,
@@ -103,7 +105,8 @@ enum {
     FM_LAST
 };
 
-class mFirmata : public firmata::FirmataClass, public smodule {
+class mFirmata : public firmata::FirmataClass, public smodule
+{
 public:
     mFirmata();
 
@@ -113,24 +116,30 @@ public:
 
     int run(u32 tick) override;
 
-    int begin(u32 tick) override { return 0; }
-
-    int diag(u32 tick) override {
+    int begin(u32 tick) override
+    {
         return 0;
     }
 
-    int dev_test(u32 tick) override {
+    int diag(u32 tick) override
+    {
         return 0;
     }
 
-    void begin(Stream *FirmataStream) {
+    int dev_test(u32 tick) override
+    {
+        return 0;
+    }
+
+    void begin(Stream *FirmataStream)
+    {
         //
     }
 
-
     void report(Stream *FirmataStream);
 #ifdef USE_FULL_FIRMATA
-    int getPinState(byte pin) override {
+    int getPinState(byte pin) override
+    {
         return pinState[pin];
     }
     /**
@@ -139,7 +148,8 @@ public:
      * @param pin The pin to set the state of
      * @param state Set the state of the specified pin
      */
-    void setPinState(byte pin, int state) override {
+    void setPinState(byte pin, int state) override
+    {
         pinState[pin] = state;
     }
 #endif
@@ -155,7 +165,9 @@ public:
 #endif
     //时序数据库操作
 #ifdef USE_KVDB
-    struct tsdb_sec_info sector{};
+    struct tsdb_sec_info sector
+    {
+    };
     uint32_t traversed_len{};
 #endif
     systemCallbackFunction i_am_here_cb;
