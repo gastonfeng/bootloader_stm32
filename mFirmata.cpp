@@ -488,6 +488,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 fm->flush(FirmataStream);
             }
             break;
+#endif
         case ANALOG_MAPPING_QUERY:
             fm->write(FirmataStream, START_SYSEX);
             fm->write(FirmataStream, ANALOG_MAPPING_RESPONSE);
@@ -496,7 +497,6 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->write(FirmataStream, END_SYSEX);
             fm->flush(FirmataStream);
             break;
-#endif
 #ifdef FIRMATA_SERIAL_FEATURE
             case SERIAL_MESSAGE:
                 serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
