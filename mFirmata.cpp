@@ -506,7 +506,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
             break;
         case CB_GET_RTE_VERSION:
-            fm->sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver), (uint8_t *) &rte_ver);
+            fm->sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver_t), (uint8_t *) &plc_var.config.rte_ver);
             break;
         case CB_PLC_START:
             rte.app_start();
