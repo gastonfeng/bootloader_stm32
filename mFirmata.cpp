@@ -352,7 +352,7 @@ int soem_scan(firmata::FirmataClass *fm, Stream *);
 void analogWriteCallback(firmata::FirmataClass *fm, Stream *, byte i, int val) {
 #if defined(RTE_APP) || defined(PLC)
     auto v = (u16) val;
-    board.set_aout(i, &v);
+    plcVar.analogValue(i, v);
 #endif
 }
 
