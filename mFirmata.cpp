@@ -476,7 +476,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 fm->write(FirmataStream, START_SYSEX);
                 fm->write(FirmataStream, PIN_STATE_RESPONSE);
                 fm->write(FirmataStream, pin);
-                if (pin < IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS) {
+                if (pin < IO_YO_NRS + IO_XI_NRS) {
                     fm->write(FirmataStream, fm->getPinMode(pin));
                     fm->write(FirmataStream, (byte) fm->getPinState(pin) & 0x7F);
                     if (fm->getPinState(pin) & 0xFF80)
