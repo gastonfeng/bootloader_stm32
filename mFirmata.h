@@ -8,22 +8,22 @@
 #include "../firmata/Firmata.h"
 
 #if defined(RTE_APP) || defined(PLC)
+
 #include "plc_rte.h"
 #include <smodule.h>
+
 #endif
 
 using u8 = unsigned char;
 using u16 = unsigned short;
 using u32 = unsigned int;
-struct i2c_device_info
-{
+struct i2c_device_info {
     byte addr;
     int reg;
     byte bytes;
     byte stopTX;
 };
-enum
-{
+enum {
     CB_GET_LOG_NUMBER = 0x0,
     CB_GET_LOG,
     CB_GET_REMAIN_MEM,
@@ -105,8 +105,7 @@ enum
     FM_LAST
 };
 
-class mFirmata : public firmata::FirmataClass, public smodule
-{
+class mFirmata : public firmata::FirmataClass, public smodule {
 public:
     mFirmata();
 
@@ -116,43 +115,33 @@ public:
 
     int run(u32 tick) override;
 
-    int begin(u32 tick) override
-    {
+    int begin(u32 tick) override {
         return 0;
     }
 
-    int diag(u32 tick) override
-    {
+    int diag(u32 tick) override {
         return 0;
     }
 
-    int dev_test(u32 tick) override
-    {
+    int dev_test(u32 tick) override {
         return 0;
     }
 
-    void begin(Stream *FirmataStream)
-    {
+    void begin(Stream *FirmataStream) {
         //
     }
 
     void report(Stream *FirmataStream);
-#ifdef USE_FULL_FIRMATA
-    int getPinState(byte pin) override
-    {
-        return pinState[pin];
-    }
+
+    int getPinState(byte pin) override;
+
     /**
      * Set the pin state. The pin state of an output pin is the pin value. The state of an
      * input pin is 0, unless the pin has it's internal pull up resistor enabled, then the value is 1.
      * @param pin The pin to set the state of
      * @param state Set the state of the specified pin
      */
-    void setPinState(byte pin, int state) override
-    {
-        pinState[pin] = state;
-    }
-#endif
+    void setPinState(byte pin, int state) override;
 
     u32 previousMillis = 0;
     // u32 analogInputsToReport = 0;
@@ -166,8 +155,8 @@ public:
     //时序数据库操作
 #ifdef USE_KVDB
     struct tsdb_sec_info sector
-    {
-    };
+            {
+            };
     uint32_t traversed_len{};
 #endif
     systemCallbackFunction i_am_here_cb;

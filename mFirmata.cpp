@@ -47,8 +47,8 @@ byte i2cRxData[8];
 #endif
 int queryIndex;
 byte analogInputsToReport[(IO_XA_NRS + IO_YA_NRS) / 8 + 1];
-byte reportPINs[IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS]; // 1 = report this port, 0 = silence
-byte previousPINs[IO_XI_NRS + IO_YO_NRS];                       // previous 8 bits sent
+byte reportPINs[(IO_YO_NRS + IO_XI_NRS + 7) / 8]; // 1 = report this port, 0 = silence
+byte previousPINs[(IO_YO_NRS + IO_XI_NRS + 7) / 8];                       // previous 8 bits sent
 bool isResetting;
 
 #ifdef USE_SERVO
@@ -153,17 +153,18 @@ void reportDigitalCallback(firmata::FirmataClass *fm, Stream *, byte port, int v
     // pins configured as analog
 #endif
 }
-#ifdef USE_FULL_FIRMATA
+
 void setPinValueCallback(firmata::FirmataClass *fm, Stream *, byte pin, int value) {
 #if defined(RTE_APP) || defined(PLC)
+    mFirmata *mfm = (mFirmata *) fm;
     if (pin < IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS) //&& fm->getPinMode(pin) == OUTPUT
     {
-        fm->setPinState(pin, value);
+        mfm->setPinState(pin, value);
         board.outputPort(pin, value);
     }
 #endif
 }
-#endif
+
 void systemResetCallback(firmata::FirmataClass *fm, Stream *) {
 #if defined(RTE_APP) || defined(PLC)
     isResetting = true;
@@ -242,7 +243,6 @@ void detachServo(byte pin)
     servoPinMap[pin] = 255;
 }
 #endif
-#ifdef USE_FULL_FIRMATA
 #ifdef ARDUINO
 
 void setPinModeCallback(firmata::FirmataClass *fm, Stream *Fs, byte pin, int mode) {
@@ -345,7 +345,8 @@ void setPinModeCallback(firmata::FirmataClass *fm, Stream *Fs, byte pin, int mod
 }
 
 #endif
-#endif
+
+
 int soem_scan(firmata::FirmataClass *fm, Stream *);
 
 void analogWriteCallback(firmata::FirmataClass *fm, Stream *, byte i, int val) {
@@ -469,7 +470,6 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->write(FirmataStream, END_SYSEX);
             fm->flush(FirmataStream);
             break;
-#ifdef USE_FULL_FIRMATA
         case PIN_STATE_QUERY:
             if (argc > 0) {
                 byte pin = argv[0];
@@ -488,7 +488,6 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 fm->flush(FirmataStream);
             }
             break;
-#endif
         case ANALOG_MAPPING_QUERY:
             fm->write(FirmataStream, START_SYSEX);
             fm->write(FirmataStream, ANALOG_MAPPING_RESPONSE);
@@ -575,16 +574,16 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #ifdef ARDUINO
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
-            case CB_SET_IP:
-                byte ip[4];
-                decodeByteStream(argc, (const byte *)argv, ip);
-                plc_var.config.ip.ip1 = ip[0];
-                plc_var.config.ip.ip2 = ip[1];
-                plc_var.config.ip.ip3 = ip[2];
-                plc_var.config.ip.ip4 = ip[3];
-                ETH_LWIP::set_ip();
-                fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *)(&plc_var.config.ip));
-                break;
+        case CB_SET_IP:
+            byte ip[4];
+            decodeByteStream(argc, (const byte *) argv, ip);
+            plc_var.config.ip.ip1 = ip[0];
+            plc_var.config.ip.ip2 = ip[1];
+            plc_var.config.ip.ip3 = ip[2];
+            plc_var.config.ip.ip4 = ip[3];
+            ETH_LWIP::set_ip();
+            fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
+            break;
 #endif
         case CB_GET_IP:
             fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
@@ -1010,36 +1009,36 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 #endif
 #ifdef ONLINE_DEBUG
-        case FM_GET_DBG_SIZE:
-            if (plc_var.info.plc_curr_app) {
-                fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
-                              (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
-            } else {
-                fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
-            }
-            break;
-        case FM_GET_DBG:
-            len = 0;
-            if (argc == 5) {
-                decodeByteStream(argc, argv, (byte *) &l_index);
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
-                    len = (int) fill_dbg((int) l_index, decodeBuf);
+            case FM_GET_DBG_SIZE:
+                if (plc_var.info.plc_curr_app) {
+                    fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
+                                  (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
+                } else {
+                    fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
                 }
-            }
-            fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
-            break;
-        case FM_SET_DBG:
-            len = 0;
-            if (argc > 5) {
-                decodedLen = decodeByteStream(argc, argv, (byte *) &decodeBuf);
-                l_index = *(u32 *) decodeBuf;
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
-                    set_dbg(l_index, &decodeBuf[4], decodedLen - 4);
-                    len = (int) fill_dbg((int) l_index, decodeBuf);
+                break;
+            case FM_GET_DBG:
+                len = 0;
+                if (argc == 5) {
+                    decodeByteStream(argc, argv, (byte *) &l_index);
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                        len = (int) fill_dbg((int) l_index, decodeBuf);
+                    }
                 }
-            }
-            fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
-            break;
+                fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
+                break;
+            case FM_SET_DBG:
+                len = 0;
+                if (argc > 5) {
+                    decodedLen = decodeByteStream(argc, argv, (byte *) &decodeBuf);
+                    l_index = *(u32 *) decodeBuf;
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                        set_dbg(l_index, &decodeBuf[4], decodedLen - 4);
+                        len = (int) fill_dbg((int) l_index, decodeBuf);
+                    }
+                }
+                fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
+                break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_LOG_SET_LEVEL:
@@ -1275,7 +1274,6 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     mfm->set_flag(command);
 }
 
-#ifdef USE_FULL_FIRMATA
 void digitalWriteCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte port, int value) {
 #if defined(RTE_APP) || defined(PLC)
     byte lastPin, pinValue, mask = 1, pinWriteMask = 0;
@@ -1310,7 +1308,7 @@ void digitalWriteCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte
     }
 #endif
 }
-#endif
+
 int mFirmata::loop(Stream *FirmataStream) {
     while (available(FirmataStream)) {
         processInput(FirmataStream);
@@ -1350,13 +1348,11 @@ void mFirmata::report(Stream *FirmataStream) {
         previousMillis += plc_var.config.reportInterval;
         /* ANALOGREAD - do all analogReads() at the configured sampling interval */
         board.readAnalogValue(this, FirmataStream, analogInputsToReport, sizeof(analogInputsToReport));
-#ifdef USE_FULL_FIRMATA
         for (byte pin = 0; pin < IO_XI_NRS + IO_YO_NRS; pin++) {
             if (reportPINs[pin]) {
                 outputPort(FirmataStream, pin, getPinState(pin), true);
             }
         }
-#endif
     }
 #ifdef FIRMATA_SERIAL_FEATURE
     serialFeature->update(this, FirmataStream);
@@ -1375,10 +1371,14 @@ void mFirmata::outputPort(Stream *FirmataStream, byte portNumber, byte portValue
     //    portValue = portValue & portConfigInputs[portNumber];
     // only send if the value is different than previously sent
     if (portNumber < (IO_XI_NRS + IO_YO_NRS) &&
-        (forceSend || previousPINs[portNumber] != portValue)) {
+        (forceSend || (previousPINs[portNumber / 8] & (1 << (portNumber % 8))) != portValue)) {
         sendDigitalPort(FirmataStream, portNumber, portValue);
         flush(FirmataStream);
-        previousPINs[portNumber] = portValue;
+        if (portValue == 0) {
+            previousPINs[portNumber / 8] &= ~(1 << (portNumber % 8));
+        } else {
+            previousPINs[portNumber / 8] |= (1 << (portNumber % 8));
+        }
     }
 }
 
@@ -1492,6 +1492,14 @@ int mFirmata::run(u32 tick) {
         plc_var.info.task_busy &= (~0x2);
     }
     return 0;
+}
+
+int mFirmata::getPinState(byte pin) {
+    return plcVar.digitalValue(pin);
+}
+
+void mFirmata::setPinState(byte pin, int state) {
+    plcVar.digitalValue(pin, state);
 }
 
 #endif
