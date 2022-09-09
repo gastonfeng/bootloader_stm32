@@ -365,16 +365,14 @@ extern FlashFs flash_fs;
 
 void stringCallback(firmata::FirmataClass *fc, Stream *Fs, char *myString) {
 #ifdef USE_LFS
-    if (strncmp(myString, "rm ", 3) == 0)
-    {
+    if (strncmp(myString, "rm ", 3) == 0) {
         if (FlashFs::unlink(&myString[3]) == 0)
             fc->sendString(Fs, "rm ok");
         else
             fc->sendString(Fs, "rm fail");
-    }
-    else
+    } else
 #endif
-    fc->sendString(Fs, "unknown input");
+        fc->sendString(Fs, "unknown input");
 }
 
 int decodeByteStream(size_t bytec, const byte *bytev, byte *buf) {
@@ -497,9 +495,9 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->flush(FirmataStream);
             break;
 #ifdef FIRMATA_SERIAL_FEATURE
-            case SERIAL_MESSAGE:
-                serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
-                break;
+        case SERIAL_MESSAGE:
+            serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
+            break;
 #endif
         case CB_GET_REMAIN_MEM:
             fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
@@ -574,33 +572,33 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
 #ifdef ARDUINO
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
-        case CB_SET_IP:
-            byte ip[4];
-            decodeByteStream(argc, (const byte *) argv, ip);
-            plc_var.config.ip.ip1 = ip[0];
-            plc_var.config.ip.ip2 = ip[1];
-            plc_var.config.ip.ip3 = ip[2];
-            plc_var.config.ip.ip4 = ip[3];
-            ETH_LWIP::set_ip();
-            fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
-            break;
+            case CB_SET_IP:
+                byte ip[4];
+                decodeByteStream(argc, (const byte *) argv, ip);
+                plc_var.config.ip.ip1 = ip[0];
+                plc_var.config.ip.ip2 = ip[1];
+                plc_var.config.ip.ip3 = ip[2];
+                plc_var.config.ip.ip4 = ip[3];
+                ETH_LWIP::set_ip();
+                fm->sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
+                break;
 #endif
-        case CB_GET_IP:
-            fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
-            break;
-        case FM_GET_NET_BUF_STAT:
-            buffer = (char *) malloc(13 * MEMP_MAX);
-            for (int i = 0; i < MEMP_MAX; i++) {
-                *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
-                *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
-                *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
-                *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
-                *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
-                memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
-            }
-            fm->sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
-            free(buffer);
-            break;
+            case CB_GET_IP:
+                fm->sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
+                break;
+            case FM_GET_NET_BUF_STAT:
+                buffer = (char *) malloc(13 * MEMP_MAX);
+                for (int i = 0; i < MEMP_MAX; i++) {
+                    *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
+                    *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
+                    *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
+                    *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
+                    *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
+                    memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
+                }
+                fm->sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
+                free(buffer);
+                break;
 #endif
 #ifdef USE_FREERTOS
         case CB_THREAD_INFO:
@@ -764,26 +762,26 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             fm->flush(FirmataStream);
             break;
 #ifdef USE_BOOTLOADER
-            case CB_GET_BOOT_VERSION:
+        case CB_GET_BOOT_VERSION:
 #ifdef BOOTINFO
-                boot_t *b;
-                b = (boot_t *)BOOTINFO; // platformio.ini中定义
-                if (b)
-                    fm->sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *)b);
-                else
+            boot_t *b;
+            b = (boot_t *) BOOTINFO; // platformio.ini中定义
+            if (b)
+                fm->sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *) b);
+            else
 #endif
-                {
-                    fm->write(FirmataStream, START_SYSEX);
-                    fm->write(FirmataStream, CB_GET_BOOT_VERSION);
-                    fm->write(FirmataStream, 0);
-                    fm->write(FirmataStream, END_SYSEX);
-                    fm->flush(FirmataStream);
-                }
-                break;
-            case FM_FLASH_BOOT:
-                len = board.updateBootbin();
-                fm->sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *)&len);
-                break;
+            {
+                fm->write(FirmataStream, START_SYSEX);
+                fm->write(FirmataStream, CB_GET_BOOT_VERSION);
+                fm->write(FirmataStream, 0);
+                fm->write(FirmataStream, END_SYSEX);
+                fm->flush(FirmataStream);
+            }
+            break;
+        case FM_FLASH_BOOT:
+            len = board.updateBootbin();
+            fm->sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
+            break;
 #endif
 #endif
 #ifdef USE_KVDB
@@ -1009,36 +1007,36 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
             break;
 #endif
 #ifdef ONLINE_DEBUG
-            case FM_GET_DBG_SIZE:
-                if (plc_var.info.plc_curr_app) {
-                    fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
-                                  (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
-                } else {
-                    fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
+        case FM_GET_DBG_SIZE:
+            if (plc_var.info.plc_curr_app) {
+                fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
+                              (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
+            } else {
+                fm->sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
+            }
+            break;
+        case FM_GET_DBG:
+            len = 0;
+            if (argc == 5) {
+                decodeByteStream(argc, argv, (byte *) &l_index);
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                    len = (int) fill_dbg((int) l_index, decodeBuf);
                 }
-                break;
-            case FM_GET_DBG:
-                len = 0;
-                if (argc == 5) {
-                    decodeByteStream(argc, argv, (byte *) &l_index);
-                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
-                        len = (int) fill_dbg((int) l_index, decodeBuf);
-                    }
+            }
+            fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
+            break;
+        case FM_SET_DBG:
+            len = 0;
+            if (argc > 5) {
+                decodedLen = decodeByteStream(argc, argv, (byte *) &decodeBuf);
+                l_index = *(u32 *) decodeBuf;
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                    set_dbg(l_index, &decodeBuf[4], decodedLen - 4);
+                    len = (int) fill_dbg((int) l_index, decodeBuf);
                 }
-                fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
-                break;
-            case FM_SET_DBG:
-                len = 0;
-                if (argc > 5) {
-                    decodedLen = decodeByteStream(argc, argv, (byte *) &decodeBuf);
-                    l_index = *(u32 *) decodeBuf;
-                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
-                        set_dbg(l_index, &decodeBuf[4], decodedLen - 4);
-                        len = (int) fill_dbg((int) l_index, decodeBuf);
-                    }
-                }
-                fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
-                break;
+            }
+            fm->sendSysex(FirmataStream, FM_GET_DBG, len, decodeBuf);
+            break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_LOG_SET_LEVEL:
@@ -1128,32 +1126,32 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
                 buffer = (char *) malloc(argc);
                 decodedLen = decodeByteStream(argc, argv, (byte *) buffer);
                 region = buffer[0];
-                indexv = *(u32 *) buffer[1];
+                indexv = *(u32 *) &buffer[1];
                 len = *(u16 *) &buffer[5];
-                const char *p;
+                char *p;
                 switch (region) {
                     default:
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        p = (const char *) &plc_var.digitalValue;
+                        p = (char *) &plc_var.digitalValue;
                         break;
                     case REGION_16: // analogValue
-                        p = (const char *) &plc_var.analogValue;
+                        p = (char *) &plc_var.analogValue;
                         break;
                     case REGION_32: // analogValue32
-                        p = (const char *) &plc_var.analogValue32;
+                        p = (char *) &plc_var.analogValue32;
                         break;
                     case REGION_HOLDER: // holdValue
-                        p = (const char *) &plc_var.holdValue;
+                        p = (char *) &plc_var.holdValue;
                         break;
                     case REGION_INFO:
-                        p = (const char *) &plc_var.info;
+                        p = (char *) &plc_var.info;
                         break;
                     case REGION_CONFIG:
-                        p = (const char *) &plc_var.config;
+                        p = (char *) &plc_var.config;
                         break;
                 }
-                memcpy((void *) &p[indexv], (void *) &buffer[indexv], len);
+                memcpy(p + indexv, &buffer[7], len);
                 fm->sendSysex(FirmataStream, FM_WRITE_VALUE_REP, 7, (byte *) buffer);
                 free(buffer);
             }
