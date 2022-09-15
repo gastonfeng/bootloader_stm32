@@ -46,10 +46,6 @@ int i2cReadDelayTime;
 byte i2cRxData[8];
 #endif
 int queryIndex;
-byte analogInputsToReport[(IO_XA_NRS + IO_YA_NRS) / 8 + 1];
-byte reportPINs[(IO_YO_NRS + IO_XI_NRS + 7) / 8]; // 1 = report this port, 0 = silence
-byte previousPINs[(IO_YO_NRS + IO_XI_NRS + 7) / 8];                       // previous 8 bits sent
-bool isResetting;
 
 #ifdef USE_SERVO
 Servo servos[MAX_SERVOS];
@@ -119,12 +115,12 @@ void reportAnalogCallback(firmata::FirmataClass *fm, Stream *stream, byte analog
 #if defined(RTE_APP) || defined(PLC)
     if (analogPin < ANALOGVALUE_LENGTH) {
         if (value == 0) {
-            analogInputsToReport[analogPin / 8] &= ~(1 << (analogPin % 8));
+            plc_var.info.analogInputsToReport[analogPin / 8] &= ~(1 << (analogPin % 8));
         } else {
-            analogInputsToReport[analogPin / 8] |= (1 << (analogPin % 8));
+            plc_var.info.analogInputsToReport[analogPin / 8] |= (1 << (analogPin % 8));
             // prevent during system reset or all analog pin values will be reported
             // which may report noise for unconnected analog pins
-            if (!isResetting) {
+            if (!plc_var.info.isResetting) {
                 // Send pin value immediately. This is helpful when connected via
                 // ethernet, wi-fi or bluetooth so pin states can be known upon
                 // reconnecting.
@@ -138,7 +134,7 @@ void reportAnalogCallback(firmata::FirmataClass *fm, Stream *stream, byte analog
 void reportDigitalCallback(firmata::FirmataClass *fm, Stream *, byte port, int value) {
 #if defined(RTE_APP) || defined(PLC)
     if (port < IO_XI_NRS + IO_YO_NRS) {
-        reportPINs[port] = value;
+        plc_var.info.reportPINs[port] = value;
         // Send port value immediately. This is helpful when connected via
         // ethernet, wi-fi or bluetooth so pin states can be known upon
         // reconnecting.
@@ -167,7 +163,7 @@ void setPinValueCallback(firmata::FirmataClass *fm, Stream *, byte pin, int valu
 
 void systemResetCallback(firmata::FirmataClass *fm, Stream *) {
 #if defined(RTE_APP) || defined(PLC)
-    isResetting = true;
+    plc_var.info.isResetting = true;
     logger.debug("systemResetCallback");
 #ifdef FIRMATA_SERIAL_FEATURE
     serialFeature->reset();
@@ -178,15 +174,15 @@ void systemResetCallback(firmata::FirmataClass *fm, Stream *) {
         disableI2CPins();
     }
 #endif
-    for (unsigned char &reportPIN: reportPINs)
+    for (unsigned char &reportPIN: plc_var.info.reportPINs)
         reportPIN = 0; // by default, reporting off
     // by default, do not report any analog inputs
-    memset(analogInputsToReport, 0, sizeof(analogInputsToReport));
+    memset(plc_var.info.analogInputsToReport, 0, sizeof(plc_var.info.analogInputsToReport));
 
     /* send digital inputs to set the initial state on the host computer,
      * since once in the loop(), this firmware will only send on change */
 
-    isResetting = false;
+    plc_var.info.isResetting = false;
 #endif
 }
 
@@ -1345,9 +1341,10 @@ void mFirmata::report(Stream *FirmataStream) {
     if (currentMillis - previousMillis > plc_var.config.reportInterval) {
         previousMillis += plc_var.config.reportInterval;
         /* ANALOGREAD - do all analogReads() at the configured sampling interval */
-        board.readAnalogValue(this, FirmataStream, analogInputsToReport, sizeof(analogInputsToReport));
+        board.readAnalogValue(this, FirmataStream, plc_var.info.analogInputsToReport,
+                              sizeof(plc_var.info.analogInputsToReport));
         for (byte pin = 0; pin < IO_XI_NRS + IO_YO_NRS; pin++) {
-            if (reportPINs[pin]) {
+            if (plc_var.info.reportPINs[pin / 8] & (1 << (pin % 8))) {
                 outputPort(FirmataStream, pin, getPinState(pin), true);
             }
         }
@@ -1369,13 +1366,13 @@ void mFirmata::outputPort(Stream *FirmataStream, byte portNumber, byte portValue
     //    portValue = portValue & portConfigInputs[portNumber];
     // only send if the value is different than previously sent
     if (portNumber < (IO_XI_NRS + IO_YO_NRS) &&
-        (forceSend || (previousPINs[portNumber / 8] & (1 << (portNumber % 8))) != portValue)) {
+        (forceSend || (plc_var.info.previousPINs[portNumber / 8] & (1 << (portNumber % 8))) != portValue)) {
         sendDigitalPort(FirmataStream, portNumber, portValue);
         flush(FirmataStream);
         if (portValue == 0) {
-            previousPINs[portNumber / 8] &= ~(1 << (portNumber % 8));
+            plc_var.info.previousPINs[portNumber / 8] &= ~(1 << (portNumber % 8));
         } else {
-            previousPINs[portNumber / 8] |= (1 << (portNumber % 8));
+            plc_var.info.previousPINs[portNumber / 8] |= (1 << (portNumber % 8));
         }
     }
 }
