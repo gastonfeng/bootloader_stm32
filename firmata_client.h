@@ -11,9 +11,11 @@ using namespace firmata;
 class firmata_client : public mFirmata {
 
 public:
-    int begin(Stream *s) {
+    int begin(nStream *s) {
         stream = s;
+#ifdef USE_FREERTOS
         rtos::create_thread_run("fc", 512, PriorityNormal, (void *) thd_loop, s);
+#endif
         return 0;
     }
 
@@ -30,7 +32,7 @@ public:
     static int set_var_float(int index, float value);
 
     void *thd{};
-    static Stream *stream;
+    static nStream *stream;
 
     [[noreturn]] static void thd_loop(void *arg);
 

@@ -1,5 +1,7 @@
+
 #ifndef RTE_KT1269_MFIRMATA_H
 #define RTE_KT1269_MFIRMATA_H
+
 #undef write
 #undef read
 
@@ -111,7 +113,7 @@ public:
 
     ~mFirmata() override = default;
 
-    int loop(Stream *FirmataStream);
+    int loop(nStream *FirmataStream);
 
     int run(u32 tick) override;
 
@@ -127,11 +129,11 @@ public:
         return 0;
     }
 
-    void begin(Stream *FirmataStream) {
+    void begin(nStream *FirmataStream) {
         //
     }
 
-    void report(Stream *FirmataStream);
+    void report(nStream *FirmataStream);
 
     int getPinState(byte pin) override;
 
@@ -147,7 +149,7 @@ public:
     // u32 analogInputsToReport = 0;
     int queryIndex = -1;
 
-    void outputPort(Stream *FirmataStream, byte portNumber, byte portValue, byte forceSend);
+    void outputPort(nStream *FirmataStream, byte portNumber, byte portValue, byte forceSend);
 
 #ifdef USE_MEMBLOCK
     mem_block *dev = nullptr;
@@ -161,7 +163,7 @@ public:
 #endif
     systemCallbackFunction i_am_here_cb;
 
-    int setValue(Stream *FirmataStream, int index, void *valBuf, u8 size);
+    int setValue(nStream *FirmataStream, int index, void *valBuf, u8 size);
 
     int get_flag(u16 cmd);
 
@@ -171,9 +173,9 @@ public:
 
     u8 respose[FM_LAST / 8 + 1]{};
 
-    int getValue(Stream *pStream, int index, u8 *value_buf, u16 len);
+    int getValue(nStream *pStream, int index, u8 *value_buf, u16 len);
 
-    int getBit(Stream *pStream, int index, u8 *value_buf, u16 len);
+    int getBit(nStream *pStream, int index, u8 *value_buf, u16 len);
 
     u8 valueBuf[8]{};
     char valueLen{};

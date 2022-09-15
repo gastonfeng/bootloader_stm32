@@ -15,7 +15,9 @@
 #endif
 
 #include <ctime>
+#ifdef USE_RTC
 #include <rte_rtc.h>
+#endif
 #include <plc_var_class.h>
 
 #ifdef USE_SERVO
@@ -105,13 +107,12 @@ void disableI2CPins()
     queryIndex = -1;
 }
 #endif
-using namespace std;
 
 void setPinModeCallback(firmata::FirmataClass *fm, byte pin, int mode);
 
 int dbg_size();
 
-void reportAnalogCallback(firmata::FirmataClass *fm, Stream *stream, byte analogPin, int value) {
+void reportAnalogCallback(firmata::FirmataClass *fm, nStream *stream, byte analogPin, int value) {
 #if defined(RTE_APP) || defined(PLC)
     if (analogPin < ANALOGVALUE_LENGTH) {
         if (value == 0) {
@@ -241,7 +242,7 @@ void detachServo(byte pin)
 #endif
 #ifdef ARDUINO
 
-void setPinModeCallback(firmata::FirmataClass *fm, Stream *Fs, byte pin, int mode) {
+void setPinModeCallback(firmata::FirmataClass *fm, nStream *Fs, byte pin, int mode) {
     if (fm->getPinMode(pin) == PIN_MODE_IGNORE)
         return;
 #ifdef USE_FIRMATA_WIRE
@@ -359,7 +360,7 @@ void analogWriteCallback(firmata::FirmataClass *fm, Stream *, byte i, int val) {
 extern FlashFs flash_fs;
 #endif
 
-void stringCallback(firmata::FirmataClass *fc, Stream *Fs, char *myString) {
+void stringCallback(firmata::FirmataClass *fc, nStream *Fs, char *myString) {
 #ifdef USE_LFS
     if (strncmp(myString, "rm ", 3) == 0) {
         if (FlashFs::unlink(&myString[3]) == 0)
@@ -368,7 +369,7 @@ void stringCallback(firmata::FirmataClass *fc, Stream *Fs, char *myString) {
             fc->sendString(Fs, "rm fail");
     } else
 #endif
-        fc->sendString(Fs, "unknown input");
+    fc->sendString(Fs, "unknown input");
 }
 
 int decodeByteStream(size_t bytec, const byte *bytev, byte *buf) {
@@ -395,7 +396,7 @@ int fill_dbg(int index, u8 *buf);
 
 void set_dbg(u32 index, byte *varp, int len);
 
-void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte command, uint16_t argc, byte *argv) {
+void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte command, uint16_t argc, byte *argv) {
     int len_data;
     int index;
     char *buffer;
@@ -1268,7 +1269,7 @@ void sysexCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte comman
     mfm->set_flag(command);
 }
 
-void digitalWriteCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte port, int value) {
+void digitalWriteCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte port, int value) {
 #if defined(RTE_APP) || defined(PLC)
     byte lastPin, pinValue, mask = 1, pinWriteMask = 0;
 
@@ -1303,7 +1304,7 @@ void digitalWriteCallback(firmata::FirmataClass *fm, Stream *FirmataStream, byte
 #endif
 }
 
-int mFirmata::loop(Stream *FirmataStream) {
+int mFirmata::loop(nStream *FirmataStream) {
     while (available(FirmataStream)) {
         processInput(FirmataStream);
         plc_var.info.task_busy |= 0x2;
@@ -1335,7 +1336,7 @@ mFirmata::mFirmata() {
 
 #if defined(RTE_APP) || defined(PLC)
 
-void mFirmata::report(Stream *FirmataStream) {
+void mFirmata::report(nStream *FirmataStream) {
     u32 currentMillis = rtos::ticks();
 
     if (currentMillis - previousMillis > plc_var.config.reportInterval) {
@@ -1361,7 +1362,7 @@ void mFirmata::report(Stream *FirmataStream) {
 
 #endif
 
-void mFirmata::outputPort(Stream *FirmataStream, byte portNumber, byte portValue, byte forceSend) {
+void mFirmata::outputPort(nStream *FirmataStream, byte portNumber, byte portValue, byte forceSend) {
     // pins not configured as INPUT are cleared to zeros
     //    portValue = portValue & portConfigInputs[portNumber];
     // only send if the value is different than previously sent
@@ -1406,7 +1407,7 @@ void Delay(u32 ms)
 }
 #endif
 
-int mFirmata::setValue(Stream *FirmataStream, int index, void *valBuf, u8 size) {
+int mFirmata::setValue(nStream *FirmataStream, int index, void *valBuf, u8 size) {
     byte *buf;
     buf = (byte *) malloc(size + 4);
     *(int *) buf = index;
@@ -1440,7 +1441,7 @@ int mFirmata::set_flag(u16 cmd) {
     return -1;
 }
 
-int mFirmata::getValue(Stream *pStream, int index, u8 *value_buf, u16 len) {
+int mFirmata::getValue(nStream *pStream, int index, u8 *value_buf, u16 len) {
     u8 buf[6];
     *(int *) buf = index;
     *(u16 *) &buf[4] = len;
@@ -1460,7 +1461,7 @@ int mFirmata::getValue(Stream *pStream, int index, u8 *value_buf, u16 len) {
     return -1;
 }
 
-int mFirmata::getBit(Stream *pStream, int index, u8 *value_buf, u16 len) {
+int mFirmata::getBit(nStream *pStream, int index, u8 *value_buf, u16 len) {
     u8 buf[6];
     *(int *) buf = index;
     *(u16 *) &buf[4] = len;
