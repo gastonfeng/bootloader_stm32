@@ -862,6 +862,25 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             fm->sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen, (byte *) tbuf);
             free(tbuf);
             break;
+        case CB_GET_TSL_BY_ID:
+            decodedLen = decodeByteStream(argc, argv, decodeBuf);
+            key_len = strlen((const char *) decodeBuf);
+            if (decodedLen != key_len + 5)return;
+            tbuf = (char *) malloc(256);
+            memset(tbuf, 0, 256);
+            tlen = tsdb.query_read_by_id((const char *) argv, *(u32 *) decodeBuf[key_len + 1], (u32 *) &tbuf[0],
+                                         (fdb_time_t *) &tbuf[4],
+                                         (int *) (tbuf + 8),
+                                         tbuf + 12, 256 - 12);
+            if (tlen < 0)
+                tlen = 0;
+            else {
+                *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
+                tlen += 4;
+            }
+            fm->sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte) tlen, (byte *) tbuf);
+            free(tbuf);
+            break;
         case CB_TSL_CLEAR:
             key_len = strlen((const char *) argv);
             // index = *(int *) &argv[key_len + 1];
