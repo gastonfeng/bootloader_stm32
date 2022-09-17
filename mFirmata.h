@@ -112,6 +112,7 @@ public:
     mFirmata();
 
     ~mFirmata() override = default;
+    const char *name() override { return "Firmata"; }
 
     int loop(nStream *FirmataStream);
 

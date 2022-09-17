@@ -728,8 +728,8 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             break;
         case FM_GET_TASK_NAME:
             if (tasks[argv[0]]) {
-                fm->sendSysex(FirmataStream, FM_GET_TASK_NAME, (byte) strlen(tasks[argv[0]]->name),
-                              (byte *) tasks[argv[0]]->name);
+                fm->sendSysex(FirmataStream, FM_GET_TASK_NAME, (byte) strlen(tasks[argv[0]]->task_name),
+                              (byte *) tasks[argv[0]]->task_name);
             }
             break;
         case FM_GET_TASK_DETAIL:
