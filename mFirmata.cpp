@@ -15,9 +15,13 @@
 #endif
 
 #include <ctime>
+
 #ifdef USE_RTC
+
 #include <rte_rtc.h>
+
 #endif
+
 #include <plc_var_class.h>
 
 #ifdef USE_SERVO
@@ -369,7 +373,7 @@ void stringCallback(firmata::FirmataClass *fc, nStream *Fs, char *myString) {
             fc->sendString(Fs, "rm fail");
     } else
 #endif
-    fc->sendString(Fs, "unknown input");
+        fc->sendString(Fs, "unknown input");
 }
 
 int decodeByteStream(size_t bytec, const byte *bytev, byte *buf) {
@@ -1113,6 +1117,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                     default:
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
+                        memset(argv, 0, argc);
                         for (int i = 0; i < len; i++) {
                             if (plcVar.digitalValue(i + indexv))
                                 argv[i] |= 1 << (i / 8);
