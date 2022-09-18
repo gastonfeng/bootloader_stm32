@@ -1113,7 +1113,13 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                     default:
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        p = (const char *) &plc_var.digitalValue;
+                        for (int i = 0; i < len; i++) {
+                            if (plcVar.digitalValue(i + indexv))
+                                argv[i] |= 1 << (i / 8);
+                        }
+                        p = (const char *) argv;
+                        len = (len + 7) / 8;
+                        indexv = 0;
                         break;
                     case REGION_16: // analogValue
                         p = (const char *) &plc_var.analogValue;
