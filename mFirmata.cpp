@@ -1115,12 +1115,14 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 const char *p;
                 switch (region) {
                     default:
+                        p = (const char *) &plc_var.digitalValue;
+                        break;
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
                         memset(argv, 0, argc);
                         for (int i = 0; i < len; i++) {
                             if (plcVar.digitalValue(i + indexv))
-                                argv[i] |= 1 << (i / 8);
+                                argv[i / 8] |= (1 << (i % 8));
                         }
                         p = (const char *) argv;
                         len = (len + 7) / 8;
@@ -1158,15 +1160,18 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 char *p;
                 switch (region) {
                     default:
+                        p = ((char *) &plc_var.digitalValue);
+                        break;
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        p = ((char *) &plc_var.digitalValue) + indexv / 8;
+                        p = ((char *) &plc_var.digitalValue) + (indexv / 8);
                         if (buffer[7] == 1) {
-                            buffer[7] = *p | (1 << indexv % 8);
+                            buffer[7] = *p | (1 << (indexv % 8));
                         } else {
-                            buffer[7] = *p & ~(1 << indexv % 8);
+                            buffer[7] = *p & (~(1 << (indexv % 8)));
                         }
                         indexv = indexv / 8;
+                        len = (len + 7) / 8;
                         break;
                     case REGION_16: // analogValue
                         p = (char *) &plc_var.analogValue;
