@@ -1164,14 +1164,16 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                         break;
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        p = ((char *) &plc_var.digitalValue) + (indexv / 8);
+                        u8 v;
+                        v = ((char *) &plc_var.digitalValue)[indexv / 8];
                         if (buffer[7] == 1) {
-                            buffer[7] = *p | (1 << (indexv % 8));
+                            buffer[7] = v | (1 << (indexv % 8));
                         } else {
-                            buffer[7] = *p & (~(1 << (indexv % 8)));
+                            buffer[7] = v & ~(1 << (indexv % 8));
                         }
                         indexv = indexv / 8;
                         len = (len + 7) / 8;
+                        p = ((char *) &plc_var.digitalValue);
                         break;
                     case REGION_16: // analogValue
                         p = (char *) &plc_var.analogValue;
