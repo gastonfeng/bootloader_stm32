@@ -23,6 +23,8 @@
 #endif
 
 #include <plc_var_class.h>
+#include <boardbase.h>
+#include <plc_rte.h>
 
 #ifdef USE_SERVO
 #include <Servo.h>
@@ -1295,10 +1297,10 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             }
             fm->sendSysex(FirmataStream, FM_SET_LOCATION, 4, (byte *) &len);
             break;
-#endif
         case CB_GOTO_IAP:
             fm->sendSysex(FirmataStream, CB_GOTO_IAP, 0, nullptr);
             boardBase::goto_iap();
+#endif
         case CB_RESET:
             len = 0;
             fm->sendSysex(FirmataStream, CB_RESET, 4, (byte *) &len);
