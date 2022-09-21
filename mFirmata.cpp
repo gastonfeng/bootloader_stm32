@@ -15,10 +15,16 @@
 #endif
 
 #include <ctime>
+
 #ifdef USE_RTC
+
 #include <rte_rtc.h>
+
 #endif
+
 #include <plc_var_class.h>
+#include <boardbase.h>
+#include <plc_rte.h>
 
 #ifdef USE_SERVO
 #include <Servo.h>
@@ -369,7 +375,7 @@ void stringCallback(firmata::FirmataClass *fc, nStream *Fs, char *myString) {
             fc->sendString(Fs, "rm fail");
     } else
 #endif
-    fc->sendString(Fs, "unknown input");
+        fc->sendString(Fs, "unknown input");
 }
 
 int decodeByteStream(size_t bytec, const byte *bytev, byte *buf) {
@@ -1111,9 +1117,18 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 const char *p;
                 switch (region) {
                     default:
+                        p = (const char *) &plc_var.digitalValue;
+                        break;
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        p = (const char *) &plc_var.digitalValue;
+                        memset(argv, 0, argc);
+                        for (int i = 0; i < len; i++) {
+                            if (plcVar.digitalValue(i + indexv))
+                                argv[i / 8] |= (1 << (i % 8));
+                        }
+                        p = (const char *) argv;
+                        len = (len + 7) / 8;
+                        indexv = 0;
                         break;
                     case REGION_16: // analogValue
                         p = (const char *) &plc_var.analogValue;
@@ -1147,9 +1162,20 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 char *p;
                 switch (region) {
                     default:
+                        p = ((char *) &plc_var.digitalValue);
+                        break;
                     case REGION_XI: // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        p = (char *) &plc_var.digitalValue;
+                        u8 v;
+                        v = ((char *) &plc_var.digitalValue)[indexv / 8];
+                        if (buffer[7] == 1) {
+                            buffer[7] = v | (1 << (indexv % 8));
+                        } else {
+                            buffer[7] = v & ~(1 << (indexv % 8));
+                        }
+                        indexv = indexv / 8;
+                        len = (len + 7) / 8;
+                        p = ((char *) &plc_var.digitalValue);
                         break;
                     case REGION_16: // analogValue
                         p = (char *) &plc_var.analogValue;
@@ -1271,10 +1297,10 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             }
             fm->sendSysex(FirmataStream, FM_SET_LOCATION, 4, (byte *) &len);
             break;
-#endif
         case CB_GOTO_IAP:
             fm->sendSysex(FirmataStream, CB_GOTO_IAP, 0, nullptr);
             boardBase::goto_iap();
+#endif
         case CB_RESET:
             len = 0;
             fm->sendSysex(FirmataStream, CB_RESET, 4, (byte *) &len);

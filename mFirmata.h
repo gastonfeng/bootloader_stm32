@@ -6,6 +6,8 @@
 #undef read
 
 #include <smodule.h>
+#include <nStream.h>
+#include <flashdb.h>
 #include "Firmata.h"
 #include "../firmata/Firmata.h"
 
@@ -112,6 +114,7 @@ public:
     mFirmata();
 
     ~mFirmata() override = default;
+
     const char *name() override { return "Firmata"; }
 
     int loop(nStream *FirmataStream);
