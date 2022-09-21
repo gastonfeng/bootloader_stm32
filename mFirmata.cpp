@@ -24,7 +24,6 @@
 
 #include <plc_var_class.h>
 #include <boardbase.h>
-#include <plc_rte.h>
 
 #ifdef USE_SERVO
 #include <Servo.h>
