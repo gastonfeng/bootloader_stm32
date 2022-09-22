@@ -924,8 +924,6 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 fm->sendSysex(FirmataStream, CB_WIFI_SET_PASS, 0, argv);
                 break;
 #endif
-#if defined(RTE_APP) || defined(PLC)
-#ifndef PLC
         case FM_PUT_DATA_BLOCK:
             u32 crc, crc_r;
             byte *buffer_data;
@@ -949,12 +947,14 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                     // } else
                     {
                         u32 object = *(u32 *) &buffer_data[4];
+                        u32 data_address = *(u32 *) &buffer_data[8];
+                        u32 data_len = *(u32 *) &buffer_data[12];
 
                         ifirmata.dev = mem_block::mems[object];
                         if (!ifirmata.dev) {
                             state = NO_DEVICE;
                         } else {
-                            state = ifirmata.dev->begin(&buffer_data[8], len_data - 8);
+                            state = ifirmata.dev->begin(&buffer_data[16], len_data - 16, data_address, data_len);
                             if (state > 0 && state > ifirmata.parser.dataBufferSize * 7 / 8 - 4) {
                                 state = (int) (ifirmata.parser.dataBufferSize * 7 / 8 - 4);
                             }
@@ -986,7 +986,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             fm->sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *) &state);
             free(buffer_data);
             break;
-#endif
+#if defined(RTE_APP) || defined(PLC)
         case FM_GET_LOC_SIZE:
             if (plc_var.info.plc_curr_app) {
                 fm->sendSysex(FirmataStream, FM_GET_LOC_SIZE, 2, (byte *) &plc_var.info.plc_curr_app->l_sz);
