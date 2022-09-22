@@ -844,7 +844,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
         fm->sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *)&len);
         break;
 #endif
-#endif
+
 #ifdef USE_KVDB
     case FM_LIST_KEY:
         kvdb.list(fm, FirmataStream);
