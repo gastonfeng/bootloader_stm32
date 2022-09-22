@@ -8,6 +8,7 @@
 #include <smodule.h>
 #include <nStream.h>
 #include <flashdb.h>
+#include <mem_block.h>
 #include "Firmata.h"
 #include "../firmata/Firmata.h"
 

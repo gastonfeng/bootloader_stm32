@@ -3,14 +3,14 @@
 #include "mFirmata.h"
 #include "rtos.h"
 #include "plc_const.h"
-
-#if defined(RTE_APP) || defined(PLC)
-
 #include <plc_rte.h>
-#include <iec_types.h>
 #include <kSerial.h>
 
 #include "hwboard.h"
+
+#if defined(RTE_APP) || defined(PLC)
+
+#include <iec_types.h>
 
 #endif
 
