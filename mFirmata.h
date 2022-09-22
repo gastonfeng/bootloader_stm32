@@ -7,7 +7,9 @@
 
 #include <smodule.h>
 #include <nStream.h>
+#ifdef USE_KVDB
 #include <flashdb.h>
+#endif
 #include <mem_block.h>
 #include "Firmata.h"
 #include "../firmata/Firmata.h"

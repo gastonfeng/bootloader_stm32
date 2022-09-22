@@ -1303,6 +1303,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
         case CB_RESET:
             len = 1;
             fm->sendSysex(FirmataStream, CB_RESET, 4, (byte *) &len);
+            boardBase::reset();
             hwboard::reset();
             break;
         default:
