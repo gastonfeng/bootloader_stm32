@@ -1301,9 +1301,9 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             boardBase::goto_iap();
 #endif
         case CB_RESET:
-            len = 0;
+            len = 1;
             fm->sendSysex(FirmataStream, CB_RESET, 4, (byte *) &len);
-            RTE::reset();
+            hwboard::reset();
             break;
         default:
             len = -1;
