@@ -742,6 +742,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 fm->sendSysex(FirmataStream, FM_GET_TASK_DETAIL, 24, tasks[argv[0]]->mata());
             }
             break;
+#endif
         case FM_GET_PLC_STATE:
             fm->sendSysex(FirmataStream, FM_GET_PLC_STATE, 1, (byte *) (&plc_var.info.plc_state));
             break;
@@ -785,7 +786,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             fm->sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
             break;
 #endif
-#endif
+
 #ifdef USE_KVDB
         case FM_LIST_KEY:
             kvdb.list(fm, FirmataStream);
