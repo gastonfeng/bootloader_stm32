@@ -39,7 +39,6 @@
 SerialFirmata *serialFeature;
 #endif
 
-
 #ifdef USE_FREERTOS
 
 #include "STM32FreeRTOS.h"
@@ -1114,6 +1113,8 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
         case FM_READ_VALUE:
             u8 region, typ;
             byte *rdbuf;
+            if (argc < 9)
+                break;
             rdbuf = (byte *) malloc(FirmataStream->tx_max_size());
             decodedLen = decodeByteStream(argc, argv, rdbuf);
             indexv = 0;
@@ -1121,8 +1122,12 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             if (decodedLen == 8 && rdbuf[0] <= REGION_HOLDER) {
                 region = rdbuf[0];
                 indexv = *(u32 *) &rdbuf[1];
+                if (indexv > 256)
+                    indexv = 0;;
                 typ = rdbuf[5];
                 len = *(u16 *) &rdbuf[6];
+                if (len > 256)
+                    len = 0;
                 rdbuf[0] = region;
                 rdbuf[1] = typ;
                 *(u32 *) &rdbuf[2] = indexv;
@@ -1260,7 +1265,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             }
             break;
         case FM_READ_BIT_REP:
-            if (argc > 0) {
+            if (argc > 0 && argc < 16) {
                 decodedLen = decodeByteStream(argc, argv, decodeBuf);
                 memcpy(mfm->valueBuf, decodeBuf, decodedLen);
                 mfm->valueLen = decodedLen;
@@ -1321,6 +1326,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             break;
         default:
             len = -1;
+            logger.error("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
             // fm->sendSysex(FirmataStream, command, 4, (byte *) &len);
             break;
     }
