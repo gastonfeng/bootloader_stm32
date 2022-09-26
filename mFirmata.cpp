@@ -23,7 +23,7 @@
 #endif
 
 #include <plc_var_class.h>
-#include <boardbase.h>
+#include <iWiFi.h>
 
 #ifdef USE_SERVO
 #include <Servo.h>
@@ -924,8 +924,8 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             case CB_WIFI_SET_PASS:
                 int plen;
                 plen = strlen((const char *)argv);
-                kvdb.set("wifi_pass", (const char *)argv, plen);
-                wifi_reload();
+//                kvdb.set("wifi_pass", (const char *)argv, plen);
+                wifi.reload();
                 fm->sendSysex(FirmataStream, CB_WIFI_SET_PASS, 0, argv);
                 break;
 #endif
