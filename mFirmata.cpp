@@ -618,7 +618,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             TaskStatus_t *StatusArray;
             task_num = uxTaskGetNumberOfTasks();
             buffer = (char *) malloc(task_num * sizeof(task_info));
-            StatusArray = (TaskStatus_t *) pvPortMalloc(task_num * sizeof(TaskStatus_t));
+            StatusArray = (TaskStatus_t *) malloc(task_num * sizeof(TaskStatus_t));
             if (StatusArray != nullptr) {
 
                 uxTaskGetSystemState(StatusArray, (UBaseType_t) task_num, (uint32_t *) &TotalRunTime);
@@ -638,7 +638,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 }
             }
             fm->sendSysex(FirmataStream, CB_THREAD_INFO, (task_num * sizeof(task_info)), (byte *) (buffer));
-            vPortFree(StatusArray);
+            free(StatusArray);
             free(buffer);
             break;
 #endif
