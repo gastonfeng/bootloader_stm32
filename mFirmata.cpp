@@ -23,8 +23,10 @@
 #endif
 
 #include <plc_var_class.h>
-#include <iWiFi.h>
 
+#ifdef USE_WIFI
+#include <iWiFi.h>
+#endif
 #ifdef USE_SERVO
 #include <Servo.h>
 #endif
@@ -59,7 +61,8 @@ byte detachedServoCount = 0;
 byte servoCount = 0;
 #endif
 /* pins configuration */
-byte portConfigInputs[TOTAL_PORTS]; // each bit: 1 = pin in INPUT, 0 = anything else
+byte portConfigInputs[TOTAL_PORTS];
+// each bit: 1 = pin in INPUT, 0 = anything else
 #ifndef ARDUINO
 // from arduino
 #define INPUT 0
@@ -117,10 +120,10 @@ int dbg_size();
 void reportAnalogCallback(firmata::FirmataClass *fm, nStream *stream, byte analogPin, int value) {
 #if defined(RTE_APP) || defined(PLC)
     if (analogPin < ANALOGVALUE_LENGTH) {
-        if (value == 0) {
-            plc_var.info.analogInputsToReport[analogPin / 8] &= ~(1 << (analogPin % 8));
+        if (0 == value) {
+            (plc_var.info.analogInputsToReport[analogPin / 8]) &= (u8) (~(1 << ((u32) analogPin % 8)));
         } else {
-            plc_var.info.analogInputsToReport[analogPin / 8] |= (1 << (analogPin % 8));
+            plc_var.info.analogInputsToReport[analogPin / 8] |= (u8) (1 << ((u32) analogPin % 8));
             // prevent during system reset or all analog pin values will be reported
             // which may report noise for unconnected analog pins
             if (!plc_var.info.isResetting) {
@@ -155,7 +158,7 @@ void reportDigitalCallback(firmata::FirmataClass *fm, Stream *, byte port, int v
 
 void setPinValueCallback(firmata::FirmataClass *fm, Stream *, byte pin, int value) {
 #if defined(RTE_APP) || defined(PLC)
-    mFirmata *mfm = (mFirmata *) fm;
+    auto *mfm = (mFirmata *) fm;
     if (pin < IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS) //&& fm->getPinMode(pin) == OUTPUT
     {
         mfm->setPinState(pin, value);
@@ -992,7 +995,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 fm->sendSysex(FirmataStream, FM_GET_LOC_SIZE, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
             }
             break;
-        case FM_GET_LOC:
+        case FM_GET_LOC_TAB:
             u32 l_index;
             if (argc == 5) {
                 decodeByteStream(argc, argv, (byte *) &l_index);
@@ -1006,23 +1009,23 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                     *(u16 *) &buffer[4] = loc->a_size;
                     memcpy(&buffer[6], loc->a_data, loc->a_size);
                     memcpy(&buffer[6 + loc->a_size], loc->v_buf, loc->v_size);
-                    fm->sendSysex(FirmataStream, FM_GET_LOC, len, (byte *) buffer);
+                    fm->sendSysex(FirmataStream, FM_GET_LOC_TAB, len, (byte *) buffer);
                     free(buffer);
                     break;
                 }
             }
-            fm->sendSysex(FirmataStream, FM_GET_LOC, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
+            fm->sendSysex(FirmataStream, FM_GET_LOC_TAB, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
             break;
-        case FM_SET_LOC:
+        case FM_SET_LOC_TAB:
             if (argc == 5) {
                 decodeByteStream(argc, argv, (byte *) &l_index);
                 if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz) {
-                    fm->sendSysex(FirmataStream, FM_SET_LOC, sizeof(plc_loc_tbl_t),
+                    fm->sendSysex(FirmataStream, FM_SET_LOC_TAB, sizeof(plc_loc_tbl_t),
                                   (byte *) &plc_var.info.plc_curr_app->l_tab[l_index]);
                     break;
                 }
             }
-            fm->sendSysex(FirmataStream, FM_SET_LOC, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
+            fm->sendSysex(FirmataStream, FM_SET_LOC_TAB, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
             break;
 #endif
 #ifdef ONLINE_DEBUG
@@ -1089,7 +1092,7 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 decodedLen = decodeByteStream(argc, argv, (byte *) buffer);
                 indexv = *(u32 *) buffer;
                 len = *(u16 *) &buffer[4];
-                for (int i = 0; i < len; i++) {
+                for (int i = 0; i < len; ++i) {
                     *((uint8_t *) indexv + i) = buffer[6 + i];
                 }
                 fm->sendSysex(FirmataStream, FM_WRITE_MEM, len, (byte *) indexv);
@@ -1262,24 +1265,6 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
                 decodedLen = decodeByteStream(argc, argv, decodeBuf);
             }
             break;
-#if defined(RTE_APP) || defined(PLC)
-        case FM_READ_LOC:
-            if (argc < 5)
-                break;
-            decodedLen = decodeByteStream(argc, argv, (byte *) decodeBuf);
-            if (decodedLen < 5)
-                break;
-            len = board.get_input(decodeBuf[0], decodeBuf[1], decodeBuf[2], decodeBuf[3],
-                                  decodeBuf);
-            fm->sendSysex(FirmataStream, FM_READ_LOC, len, (byte *) decodeBuf);
-            break;
-        case FM_WRITE_LOC:
-            decodedLen = decodeByteStream(argc, argv, (byte *) decodeBuf);
-            len = board.set_output(decodeBuf[0], decodeBuf[1], decodeBuf[2], decodeBuf[3],
-                                   &decodeBuf[4],
-                                   decodedLen - 4);
-            fm->sendSysex(FirmataStream, FM_READ_LOC, len, (byte *) decodeBuf);
-            break;
         case FM_GET_LOCATION:
             byte *buf_fgl;
             buf_fgl = (byte *) malloc(32);
@@ -1302,7 +1287,6 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
         case CB_GOTO_IAP:
             fm->sendSysex(FirmataStream, CB_GOTO_IAP, 0, nullptr);
             boardBase::goto_iap();
-#endif
         case CB_RESET:
             len = 1;
             fm->sendSysex(FirmataStream, CB_RESET, 4, (byte *) &len);
