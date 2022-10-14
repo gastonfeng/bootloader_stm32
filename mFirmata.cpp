@@ -394,7 +394,6 @@ int decodeByteStream(size_t bytec, const byte *bytev, byte *buf) {
     return j;
 }
 
-extern "C" void core_debug_uart(bool v);
 
 int fill_dbg(int index, u8 *buf);
 
@@ -421,7 +420,6 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
     switch (command) {
         case firmata::ARE_YOU_THERE:
 #if defined(RTE_APP) || defined(PLC)
-            // core_debug_uart(false);
             // logger.disable(logger_t::LOGGER_SERIAL);
 #endif
             fm->write(FirmataStream, START_SYSEX);
