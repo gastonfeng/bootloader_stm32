@@ -809,7 +809,8 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             size_t key_len;
             key_len = strlen((const char *) argv);
             int rw;
-            rw = kvdb.set((const char *) argv, (const char *) argv + key_len + 1, (int) (argc - key_len - 2));
+            rw = kvdb.set((const char *) argv, (const char *) argv + key_len + 1, (int) (argc - key_len - 2),
+                          KV_STR_VALUE);
             fm->sendSysex(FirmataStream, CB_WRITE_KEY, 4, (byte *) &rw);
             break;
         case FM_WRITE_KEY_BYTES:
