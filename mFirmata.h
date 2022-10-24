@@ -124,9 +124,7 @@ public:
 
     int run(u32 tick) override;
 
-    int begin(u32 tick) override {
-        return 0;
-    }
+    int begin(u32 tick) override;
 
     int diag(u32 tick) override {
         return 0;

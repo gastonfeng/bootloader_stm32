@@ -373,7 +373,7 @@ void stringCallback(firmata::FirmataClass *fc, nStream *Fs, char *myString) {
             fc->sendString(Fs, "rm fail");
     } else
 #endif
-        fc->sendString(Fs, "unknown input");
+    fc->sendString(Fs, "unknown input");
 }
 
 int decodeByteStream(size_t bytec, const byte *bytev, byte *buf) {
@@ -494,9 +494,9 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             fm->flush(FirmataStream);
             break;
 #ifdef FIRMATA_SERIAL_FEATURE
-        case SERIAL_MESSAGE:
-            serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
-            break;
+            case SERIAL_MESSAGE:
+                serialFeature->handleSysex(fm, FirmataStream, command, argc, argv);
+                break;
 #endif
         case CB_GET_REMAIN_MEM:
             fm->sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
@@ -762,26 +762,26 @@ void sysexCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byte comma
             fm->flush(FirmataStream);
             break;
 #ifdef USE_BOOTLOADER
-            case CB_GET_BOOT_VERSION:
+        case CB_GET_BOOT_VERSION:
 #ifdef BOOTINFO
-                boot_t *b;
-                b = (boot_t *)BOOTINFO; // platformio.ini中定义
-                if (b)
-                    fm->sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *)b);
-                else
+            boot_t *b;
+            b = (boot_t *) BOOTINFO; // platformio.ini中定义
+            if (b)
+                fm->sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *) b);
+            else
 #endif
-                {
-                    fm->write(FirmataStream, START_SYSEX);
-                    fm->write(FirmataStream, CB_GET_BOOT_VERSION);
-                    fm->write(FirmataStream, 0);
-                    fm->write(FirmataStream, END_SYSEX);
-                    fm->flush(FirmataStream);
-                }
-                break;
-            case FM_FLASH_BOOT:
-                len = board.updateBootbin();
-                fm->sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *)&len);
-                break;
+            {
+                fm->write(FirmataStream, START_SYSEX);
+                fm->write(FirmataStream, CB_GET_BOOT_VERSION);
+                fm->write(FirmataStream, 0);
+                fm->write(FirmataStream, END_SYSEX);
+                fm->flush(FirmataStream);
+            }
+            break;
+        case FM_FLASH_BOOT:
+            len = board.updateBootbin();
+            fm->sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
+            break;
 #endif
 
 #ifdef USE_KVDB
@@ -1349,21 +1349,6 @@ int mFirmata::loop(nStream *FirmataStream) {
 }
 
 mFirmata::mFirmata() {
-    disableBlinkVersion();
-    setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
-    attach(STRING_DATA, stringCallback);
-    attach(START_SYSEX, sysexCallback);
-    //    attach(ANALOG_MESSAGE, analogWriteCallback);
-    //    attach(DIGITAL_MESSAGE, digitalWriteCallback);
-    //    attach(REPORT_ANALOG, reportAnalogCallback);
-    //    attach(REPORT_DIGITAL, reportDigitalCallback);
-    //    attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
-    //    attach(SET_PIN_MODE, setPinModeCallback);
-    //    attach(SYSTEM_RESET, systemResetCallback);
-    i_am_here_cb = nullptr;
-#ifdef FIRMATA_SERIAL_FEATURE
-    serialFeature = new SerialFirmata();
-#endif
 }
 
 #if defined(RTE_APP) || defined(PLC)
@@ -1528,6 +1513,26 @@ int mFirmata::getPinState(byte pin) {
 
 void mFirmata::setPinState(byte pin, int state) {
     plcVar.digitalValue(pin, state);
+}
+
+int mFirmata::begin(u32 tick) {
+    disableBlinkVersion();
+    setFirmwareVersion(FIRMATA_FIRMWARE_MAJOR_VERSION, FIRMATA_FIRMWARE_MINOR_VERSION);
+    attach(STRING_DATA, stringCallback);
+    attach(START_SYSEX, sysexCallback);
+    //    attach(ANALOG_MESSAGE, analogWriteCallback);
+    //    attach(DIGITAL_MESSAGE, digitalWriteCallback);
+    //    attach(REPORT_ANALOG, reportAnalogCallback);
+    //    attach(REPORT_DIGITAL, reportDigitalCallback);
+    //    attach(SET_DIGITAL_PIN_VALUE, setPinValueCallback);
+    //    attach(SET_PIN_MODE, setPinModeCallback);
+    //    attach(SYSTEM_RESET, systemResetCallback);
+    i_am_here_cb = nullptr;
+#ifdef FIRMATA_SERIAL_FEATURE
+    serialFeature = new SerialFirmata();
+#endif
+
+    return 0;
 }
 
 #endif
