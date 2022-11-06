@@ -1339,7 +1339,7 @@ void digitalWriteCallback(firmata::FirmataClass *fm, nStream *FirmataStream, byt
 }
 
 int mFirmata::loop(nStream *FirmataStream) {
-    while (available(FirmataStream)) {
+    while (available(FirmataStream)>0) {
         processInput(FirmataStream);
         plc_var.info.task_busy |= 0x2;
         last_tick = rtos::ticks();
