@@ -6,7 +6,6 @@
 #include "rtos.h"
 
 using u8 = unsigned char;
-using namespace firmata;
 
 class firmata_client : public mFirmata {
 
@@ -37,10 +36,6 @@ public:
     [[noreturn]] static void thd_loop(void *arg);
 
     static int get_plc_var(int index);
-
-    void sendSysex(byte command, uint16_t bytec, byte *bytev) {
-        FirmataClass::sendSysex(stream, command, bytec, bytev);
-    }
 
     static int set_plc_var(int index, byte *value, int);
 };
