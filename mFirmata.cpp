@@ -934,6 +934,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 sendSysex(FirmataStream, CB_WIFI_SET_PASS, 0, argv);
                 break;
 #endif
+#ifdef USE_MEMDBLOCK
         case FM_PUT_DATA_BLOCK:
             u32 crc, crc_r;
             if (argc < 12)
@@ -991,6 +992,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *) &state);
             break;
+#endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_GET_LOC_SIZE:
             if (plc_var.info.plc_curr_app) {
@@ -1006,7 +1008,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz) {
                     plc_loc_tbl_t loc = plc_var.info.plc_curr_app->l_tab[l_index];
                     len = (int) sizeof(plc_loc_dsc_t) + loc->a_size + loc->v_size;
-                    buffer = (char *) malloc(len);
+                    byte *buffer = (byte *) malloc(len);
                     buffer[0] = loc->v_type;
                     buffer[1] = loc->v_size;
                     *(u16 *) &buffer[2] = loc->proto;
@@ -1204,7 +1206,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 len = *(u16 *) &argv[4];
             }
             if (len > 0) {
-                buffer = (char *) malloc(len / 8 + 6);
+                byte *buffer = (byte *) malloc(len / 8 + 6);
                 *(u32 *) argv = indexv;
                 buffer[4] = len;
                 for (int i = 0; i < len; i++) {
