@@ -802,7 +802,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case CB_READ_KEY:
             size_t vlen;
-            buffer = kvdb.get((const char *) argv);
+            byte *buffer = kvdb.get((const char *) argv);
             vlen = strlen(buffer);
             if (buffer && (vlen > 0))
                 sendSysex(FirmataStream, CB_READ_KEY, (byte) vlen, (byte *) buffer);
@@ -906,7 +906,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #ifdef USE_SOEM
             case FM_SOEM_SCAN:
-                soem_scan(fm, FirmataStream);
+                soem_scan(FirmataStream);
                 break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
