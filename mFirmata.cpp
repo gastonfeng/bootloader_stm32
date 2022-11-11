@@ -432,6 +432,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     int len;
     u8 *data;
     tm new_time{};
+    char *buffer;
     struct {
         u32 build;
         char name[8];
@@ -600,7 +601,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
                 break;
             case FM_GET_NET_BUF_STAT:
-                char *buffer;
                 buffer = (char *) malloc(13 * MEMP_MAX);
             for (int i = 0; i < MEMP_MAX; i++)
             {
@@ -631,7 +631,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             u32 TotalRunTime;
             TaskStatus_t *StatusArray;
             task_num = uxTaskGetNumberOfTasks();
-            char *buffer;
             buffer = (char *) malloc(task_num * sizeof(task_info));
             StatusArray = (TaskStatus_t *) malloc(task_num * sizeof(TaskStatus_t));
             if (StatusArray != nullptr) {
@@ -802,7 +801,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case CB_READ_KEY:
             size_t vlen;
-            byte *buffer = kvdb.get((const char *) argv);
+            buffer = kvdb.get((const char *) argv);
             vlen = strlen(buffer);
             if (buffer && (vlen > 0))
                 sendSysex(FirmataStream, CB_READ_KEY, (byte) vlen, (byte *) buffer);
