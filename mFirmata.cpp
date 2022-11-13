@@ -386,7 +386,7 @@ bool IS_PIN_ANALOG(byte pin) {
 
 #endif
 
-int soem_scan(Stream *);
+int soem_scan(mFirmata *fm,Stream *);
 
 void mFirmata::analogWriteCallback(Stream *, byte i, int val) {
 #if defined(RTE_APP) || defined(PLC)
@@ -905,7 +905,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #ifdef USE_SOEM
             case FM_SOEM_SCAN:
-                soem_scan(FirmataStream);
+                soem_scan(this,FirmataStream);
                 break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
@@ -1268,6 +1268,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             sendSysex(FirmataStream, FM_SET_LOCATION, 4, (byte *) &len);
             break;
+#endif
+#ifdef ARDUINO
         case CB_GOTO_IAP:
             sendSysex(FirmataStream, CB_GOTO_IAP, 0, nullptr);
             boardBase::goto_iap();
