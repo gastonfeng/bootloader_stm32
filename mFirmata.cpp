@@ -1342,7 +1342,7 @@ int mFirmata::loop(nStream *FirmataStream) {
         last_tick = rtos::ticks();
     }
 #if defined(RTE_APP) || defined(PLC)
-    report(FirmataStream);
+   report(FirmataStream);
 #endif
     return 0;
 }
