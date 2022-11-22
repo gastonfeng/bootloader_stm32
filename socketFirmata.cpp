@@ -63,12 +63,6 @@ int create_peer(peer_t *peer) {
     return 0;
 }
 
-int socketFirmata::begin(mFirmata *fm) {
-    firm = fm;
-
-    rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
-    return 0;
-}
 
 #undef write
 #undef read
@@ -256,8 +250,7 @@ int close_client_connection(peer_t *client) {
 }
 
 int socketFirmata::handle_received_message() {
-    while (available())
-        firm->processInput(this);
+    firm.loop(this);
     return 0;
 }
 
@@ -350,13 +343,15 @@ void socketFirmata::flush() {
 #if defined(RTE_APP) || defined(PLC)
 
 void socketFirmata::report() {
-    firm->report(this);
+    firm.report(this);
 }
 
 #endif
 
 int socketFirmata::begin(u32 tick) {
-    return begin(&ifirmata);
+    rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
+    return 0;
+
 }
 
 int socketFirmata::run(u32 tick) {

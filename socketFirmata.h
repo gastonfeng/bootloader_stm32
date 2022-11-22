@@ -34,9 +34,6 @@
 
 #include <csignal>
 
-
-#define MAX_CLIENTS 3
-
 #define DATA_MAXSIZE FIRMATA_BUFFER_SZ
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
@@ -52,12 +49,9 @@ extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t c
 class socketFirmata : public nStream, public smodule {
 
 public:
-    virtual ~socketFirmata() = default;
+    ~socketFirmata() final = default;
 
     const char *name() final { return "socketFirmata"; }
-
-    int begin(mFirmata *);
-
 
     int begin(u32 tick) override;
 
@@ -107,7 +101,7 @@ public:
 
 private:
     std::vector<u8> txbuf;
-    mFirmata *firm;
+    mFirmata firm;
 };
 
 #endif

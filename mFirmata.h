@@ -175,14 +175,28 @@ enum {
     FM_READ_KEY_BYTES,
     FM_WRITE_KEY_BYTES,
     FM_FLASH_BOOT,
+    FM_IOT_LOGIN,
     FM_LAST
 };
+enum {
+    IOT_LOGIN_OK = 0x55
+} iot_enum;
 
 class mFirmata {
 public:
     int loop(nStream *FirmataStream);
 
+    void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev);
+
+    void sendAnalog(nStream *pStream, byte i, int i1);
+
+    void setPinMode(byte i, int i1);
+
     void report(nStream *FirmataStream);
+
+    int decodeByteStream(size_t bytec, const byte *bytev, byte *buf);
+
+private:
 
     int getPinState(byte pin);
 
@@ -233,8 +247,6 @@ public:
     bool use_sn;
     u32 sn;
 
-    void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev);
-
     void marshaller_sendSysex(nStream *FirmataStream, uint8_t command, size_t bytec, uint8_t *bytev);
 
     void encodeByteStream(nStream *FirmataStream, size_t bytec, uint8_t *bytev, size_t max_bytes);
@@ -260,7 +272,6 @@ public:
     int waitForData;
     uint8_t executeMultiByteCommand; // execute this after getting multi-byte data
     uint8_t multiByteChannel;        // channel data for multiByteCommands
-    int decodeByteStream(size_t bytec, const byte *bytev, byte *buf);
 
     void currentReportFirmwareCallback(nStream *pStream);
 
@@ -270,11 +281,7 @@ public:
 
     void currentDataBufferOverflowCallback(nStream *pStream);
 
-    void sendAnalog(nStream *pStream, byte i, int i1);
-
     bool getPinMode(byte i);
-
-    void setPinMode(byte i, int i1);
 
     void sendString(nStream *pStream, const char *string);
 
@@ -293,6 +300,7 @@ public:
     void stringCallback(nStream *Fs, char *myString);
 
     void analogWriteCallback(Stream *, byte i, int val);
+
 };
 
 extern mFirmata ifirmata;

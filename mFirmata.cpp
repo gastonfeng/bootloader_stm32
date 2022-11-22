@@ -386,7 +386,7 @@ bool IS_PIN_ANALOG(byte pin) {
 
 #endif
 
-int soem_scan(mFirmata *fm,Stream *);
+int soem_scan(mFirmata *fm, Stream *);
 
 void mFirmata::analogWriteCallback(Stream *, byte i, int val) {
 #if defined(RTE_APP) || defined(PLC)
@@ -411,7 +411,7 @@ void mFirmata::stringCallback(nStream *Fs, char *myString) {
             sendString(Fs, "rm fail");
     } else
 #endif
-    sendString(Fs, "unknown input");
+        sendString(Fs, "unknown input");
 }
 
 int fill_dbg(int index, u8 *buf);
@@ -511,9 +511,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->flush();
             break;
 #ifdef FIRMATA_SERIAL_FEATURE
-            case SERIAL_MESSAGE:
-                serialFeature->handleSysex(this, FirmataStream, command, argc, argv);
-                break;
+        case SERIAL_MESSAGE:
+            serialFeature->handleSysex(this, FirmataStream, command, argc, argv);
+            break;
 #endif
         case CB_GET_REMAIN_MEM:
             sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
@@ -588,31 +588,30 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef ARDUINO
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
-            case CB_SET_IP:
-                plc_var.config.ip.ip1 = argv[0];
-                plc_var.config.ip.ip2 = argv[1];
-                plc_var.config.ip.ip3 = argv[2];
-                plc_var.config.ip.ip4 = argv[3];
-                ETH_LWIP::set_ip();
-                sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
-                break;
+        case CB_SET_IP:
+            plc_var.config.ip.ip1 = argv[0];
+            plc_var.config.ip.ip2 = argv[1];
+            plc_var.config.ip.ip3 = argv[2];
+            plc_var.config.ip.ip4 = argv[3];
+            ETH_LWIP::set_ip();
+            sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
+            break;
 #endif
-            case CB_GET_IP:
-                sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
-                break;
-            case FM_GET_NET_BUF_STAT:
-                buffer = (char *) malloc(13 * MEMP_MAX);
-            for (int i = 0; i < MEMP_MAX; i++)
-            {
-                *(u8 *)&buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
-                *(u8 *)&buffer[1 + 13 * i] = memp_pools[i]->stats->err;
-                *(u8 *)&buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
-                *(u8 *)&buffer[3 + 13 * i] = memp_pools[i]->stats->max;
-                *(u8 *)&buffer[4 + 13 * i] = memp_pools[i]->stats->used;
+        case CB_GET_IP:
+            sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
+            break;
+        case FM_GET_NET_BUF_STAT:
+            buffer = (char *) malloc(13 * MEMP_MAX);
+            for (int i = 0; i < MEMP_MAX; i++) {
+                *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
+                *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
+                *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
+                *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
+                *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
                 memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
             }
-                sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
-                free(buffer);
+            sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
+            free(buffer);
             break;
 #endif
 #ifdef USE_FREERTOS
@@ -773,25 +772,25 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->flush();
             break;
 #ifdef USE_BOOTLOADER
-            case CB_GET_BOOT_VERSION:
+        case CB_GET_BOOT_VERSION:
 #ifdef BOOTINFO
-                boot_t *b;
-                b = (boot_t *) BOOTINFO; // platformio.ini中定义
-                if (b)
-                    sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *) b);
-                else
+            boot_t *b;
+            b = (boot_t *) BOOTINFO; // platformio.ini中定义
+            if (b)
+                sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *) b);
+            else
 #endif
-                {
-                    FirmataStream->write(START_SYSEX);
-                    FirmataStream->write(CB_GET_BOOT_VERSION);
-                    FirmataStream->write((uint8_t) 0);
-                    FirmataStream->write(END_SYSEX);
-                    FirmataStream->flush();
-                }
+            {
+                FirmataStream->write(START_SYSEX);
+                FirmataStream->write(CB_GET_BOOT_VERSION);
+                FirmataStream->write((uint8_t) 0);
+                FirmataStream->write(END_SYSEX);
+                FirmataStream->flush();
+            }
             break;
         case FM_FLASH_BOOT:
             len = board.updateBootbin();
-                sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
+            sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
             break;
 #endif
 
@@ -934,63 +933,63 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
 #ifdef USE_MEMDBLOCK
-        case FM_PUT_DATA_BLOCK:
-            u32 crc, crc_r;
-            if (argc < 12)
-                break;
-            crc = GenerateCRC32Sum((const u8 *) argv, argc - 4, 0);
-            crc_r = *(u32 *) (&argv[argc - 4]);
-            if (crc_r != crc) {
-                state = CRC_ERROR;
-                logger.error("crc error block %d 0x%x 0x%x argc=%d len=%d", *(int *) &argv[0], crc, crc_r, argc,
-                             argc);
-            } else {
-                rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
-                int block = *(int *) &argv[0];
-                if (block == 0) {
-                    // if (ifirmata.dev) {
-                    //     state = DEV_IS_OPEN;
-                    // } else
-                    {
-                        u32 object = *(u32 *) &argv[4];
-                        u32 data_address = *(u32 *) &argv[8];
-                        u32 data_len = *(u32 *) &argv[12];
-
-                        ifirmata.dev = mem_block::mems[object];
-                        if (!ifirmata.dev) {
-                            state = NO_DEVICE;
-                        } else {
-                            state = ifirmata.dev->begin(&argv[16], argc - 16, data_address, data_len);
-                            if (state > 0 && state > ifirmata.dataBufferSize * 7 / 8 - 4) {
-                                state = (int) (ifirmata.dataBufferSize * 7 / 8 - 4);
-                            }
-                            logger.info("recv %s ,size= %d", &argv[12], *(u32 *) &argv[8]);
-                        }
-                    }
-                } else if (block == -1) {
-                    if (ifirmata.dev) {
-                        if (ifirmata.dev->Shutdown() < 0) {
-                            state = DEVICE_SHUTDOWN_ERR;
-                        } else {
-                            state = 1;
-                            rte.set_state(PLC_STATUS::APP_FLASH_END);
-                            logger.info("recv end.");
-                            ifirmata.dev = nullptr;
-                        }
-                    }
+            case FM_PUT_DATA_BLOCK:
+                u32 crc, crc_r;
+                if (argc < 12)
+                    break;
+                crc = GenerateCRC32Sum((const u8 *) argv, argc - 4, 0);
+                crc_r = *(u32 *) (&argv[argc - 4]);
+                if (crc_r != crc) {
+                    state = CRC_ERROR;
+                    logger.error("crc error block %d 0x%x 0x%x argc=%d len=%d", *(int *) &argv[0], crc, crc_r, argc,
+                                 argc);
                 } else {
-                    if (ifirmata.dev) {
-                        if (ifirmata.dev->Write(&argv[4], argc - 8) < 0) {
-                            state = DEVICE_WRITE_ERR;
-                        } else {
-                            state = block;
+                    rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
+                    int block = *(int *) &argv[0];
+                    if (block == 0) {
+                        // if (ifirmata.dev) {
+                        //     state = DEV_IS_OPEN;
+                        // } else
+                        {
+                            u32 object = *(u32 *) &argv[4];
+                            u32 data_address = *(u32 *) &argv[8];
+                            u32 data_len = *(u32 *) &argv[12];
+
+                            ifirmata.dev = mem_block::mems[object];
+                            if (!ifirmata.dev) {
+                                state = NO_DEVICE;
+                            } else {
+                                state = ifirmata.dev->begin(&argv[16], argc - 16, data_address, data_len);
+                                if (state > 0 && state > ifirmata.dataBufferSize * 7 / 8 - 4) {
+                                    state = (int) (ifirmata.dataBufferSize * 7 / 8 - 4);
+                                }
+                                logger.info("recv %s ,size= %d", &argv[12], *(u32 *) &argv[8]);
+                            }
                         }
-                        logger.info("recv %d ,size= %d", block, argc - 8);
+                    } else if (block == -1) {
+                        if (ifirmata.dev) {
+                            if (ifirmata.dev->Shutdown() < 0) {
+                                state = DEVICE_SHUTDOWN_ERR;
+                            } else {
+                                state = 1;
+                                rte.set_state(PLC_STATUS::APP_FLASH_END);
+                                logger.info("recv end.");
+                                ifirmata.dev = nullptr;
+                            }
+                        }
+                    } else {
+                        if (ifirmata.dev) {
+                            if (ifirmata.dev->Write(&argv[4], argc - 8) < 0) {
+                                state = DEVICE_WRITE_ERR;
+                            } else {
+                                state = block;
+                            }
+                            logger.info("recv %d ,size= %d", block, argc - 8);
+                        }
                     }
                 }
-            }
-            sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *) &state);
-            break;
+                sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *) &state);
+                break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_GET_LOC_SIZE:
@@ -1280,6 +1279,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             boardBase::reset();
             hwboard::reset();
             break;
+        case FM_IOT_LOGIN:
+            switch (argv[0]) {
+                case IOT_LOGIN_OK:
+                    break;
+            }
+            break;
         default:
             len = -1;
             logger.error("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
@@ -1342,7 +1347,7 @@ int mFirmata::loop(nStream *FirmataStream) {
         last_tick = rtos::ticks();
     }
 #if defined(RTE_APP) || defined(PLC)
-   report(FirmataStream);
+    report(FirmataStream);
 #endif
     return 0;
 }
