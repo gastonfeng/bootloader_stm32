@@ -34,14 +34,14 @@
 #ifndef windows_x86
 extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
 #endif
-typedef struct {
+using peer_t = struct {
     int socket{};
     struct sockaddr_in addres{};
 
     /* The same for the receiving message. */
     char receiving_buffer[DATA_MAXSIZE]{};
     size_t current_receiving_byte{};
-} peer_t;
+};
 peer_t connection_list[MAX_CLIENTS]{};
 peer_t *cur_peer{};
 u16 rxinx{};
@@ -364,6 +364,16 @@ int socketFirmata::diag(u32 tick) {
 
 int socketFirmata::dev_test(u32 tick) {
     return 0;
+}
+
+int socketFirmata::available_wait(int Delay) {
+    return available();
+}
+
+int socketFirmata::read_wait(int timeout) {
+    if (available_wait(timeout))
+        return read();
+    return -1;
 }
 
 #endif

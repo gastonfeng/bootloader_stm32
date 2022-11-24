@@ -184,6 +184,8 @@ enum {
 
 class mFirmata {
 public:
+    mFirmata();
+
     int loop(nStream *FirmataStream);
 
     void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev);

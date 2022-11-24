@@ -66,7 +66,11 @@ public:
 
     int available() override;
 
+    int available_wait(int Delay) override;
+
     int read() override;
+
+    int read_wait(int timeout = -1) override;
 
     int peek() override;
 
