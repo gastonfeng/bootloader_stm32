@@ -1992,14 +1992,21 @@ void mFirmata::processSysexMessage(nStream *stream)
         currentStringCallback(stream, (const char *)&dataBuffer[1]);
         break;
     default:
-        byte *buffer = (byte *)malloc(sysexBytesRead);
-        int len = decodeByteStream(sysexBytesRead - 1, &dataBuffer[1], buffer);
-        if (use_sn)
+        if (sysexBytesRead > 1)
         {
-            sn = *(uint32_t *)buffer;
+            byte *buffer = (byte *)malloc(sysexBytesRead);
+            int len = decodeByteStream(sysexBytesRead - 1, &dataBuffer[1], buffer);
+            if (use_sn)
+            {
+                sn = *(uint32_t *)buffer;
+            }
+            sysexCallback(stream, dataBuffer[0], len, buffer);
+            free(buffer);
         }
-        sysexCallback(stream, dataBuffer[0], len, buffer);
-        free(buffer);
+        else
+        {
+            sysexCallback(stream, dataBuffer[0], sysexBytesRead - 1, &dataBuffer[1]);
+        }
     }
 }
 
