@@ -188,7 +188,7 @@ public:
 
     int loop(nStream *FirmataStream);
 
-    void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev);
+    void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool crc_en = true);
 
     void sendAnalog(nStream *pStream, byte i, int i1);
 

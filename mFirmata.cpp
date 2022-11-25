@@ -1600,7 +1600,8 @@ void mFirmata::marshaller_sendSysex(nStream *FirmataStream, uint8_t command, siz
         rtos::mutex_unlock(FirmataStream->lock);
 }
 
-void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev) {
+void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool _crc_en) {
+    crc_en = _crc_en;
     if (use_sn) {
         auto *c = (byte *) malloc(bytec + 4);
         *(uint32_t *) c = sn;
