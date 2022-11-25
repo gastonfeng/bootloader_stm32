@@ -436,7 +436,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         u32 build;
         char name[8];
     } info{};
-    // logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
+    logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
     switch (command) {
         case ARE_YOU_THERE:
 #if defined(RTE_APP) || defined(PLC)
@@ -1119,8 +1119,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case FM_READ_VALUE:
             u8 region, typ;
-            if (argc < 9)
-                break;
             indexv = 0;
             len = 0;
             if (argc == 8 && argv[0] <= REGION_HOLDER) {
@@ -1364,7 +1362,7 @@ int mFirmata::loop(nStream *FirmataStream) {
     plc_var.info.task_busy |= 0x2;
     last_tick = rtos::ticks();
 #if defined(RTE_APP) || defined(PLC)
-    report(FirmataStream);
+    // report(FirmataStream);
 #endif
     return 0;
 }
@@ -1607,6 +1605,7 @@ void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, b
         *(uint32_t *) c = sn;
         memcpy(c + 4, bytev, bytec);
         marshaller_sendSysex(FirmataStream, command, bytec + 4, c);
+        free(c);
     } else {
         marshaller_sendSysex(FirmataStream, command, bytec, bytev);
     }
@@ -1789,7 +1788,7 @@ void mFirmata::processSysexMessage(nStream *stream) {
             if (use_sn) {
                 sn = *(uint32_t *) buffer;
             }
-            sysexCallback(stream, dataBuffer[0], sysexBytesRead - 1, dataBuffer + 1);
+            sysexCallback(stream, dataBuffer[0], len, buffer);
             free(buffer);
     }
 }
