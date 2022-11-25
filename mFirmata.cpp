@@ -1130,9 +1130,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 len = *(u16 *) &argv[6];
                 if (len > 256)
                     len = 0;
-                argv[0] = region;
-                argv[1] = typ;
-                *(u32 *) &argv[2] = indexv;
+                byte *buffer;
+                buffer = (byte *) malloc(len + 10);
+                memset(buffer, 0, len + 10);
+                buffer[0] = region;
+                buffer[1] = typ;
+                *(u32 *) &buffer[2] = indexv;
                 const char *p;
                 switch (region) {
                     default:
@@ -1140,14 +1143,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         break;
                     case REGION_XI:      // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        memset(argv, 0, argc);
-                        for (int i = 0; i < len; i++) {
-                            if (plcVar.digitalValue(i + indexv))
-                                argv[i / 8] |= (1 << (i % 8));
-                        }
-                        p = (const char *) argv;
+                        p = (const char *) &plc_var.digitalValue;
                         len = (len + 7) / 8;
-                        indexv = 0;
                         break;
                     case REGION_16: // analogValue
                         p = (const char *) &plc_var.analogValue;
@@ -1165,8 +1162,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         p = (const char *) &plc_var.config;
                         break;
                 }
-                memcpy(&argv[6], &p[indexv], len);
-                sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) argv);
+                memcpy(&buffer[6], &p[indexv], len);
+                sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) buffer);
+                free(buffer);
             } else
                 sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
             break;
@@ -1572,11 +1570,11 @@ void mFirmata::encodeByteStream(nStream *FirmataStream, size_t bytec, uint8_t *b
         FirmataStream->write(v);
         crc = crc_16(&v, 1, crc);
     }
-#ifdef FIRMATA_USE_CRC
-    FirmataStream->write(crc & 0x7f);
-    FirmataStream->write((crc >> 7) & 0x7f);
-    FirmataStream->write((crc >> 14) & 0x7f);
-#endif
+    if (crc_en) {
+        FirmataStream->write(crc & 0x7f);
+        FirmataStream->write((crc >> 7) & 0x7f);
+        FirmataStream->write((crc >> 14) & 0x7f);
+    }
 }
 
 void mFirmata::marshaller_sendSysex(nStream *FirmataStream, uint8_t command, size_t bytec, uint8_t *bytev) {
@@ -1645,12 +1643,14 @@ void mFirmata::parse(nStream *stream, uint8_t inputData) {
 #endif
     if (parsingSysex) {
         if (inputData == END_SYSEX) {
+            crc_en = false;
             // stop sysex byte
             parsingSysex = false;
             // fire off handler function
             processSysexMessage(stream);
             stream->flag &= ~FLAG_SYSEX;
         } else if (inputData == 0xFA) {
+            crc_en = true;
             // stop sysex byte
             parsingSysex = false;
             u16 crc1 = 0, crc = 0;
@@ -1784,7 +1784,7 @@ void mFirmata::processSysexMessage(nStream *stream) {
             break;
         default:
             byte *buffer = (byte *) malloc(sysexBytesRead);
-            int len = decodeByteStream(sysexBytesRead, &dataBuffer[1], buffer);
+            int len = decodeByteStream(sysexBytesRead - 1, &dataBuffer[1], buffer);
             if (use_sn) {
                 sn = *(uint32_t *) buffer;
             }

@@ -303,6 +303,7 @@ private:
 
     void analogWriteCallback(Stream *, byte i, int val);
 
+    bool crc_en;
 };
 
 extern mFirmata ifirmata;
