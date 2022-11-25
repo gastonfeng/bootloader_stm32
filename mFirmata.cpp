@@ -472,7 +472,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         u32 build;
         char name[8];
     } info{};
-    logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
+    // logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
     switch (command)
     {
     case ARE_YOU_THERE:
