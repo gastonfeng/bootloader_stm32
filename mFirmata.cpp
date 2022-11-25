@@ -410,7 +410,7 @@ void mFirmata::stringCallback(nStream *Fs, char *myString) {
             sendString(Fs, "rm fail");
     } else
 #endif
-        sendString(Fs, "unknown input");
+    sendString(Fs, "unknown input");
 }
 
 int fill_dbg(int index, u8 *buf);
@@ -569,49 +569,49 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
-        case CB_GET_RTC:
-            sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
-            break;
-        case CB_SET_RTC:
-            new_time.tm_year = *(u16 *) &argv[0];
-            new_time.tm_mon = argv[2];
-            new_time.tm_mday = argv[3];
-            new_time.tm_hour = argv[4];
-            new_time.tm_min = argv[5];
-            new_time.tm_sec = argv[6];
-            new_time.tm_wday = argv[7];
-            rtc.set_time(&new_time);
-            sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
-            break;
+            case CB_GET_RTC:
+                sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
+                break;
+            case CB_SET_RTC:
+                new_time.tm_year = *(u16 *) &argv[0];
+                new_time.tm_mon = argv[2];
+                new_time.tm_mday = argv[3];
+                new_time.tm_hour = argv[4];
+                new_time.tm_min = argv[5];
+                new_time.tm_sec = argv[6];
+                new_time.tm_wday = argv[7];
+                rtc.set_time(&new_time);
+                sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
+                break;
 #endif
 #ifdef ARDUINO
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
-        case CB_SET_IP:
-            plc_var.config.ip.ip1 = argv[0];
-            plc_var.config.ip.ip2 = argv[1];
-            plc_var.config.ip.ip3 = argv[2];
-            plc_var.config.ip.ip4 = argv[3];
-            ETH_LWIP::set_ip();
-            sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
-            break;
+            case CB_SET_IP:
+                plc_var.config.ip.ip1 = argv[0];
+                plc_var.config.ip.ip2 = argv[1];
+                plc_var.config.ip.ip3 = argv[2];
+                plc_var.config.ip.ip4 = argv[3];
+                ETH_LWIP::set_ip();
+                sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
+                break;
 #endif
-        case CB_GET_IP:
-            sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
-            break;
-        case FM_GET_NET_BUF_STAT:
-            buffer = (char *) malloc(13 * MEMP_MAX);
-            for (int i = 0; i < MEMP_MAX; i++) {
-                *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
-                *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
-                *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
-                *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
-                *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
-                memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
-            }
-            sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
-            free(buffer);
-            break;
+            case CB_GET_IP:
+                sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
+                break;
+            case FM_GET_NET_BUF_STAT:
+                buffer = (char *) malloc(13 * MEMP_MAX);
+                for (int i = 0; i < MEMP_MAX; i++) {
+                    *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
+                    *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
+                    *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
+                    *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
+                    *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
+                    memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
+                }
+                sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
+                free(buffer);
+                break;
 #endif
 #ifdef USE_FREERTOS
         case CB_THREAD_INFO:
@@ -771,135 +771,135 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->flush();
             break;
 #ifdef USE_BOOTLOADER
-        case CB_GET_BOOT_VERSION:
+            case CB_GET_BOOT_VERSION:
 #ifdef BOOTINFO
-            boot_t *b;
-            b = (boot_t *) BOOTINFO; // platformio.ini中定义
-            if (b)
-                sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *) b);
-            else
+                boot_t *b;
+                b = (boot_t *) BOOTINFO; // platformio.ini中定义
+                if (b)
+                    sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *) b);
+                else
 #endif
-            {
-                FirmataStream->write(START_SYSEX);
-                FirmataStream->write(CB_GET_BOOT_VERSION);
-                FirmataStream->write((uint8_t) 0);
-                FirmataStream->write(END_SYSEX);
-                FirmataStream->flush();
-            }
-            break;
-        case FM_FLASH_BOOT:
-            len = board.updateBootbin();
-            sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
-            break;
+                {
+                    FirmataStream->write(START_SYSEX);
+                    FirmataStream->write(CB_GET_BOOT_VERSION);
+                    FirmataStream->write((uint8_t) 0);
+                    FirmataStream->write(END_SYSEX);
+                    FirmataStream->flush();
+                }
+                break;
+            case FM_FLASH_BOOT:
+                len = board.updateBootbin();
+                sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
+                break;
 #endif
 
 #ifdef USE_KVDB
-        case FM_LIST_KEY:
-            kvdb.list(this, FirmataStream);
-            break;
-        case CB_READ_KEY:
-            size_t vlen;
-            buffer = kvdb.get((const char *) argv);
-            vlen = strlen(buffer);
-            if (buffer && (vlen > 0))
-                sendSysex(FirmataStream, CB_READ_KEY, (byte) vlen, (byte *) buffer);
-            else
-                sendSysex(FirmataStream, CB_READ_KEY, 0, (byte *) buffer);
-            break;
-        case FM_READ_KEY_BYTES:
-            data = (u8 *) malloc(256);
-            len = kvdb.get((const char *) argv, (char *) data + 4, 256, (u32 *) data);
-            sendSysex(FirmataStream, FM_READ_KEY_BYTES, len + 4, (byte *) data);
-            free(data);
-            break;
-        case CB_WRITE_KEY:
-            size_t key_len;
-            key_len = strlen((const char *) argv);
-            int rw;
-            rw = kvdb.set((const char *) argv, (const char *) argv + key_len + 1, (int) (argc - key_len - 2),
-                          KV_STR_VALUE);
-            sendSysex(FirmataStream, CB_WRITE_KEY, 4, (byte *) &rw);
-            break;
-        case FM_WRITE_KEY_BYTES:
-            key_len = strlen((const char *) argv);
-            uint32_t type;
-            type = *(uint32_t *) (argv + key_len + 1);
-            len = kvdb.set((const char *) argv, (const char *) (argv + key_len + 1 + 4),
-                           (int) (argc - key_len - 1 - 4), type);
-            sendSysex(FirmataStream, FM_WRITE_KEY_BYTES, 4, (byte *) &len);
-            break;
-        case CB_RM_KEY:
-            kvdb.remove((const char *) argv);
-            sendSysex(FirmataStream, CB_RM_KEY, 0, argv);
-            break;
+            case FM_LIST_KEY:
+                kvdb.list(this, FirmataStream);
+                break;
+            case CB_READ_KEY:
+                size_t vlen;
+                buffer = kvdb.get((const char *) argv);
+                vlen = strlen(buffer);
+                if (buffer && (vlen > 0))
+                    sendSysex(FirmataStream, CB_READ_KEY, (byte) vlen, (byte *) buffer);
+                else
+                    sendSysex(FirmataStream, CB_READ_KEY, 0, (byte *) buffer);
+                break;
+            case FM_READ_KEY_BYTES:
+                data = (u8 *) malloc(256);
+                len = kvdb.get((const char *) argv, (char *) data + 4, 256, (u32 *) data);
+                sendSysex(FirmataStream, FM_READ_KEY_BYTES, len + 4, (byte *) data);
+                free(data);
+                break;
+            case CB_WRITE_KEY:
+                size_t key_len;
+                key_len = strlen((const char *) argv);
+                int rw;
+                rw = kvdb.set((const char *) argv, (const char *) argv + key_len + 1, (int) (argc - key_len - 2),
+                              KV_STR_VALUE);
+                sendSysex(FirmataStream, CB_WRITE_KEY, 4, (byte *) &rw);
+                break;
+            case FM_WRITE_KEY_BYTES:
+                key_len = strlen((const char *) argv);
+                uint32_t type;
+                type = *(uint32_t *) (argv + key_len + 1);
+                len = kvdb.set((const char *) argv, (const char *) (argv + key_len + 1 + 4),
+                               (int) (argc - key_len - 1 - 4), type);
+                sendSysex(FirmataStream, FM_WRITE_KEY_BYTES, 4, (byte *) &len);
+                break;
+            case CB_RM_KEY:
+                kvdb.remove((const char *) argv);
+                sendSysex(FirmataStream, CB_RM_KEY, 0, argv);
+                break;
 #endif
 #ifdef USE_TSDB
-        case CB_SET_TSL_RANGE:
-            tsl_query q;
-            key_len = strlen((const char *) argv);
-            if (argc == key_len + 13) {
-                start = *(u32 *) &argv[key_len + 1];
-                end = *(u32 *) &argv[key_len + 1 + 4];
-                state = (int) *(u32 *) &argv[key_len + 1 + 8];
-                memset(&q, 0, sizeof(q));
-                tsdb.query((const char *) argv, start, end, (fdb_tsl_status) (state), &q);
-            }
-            sendSysex(FirmataStream, CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *) &q);
-            break;
-        case CB_SET_TSL_STATUS:
-            key_len = strlen((const char *) argv);
-            len = -1;
-            if (argc == key_len + 13) {
-                start = *(u32 *) &argv[key_len + 1];
-                end = *(u32 *) &argv[key_len + 1 + 4];
-                state = (int) *(u32 *) &argv[key_len + 1 + 8];
-                len = tsdb.set_status((const char *) argv, start, end, (fdb_tsl_status) (state));
-            }
-            sendSysex(FirmataStream, CB_SET_TSL_STATUS, 4, (byte *) &len);
-            break;
-        case CB_GET_TSL:
-            char *tbuf;
-            int tlen;
-            tbuf = (char *) malloc(256);
-            memset(tbuf, 0, 256);
-            tlen = tsdb.query_read((const char *) argv, (u32 *) &tbuf[0], (fdb_time_t *) &tbuf[4],
-                                   (int *) (tbuf + 8),
-                                   tbuf + 12, 256 - 12);
-            if (tlen < 0)
-                tlen = 0;
-            else {
-                *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
-                tlen += 4;
-            }
-            sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen, (byte *) tbuf);
-            free(tbuf);
-            break;
-        case CB_GET_TSL_BY_ID:
-            key_len = strlen((const char *) argv);
-            if (argc != key_len + 5)
-                return;
-            tbuf = (char *) malloc(256);
-            memset(tbuf, 0, 256);
-            tlen = tsdb.query_read_by_id((const char *) argv, *(u32 *) argv[key_len + 1], (u32 *) &tbuf[0],
-                                         (fdb_time_t *) &tbuf[4],
-                                         (int *) (tbuf + 8),
-                                         tbuf + 12, 256 - 12);
-            if (tlen < 0)
-                tlen = 0;
-            else {
-                *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
-                tlen += 4;
-            }
-            sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte) tlen, (byte *) tbuf);
-            free(tbuf);
-            break;
-        case CB_TSL_CLEAR:
-            key_len = strlen((const char *) argv);
-            // index = *(int *) &argv[key_len + 1];
+            case CB_SET_TSL_RANGE:
+                tsl_query q;
+                key_len = strlen((const char *) argv);
+                if (argc == key_len + 13) {
+                    start = *(u32 *) &argv[key_len + 1];
+                    end = *(u32 *) &argv[key_len + 1 + 4];
+                    state = (int) *(u32 *) &argv[key_len + 1 + 8];
+                    memset(&q, 0, sizeof(q));
+                    tsdb.query((const char *) argv, start, end, (fdb_tsl_status) (state), &q);
+                }
+                sendSysex(FirmataStream, CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *) &q);
+                break;
+            case CB_SET_TSL_STATUS:
+                key_len = strlen((const char *) argv);
+                len = -1;
+                if (argc == key_len + 13) {
+                    start = *(u32 *) &argv[key_len + 1];
+                    end = *(u32 *) &argv[key_len + 1 + 4];
+                    state = (int) *(u32 *) &argv[key_len + 1 + 8];
+                    len = tsdb.set_status((const char *) argv, start, end, (fdb_tsl_status) (state));
+                }
+                sendSysex(FirmataStream, CB_SET_TSL_STATUS, 4, (byte *) &len);
+                break;
+            case CB_GET_TSL:
+                char *tbuf;
+                int tlen;
+                tbuf = (char *) malloc(256);
+                memset(tbuf, 0, 256);
+                tlen = tsdb.query_read((const char *) argv, (u32 *) &tbuf[0], (fdb_time_t *) &tbuf[4],
+                                       (int *) (tbuf + 8),
+                                       tbuf + 12, 256 - 12);
+                if (tlen < 0)
+                    tlen = 0;
+                else {
+                    *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
+                    tlen += 4;
+                }
+                sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen, (byte *) tbuf);
+                free(tbuf);
+                break;
+            case CB_GET_TSL_BY_ID:
+                key_len = strlen((const char *) argv);
+                if (argc != key_len + 5)
+                    return;
+                tbuf = (char *) malloc(256);
+                memset(tbuf, 0, 256);
+                tlen = tsdb.query_read_by_id((const char *) argv, *(u32 *) argv[key_len + 1], (u32 *) &tbuf[0],
+                                             (fdb_time_t *) &tbuf[4],
+                                             (int *) (tbuf + 8),
+                                             tbuf + 12, 256 - 12);
+                if (tlen < 0)
+                    tlen = 0;
+                else {
+                    *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
+                    tlen += 4;
+                }
+                sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte) tlen, (byte *) tbuf);
+                free(tbuf);
+                break;
+            case CB_TSL_CLEAR:
+                key_len = strlen((const char *) argv);
+                // index = *(int *) &argv[key_len + 1];
 
-            sendSysex(FirmataStream, CB_TSL_CLEAR, (byte) sizeof(state), (byte *) &state);
-            state = TSL::clear((const char *) (argv));
-            break;
+                sendSysex(FirmataStream, CB_TSL_CLEAR, (byte) sizeof(state), (byte *) &state);
+                state = TSL::clear((const char *) (argv));
+                break;
 #endif
 #ifdef USE_SOEM
             case FM_SOEM_SCAN:
@@ -1052,35 +1052,35 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #ifdef ONLINE_DEBUG
-        case FM_GET_DBG_SIZE:
-            if (plc_var.info.plc_curr_app) {
-                sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
-                          (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
-            } else {
-                sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
-            }
-            break;
-        case FM_GET_DBG:
-            len = 0;
-            if (argc == 5) {
-                l_index = *(u32 *) &argv[0];
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
-                    len = (int) fill_dbg((int) l_index, argv);
+            case FM_GET_DBG_SIZE:
+                if (plc_var.info.plc_curr_app) {
+                    sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
+                              (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
+                } else {
+                    sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
                 }
-            }
-            sendSysex(FirmataStream, FM_GET_DBG, len, argv);
-            break;
-        case FM_SET_DBG:
-            len = 0;
-            if (argc > 5) {
-                l_index = *(u32 *) argv;
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
-                    set_dbg(l_index, &argv[4], argc - 4);
-                    len = (int) fill_dbg((int) l_index, argv);
+                break;
+            case FM_GET_DBG:
+                len = 0;
+                if (argc == 5) {
+                    l_index = *(u32 *) &argv[0];
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                        len = (int) fill_dbg((int) l_index, argv);
+                    }
                 }
-            }
-            sendSysex(FirmataStream, FM_GET_DBG, len, argv);
-            break;
+                sendSysex(FirmataStream, FM_GET_DBG, len, argv);
+                break;
+            case FM_SET_DBG:
+                len = 0;
+                if (argc > 5) {
+                    l_index = *(u32 *) argv;
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                        set_dbg(l_index, &argv[4], argc - 4);
+                        len = (int) fill_dbg((int) l_index, argv);
+                    }
+                }
+                sendSysex(FirmataStream, FM_GET_DBG, len, argv);
+                break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_LOG_SET_LEVEL:
@@ -1586,7 +1586,10 @@ void mFirmata::marshaller_sendSysex(nStream *FirmataStream, uint8_t command, siz
     if (FirmataStream->lock)
         rtos::mutex_lock(FirmataStream->lock);
     FirmataStream->flag |= FLAG_SYSEX;
-    FirmataStream->write(START_SYSEX);
+    if (crc_en)
+        FirmataStream->write(0xFA);
+    else
+        FirmataStream->write(START_SYSEX);
     FirmataStream->write(command);
     if (bytec > 0)
         encodeByteStream(FirmataStream, bytec, bytev, FIRMATA_BUFFER_SZ);
