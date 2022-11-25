@@ -1744,8 +1744,10 @@ void mFirmata::marshaller_sendSysex(nStream *FirmataStream, uint8_t command, siz
     FirmataStream->write(command);
     if (bytec > 0)
         encodeByteStream(FirmataStream, bytec, bytev, FIRMATA_BUFFER_SZ);
-
-    FirmataStream->write(END_SYSEX);
+    if (use_sn)
+        FirmataStream->write(0xE0);
+    else
+        FirmataStream->write(END_SYSEX);
     FirmataStream->flush();
     if (FirmataStream->lock)
         rtos::mutex_unlock(FirmataStream->lock);
@@ -1831,7 +1833,7 @@ void mFirmata::parse(nStream *stream, uint8_t inputData)
             {
                 logger.error("crc error %d %d", crc, crc1);
             }
-            
+
             stream->flag &= ~FLAG_SYSEX;
         }
         else if (inputData == 0xE0)
@@ -1851,8 +1853,7 @@ void mFirmata::parse(nStream *stream, uint8_t inputData)
             {
                 // fire off handler function
                 processSysexMessage(stream);
-            }
-                else
+            } else
             {
                 logger.error("crc error %d %d", crc, crc1);
             }

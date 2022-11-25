@@ -190,6 +190,8 @@ public:
 
     void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool crc_en = false);
 
+    void replySysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev);
+
     void sendAnalog(nStream *pStream, byte i, int i1);
 
     void setPinMode(byte i, int i1);
@@ -199,7 +201,6 @@ public:
     int decodeByteStream(size_t bytec, const byte *bytev, byte *buf);
 
 private:
-
     int getPinState(byte pin);
 
     void reportAnalogCallback(nStream *stream, byte analogPin, int value);
@@ -224,8 +225,8 @@ private:
     //时序数据库操作
 #ifdef USE_KVDB
     struct tsdb_sec_info sector
-            {
-            };
+    {
+    };
     uint32_t traversed_len{};
 #endif
 
