@@ -62,7 +62,6 @@ void SerialFirmata::handleCapability(mFirmata *fm, nStream *FirmataStream, byte 
 }
 
 bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte command, byte argc, byte *argv) {
-    int len;
     //  logger.debug("SerialFirmata::handleSysex: fm=0x%x S=0x%x cmd=0x%x argc=%d argv=0x%x", fm, FirmataStream, command,
     //               argc, argv);
     if (argc > 256 || argc < 3) {
@@ -73,22 +72,23 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
         kSerial *serialPort;
         byte mode = argv[0] & SERIAL_MODE_MASK;
         byte portId = argv[0] & SERIAL_PORT_ID_MASK;
-        //    logger.debug("mode =%d port=%d", mode, portId);
+        // logger.debug("mode =0x%x port=%d", mode, portId);
         if (portId >= SERIAL_READ_ARR_LEN) {
             return false;
         }
 
         switch (mode) {
-#ifdef ARDUINO
-            case SERIAL_CONFIG: {
-                if (len != 6) {
+            case SERIAL_CONFIG:
+                if (argc != 6) {
                     break;
                 }
-                u32 baud = *(u32 *) &argv[1];
+                u32 baud;
+                baud = *(u32 *) &argv[1];
                 if (baud > 115200) {
                     return false;
                 }
-                u8 format = argv[5];
+                u8 format;
+                format = argv[5];
 #if defined(FIRMATA_SERIAL_RX_DELAY)
                 lastBytesAvailable[portId] = 0;
                 lastBytesReceived[portId] = 0;
@@ -167,21 +167,21 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
 #endif
                 }
                 break; // SERIAL_CONFIG
-            }
-            case SERIAL_WRITE: {
+
+            case SERIAL_WRITE:
                 serialPort = getPortFromId(portId);
                 if (serialPort == nullptr) {
                     break;
                 }
                 if (serialPort->flag & IS_OPEN) {
-                    serialPort->write(&argv[1], len - 1);
+                    serialPort->write(&argv[1], argc - 1);
                 } else {
                     argv[0] = SERIAL_STATUS | portId;
                     argv[1] = SERIAL_IS_CLOSE;
                     fm->sendSysex(FirmataStream, SERIAL_MESSAGE, 2, argv);
                 }
                 break; // SERIAL_WRITE
-            }
+
             case SERIAL_READ:
                 serialPort = getPortFromId(portId);
                 if (serialPort == nullptr) {
@@ -198,7 +198,7 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                         break;
                     }
 
-                    if (len > 2) {
+                    if (argc > 2) {
                         // maximum number of bytes to read from argvfer per iteration of loop()
                         plc_var.info.serialBytesToRead[portId] = argv[2];
                     } else {
@@ -212,7 +212,7 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                             break;
                         }
                     }
-                    if (!serialIndexToSkip) {
+                    if (0 == serialIndexToSkip) {
                         serialIndex++;
                         plc_var.info.reportSerial[serialIndex] = portId;
                     }
@@ -273,7 +273,7 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                   }
                   break; // SERIAL_LISTEN
 #endif
-#endif
+
             default:
                 break;
         } // end switch
