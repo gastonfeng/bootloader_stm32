@@ -250,7 +250,9 @@ int close_client_connection(peer_t *client) {
 }
 
 int socketFirmata::handle_received_message() {
+    while(available()){
     firm.loop(this);
+    }
     return 0;
 }
 
