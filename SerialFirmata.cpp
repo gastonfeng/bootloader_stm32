@@ -64,9 +64,6 @@ void SerialFirmata::handleCapability(mFirmata *fm, nStream *FirmataStream, byte 
 bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte command, byte argc, byte *argv) {
     //  logger.debug("SerialFirmata::handleSysex: fm=0x%x S=0x%x cmd=0x%x argc=%d argv=0x%x", fm, FirmataStream, command,
     //               argc, argv);
-    if (argc > 256 || argc < 3) {
-        return false;
-    }
     if (command == SERIAL_MESSAGE) {
 
         kSerial *serialPort;

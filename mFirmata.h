@@ -176,6 +176,8 @@ enum {
     FM_WRITE_KEY_BYTES,
     FM_FLASH_BOOT,
     FM_IOT_LOGIN,
+    FM_INFO_SERIAL_RX,
+    FM_INFO_SERIAL_TX,
     FM_LAST
 };
 enum {
