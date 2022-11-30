@@ -1456,24 +1456,24 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             len = 4;
             *(int *)buffer = NO_DEVICE;
         }
-        else
-
-            {buffer = (byte *)malloc(serial->tx_buf_size + 16);
-            *(int *)buffer = serial->tx_count;
+        else {
+            buffer = (byte *) malloc(serial->tx_buf_size + 16);
+            *(int *) buffer = serial->tx_count;
             memcpy(buffer + 4, serial->_serial.tx_buff + serial->_serial.tx_head,
                    serial->tx_buf_size - serial->_serial.tx_head);
             memcpy(buffer + 4, serial->_serial.tx_buff, serial->_serial.tx_head);
             len = serial->tx_buf_size + 4;
         }
-        sendSysex(FirmataStream, FM_INFO_SERIAL_TX, len, buffer);
-        free(buffer);
-    }
-    break;#endif
-    default:
-        len = -1;
-        logger.error("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
-        // sendSysex(FirmataStream, command, 4, (byte *) &len);
-        break;
+                sendSysex(FirmataStream, FM_INFO_SERIAL_TX, len, buffer);
+                free(buffer);
+            }
+            break;
+#endif
+        default:
+            len = -1;
+            logger.error("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
+            // sendSysex(FirmataStream, command, 4, (byte *) &len);
+            break;
     }
     set_flag(command);
 }
