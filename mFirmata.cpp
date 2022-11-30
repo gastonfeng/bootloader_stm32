@@ -1227,28 +1227,22 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         len = 0;
         if (argc == 8 && argv[0] <= REGION_HOLDER)
                 {
-            region = argv[0];
-            indexv = *(u32 *)&argv[1];
-            if (indexv > 256)
-                indexv = 0;
-                    ;
-            typ = argv[5];
-            len = *(u16 *)&argv[6];
-            if (len > 256)
-                len = 0;
-            byte *buffer;
-            buffer = (byte *)malloc(len + 10);
-            memset(buffer, 0, len + 10);
-            buffer[0] = region;
-            buffer[1] = typ;
-            *(u32 *)&buffer[2] = indexv;
-            const char *p;
-            switch (region)
-                    {
-            default:
-                p = (const char *)&plc_var.digitalValue;
-                break;
-            case REGION_XI:      // byte from 0
+                    region = argv[0];
+                    indexv = *(u32 *) &argv[1];
+                    typ = argv[5];
+                    len = *(u16 *) &argv[6];
+                    byte *buffer;
+                    buffer = (byte *) malloc(len * 4 + 10);
+                    memset(buffer, 0, len * 4 + 10);
+                    buffer[0] = region;
+                    buffer[1] = typ;
+                    *(u32 *) &buffer[2] = indexv;
+                    const char *p;
+                    switch (region) {
+                        default:
+                            p = (const char *) &plc_var.digitalValue;
+                            break;
+                        case REGION_XI:      // byte from 0
             case REGION_DIGITAL: // digitalValue
                 p = (const char *)&plc_var.digitalValue;
                 len = (len + 7) / 8;
