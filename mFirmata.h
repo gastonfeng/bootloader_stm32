@@ -309,5 +309,4 @@ private:
     bool crc_en;
 };
 
-extern mFirmata ifirmata;
 #endif

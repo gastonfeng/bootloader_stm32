@@ -1037,25 +1037,25 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             int block = *(int *)&argv[0];
             if (block == 0)
             {
-                // if (ifirmata.dev) {
-                //     state = DEV_IS_OPEN;
-                // } else
+                 if (dev) {
+                     state = DEV_IS_OPEN;
+                 } else
                 {
                     u32 object = *(u32 *)&argv[4];
                     u32 data_address = *(u32 *)&argv[8];
                     u32 data_len = *(u32 *)&argv[12];
 
-                    ifirmata.dev = mem_block::mems[object];
-                    if (!ifirmata.dev)
+                    dev = mem_block::mems[object];
+                    if (!dev)
                     {
                         state = NO_DEVICE;
                     }
                     else
                     {
-                        state = ifirmata.dev->begin(&argv[16], argc - 16, data_address, data_len);
-                        if (state > 0 && state > ifirmata.dataBufferSize * 7 / 8 - 4)
+                        state = dev->begin(&argv[16], argc - 16, data_address, data_len);
+                        if (state > 0 && state > dataBufferSize * 7 / 8 - 4)
                         {
-                            state = (int)(ifirmata.dataBufferSize * 7 / 8 - 4);
+                            state = (int)(dataBufferSize * 7 / 8 - 4);
                         }
                         logger.info("recv %s ,size= %d", &argv[12], *(u32 *)&argv[8]);
                     }
@@ -1063,9 +1063,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             else if (block == -1)
             {
-                if (ifirmata.dev)
+                if (dev)
                 {
-                    if (ifirmata.dev->Shutdown() < 0)
+                    if (dev->Shutdown() < 0)
                     {
                         state = DEVICE_SHUTDOWN_ERR;
                     }
@@ -1074,15 +1074,15 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         state = 1;
                         rte.set_state(PLC_STATUS::APP_FLASH_END);
                         logger.info("recv end.");
-                        ifirmata.dev = nullptr;
+                        dev = nullptr;
                     }
                 }
             }
             else
             {
-                if (ifirmata.dev)
+                if (dev)
                 {
-                    if (ifirmata.dev->Write(&argv[4], argc - 8) < 0)
+                    if (dev->Write(&argv[4], argc - 8) < 0)
                     {
                         state = DEVICE_WRITE_ERR;
                     }
