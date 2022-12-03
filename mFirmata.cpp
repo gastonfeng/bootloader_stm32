@@ -1534,7 +1534,6 @@ int mFirmata::loop(nStream *FirmataStream)
     return 0;
 }
 
-#if defined(RTE_APP) || defined(PLC)
 
 void mFirmata::report(nStream *FirmataStream)
 {
@@ -1564,7 +1563,6 @@ void mFirmata::report(nStream *FirmataStream)
     // }
 }
 
-#endif
 
 void mFirmata::outputPort(nStream *FirmataStream, byte portNumber, byte portValue, byte forceSend)
 {
