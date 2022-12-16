@@ -108,14 +108,19 @@ int dbg_size();
 
 void mFirmata::reportAnalogCallback(nStream *stream, byte analogPin, int value) {
 #if defined(RTE_APP) || defined(PLC)
-    if (analogPin < ANALOGVALUE_LENGTH) {
-        if (0 == value) {
-            (plc_var.info.analogInputsToReport[analogPin / 8]) &= (u8) (~(1 << ((u32) analogPin % 8)));
-        } else {
-            plc_var.info.analogInputsToReport[analogPin / 8] |= (u8) (1 << ((u32) analogPin % 8));
+    if (analogPin < ANALOGVALUE_LENGTH)
+    {
+        if (0 == value)
+        {
+            (plc_var.info.analogInputsToReport[analogPin / 8]) &= (u8)(~(1 << ((u32)analogPin % 8)));
+        }
+        else
+        {
+            plc_var.info.analogInputsToReport[analogPin / 8] |= (u8)(1 << ((u32)analogPin % 8));
             // prevent during system reset or all analog pin values will be reported
             // which may report noise for unconnected analog pins
-            if (plc_var.info.plc_state < BOOT_WAIT_RESTART) {
+            if (plc_var.info.plc_state < BOOT_WAIT_RESTART)
+            {
                 // Send pin value immediately. This is helpful when connected via
                 // ethernet, wi-fi or bluetooth so pin states can be known upon
                 // reconnecting.
@@ -128,7 +133,8 @@ void mFirmata::reportAnalogCallback(nStream *stream, byte analogPin, int value) 
 
 void mFirmata::reportDigitalCallback(Stream *, byte port, int value) {
 #if defined(RTE_APP) || defined(PLC)
-    if (port < IO_XI_NRS + IO_YO_NRS) {
+    if (port < IO_XI_NRS + IO_YO_NRS)
+    {
         plc_var.info.reportPINs[port] = value;
         // Send port value immediately. This is helpful when connected via
         // ethernet, wi-fi or bluetooth so pin states can be known upon
@@ -168,7 +174,7 @@ void mFirmata::systemResetCallback(Stream *) {
         disableI2CPins();
     }
 #endif
-    for (unsigned char &reportPIN: plc_var.info.reportPINs)
+    for (unsigned char &reportPIN : plc_var.info.reportPINs)
         reportPIN = 0; // by default, reporting off
     // by default, do not report any analog inputs
     memset(plc_var.info.analogInputsToReport, 0, sizeof(plc_var.info.analogInputsToReport));
@@ -375,7 +381,7 @@ int soem_scan(mFirmata *fm, Stream *);
 
 void mFirmata::analogWriteCallback(Stream *, byte i, int val) {
 #if defined(RTE_APP) || defined(PLC)
-    auto v = (u16) val;
+    auto v = (u16)val;
     plcVar.analogValue(i, v);
 #endif
 }
@@ -389,14 +395,16 @@ extern FlashFs flash_fs;
 
 void mFirmata::stringCallback(nStream *Fs, char *myString) {
 #ifdef USE_LFS
-    if (strncmp(myString, "rm ", 3) == 0) {
+    if (strncmp(myString, "rm ", 3) == 0)
+    {
         if (FlashFs::unlink(&myString[3]) == 0)
             sendString(Fs, "rm ok");
         else
             sendString(Fs, "rm fail");
-    } else
+    }
+    else
 #endif
-        sendString(Fs, "unknown input");
+    sendString(Fs, "unknown input");
 }
 
 int fill_dbg(int index, u8 *buf);
@@ -436,7 +444,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case I_AM_HERE:
             break;
-#if defined(RTE_APP) || defined(PLC)
         case SAMPLING_INTERVAL:
             if (argc > 1) {
                 plc_var.info.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
@@ -496,9 +503,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->flush();
             break;
 #ifdef FIRMATA_SERIAL_FEATURE
-        case SERIAL_MESSAGE:
-            serialFeature->handleSysex(this, FirmataStream, command, argc, argv);
-            break;
+            case SERIAL_MESSAGE:
+                serialFeature->handleSysex(this, FirmataStream, command, argc, argv);
+                break;
 #endif
         case CB_GET_REMAIN_MEM:
             sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
@@ -506,54 +513,59 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_GET_RTE_VERSION:
             sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver_t), (uint8_t *) &plc_var.config.rte_ver);
             break;
-        case CB_PLC_START:
-            rte.app_start();
-            FirmataStream->write(START_SYSEX);
-            FirmataStream->write(CB_PLC_START);
-            FirmataStream->write((uint8_t) 0x0);
-            FirmataStream->write(END_SYSEX);
-            FirmataStream->flush();
-            break;
-        case CB_PLC_STOP:
-            rte.app_stop();
-            FirmataStream->write(START_SYSEX);
-            FirmataStream->write(CB_PLC_STOP);
-            FirmataStream->write((uint8_t) 0);
-            FirmataStream->write(END_SYSEX);
-            FirmataStream->flush();
-            break;
-        case REPORT_PLC_MD5:
-            if (plc_var.info.plc_curr_app)
-                sendSysex(FirmataStream, REPORT_PLC_MD5, 32, (byte *) plc_var.info.plc_curr_app->id);
-            else
-                sendSysex(FirmataStream, REPORT_PLC_MD5, 0, (byte *) "");
-            break;
-        case CB_PLC_LOAD:
-            FirmataStream->write(START_SYSEX);
-            FirmataStream->write(CB_PLC_LOAD);
-            FirmataStream->write((uint8_t) 0);
-            FirmataStream->write(END_SYSEX);
-            FirmataStream->flush();
-            rte.app_stop();
-            app.unload();
-            rte.load_app();
-            break;
-        case CB_PLC_REPAIR:
-            rte.app_stop();
-            app.unload();
-            FirmataStream->write(START_SYSEX);
-            FirmataStream->write(CB_PLC_REPAIR);
-            FirmataStream->write((uint8_t) 0);
-            FirmataStream->write(END_SYSEX);
-            FirmataStream->flush();
-            break;
+#ifdef RTE_APP
+            case CB_PLC_START:
+                rte.app_start();
+                FirmataStream->write(START_SYSEX);
+                FirmataStream->write(CB_PLC_START);
+                FirmataStream->write((uint8_t)0x0);
+                FirmataStream->write(END_SYSEX);
+                FirmataStream->flush();
+                break;
+            case CB_PLC_STOP:
+                rte.app_stop();
+                FirmataStream->write(START_SYSEX);
+                FirmataStream->write(CB_PLC_STOP);
+                FirmataStream->write((uint8_t)0);
+                FirmataStream->write(END_SYSEX);
+                FirmataStream->flush();
+                break;
+            case REPORT_PLC_MD5:
+                if (plc_var.info.plc_curr_app)
+                    sendSysex(FirmataStream, REPORT_PLC_MD5, 32, (byte *)plc_var.info.plc_curr_app->id);
+                else
+                    sendSysex(FirmataStream, REPORT_PLC_MD5, 0, (byte *)"");
+                break;
+            case CB_PLC_LOAD:
+                FirmataStream->write(START_SYSEX);
+                FirmataStream->write(CB_PLC_LOAD);
+                FirmataStream->write((uint8_t)0);
+                FirmataStream->write(END_SYSEX);
+                FirmataStream->flush();
+                rte.app_stop();
+                app.unload();
+                rte.load_app();
+                break;
+            case CB_PLC_REPAIR:
+                rte.app_stop();
+                app.unload();
+                FirmataStream->write(START_SYSEX);
+                FirmataStream->write(CB_PLC_REPAIR);
+                FirmataStream->write((uint8_t)0);
+                FirmataStream->write(END_SYSEX);
+                FirmataStream->flush();
+                break;
+            case CB_SET_PLC_FILE:
+                app.setPLCDLL((char *)argv);
+                sendSysex(FirmataStream, CB_SET_PLC_FILE, 0, (byte *)argv);
+                break;
+#endif
         case FM_FLASH_CLEAR:
             len = 0;
             sendSysex(FirmataStream, FM_FLASH_CLEAR, 4, (byte *) &len);
             board.flashClear();
             hwboard::reset();
             break;
-#endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
         case CB_GET_RTC:
             sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
@@ -573,31 +585,33 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef ARDUINO
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
-        case CB_SET_IP:
-            plc_var.config.ip.ip1 = argv[0];
-            plc_var.config.ip.ip2 = argv[1];
-            plc_var.config.ip.ip3 = argv[2];
-            plc_var.config.ip.ip4 = argv[3];
-            ETH_LWIP::set_ip();
-            sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&plc_var.config.ip));
-            break;
+            case CB_SET_IP:
+                plc_var.config.ip.ip1 = argv[0];
+                plc_var.config.ip.ip2 = argv[1];
+                plc_var.config.ip.ip3 = argv[2];
+                plc_var.config.ip.ip4 = argv[3];
+                ETH_LWIP::set_ip();
+                sendSysex(FirmataStream, CB_SET_IP, 4, (byte *)(&plc_var.config.ip));
+                break;
 #endif
-        case CB_GET_IP:
-            sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&plc_var.config.ip));
-            break;
-        case FM_GET_NET_BUF_STAT: {
-            buffer = (byte *) malloc(13 * MEMP_MAX);
-            for (int i = 0; i < MEMP_MAX; i++) {
-                *(u8 *) &buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
-                *(u8 *) &buffer[1 + 13 * i] = memp_pools[i]->stats->err;
-                *(u8 *) &buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
-                *(u8 *) &buffer[3 + 13 * i] = memp_pools[i]->stats->max;
-                *(u8 *) &buffer[4 + 13 * i] = memp_pools[i]->stats->used;
-                memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
+            case CB_GET_IP:
+                sendSysex(FirmataStream, CB_GET_IP, 4, (byte *)(&plc_var.config.ip));
+                break;
+            case FM_GET_NET_BUF_STAT:
+            {
+                buffer = (byte *)malloc(13 * MEMP_MAX);
+                for (int i = 0; i < MEMP_MAX; i++)
+                {
+                    *(u8 *)&buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
+                    *(u8 *)&buffer[1 + 13 * i] = memp_pools[i]->stats->err;
+                    *(u8 *)&buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
+                    *(u8 *)&buffer[3 + 13 * i] = memp_pools[i]->stats->max;
+                    *(u8 *)&buffer[4 + 13 * i] = memp_pools[i]->stats->used;
+                    memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
+                }
+                sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *)buffer);
+                free(buffer);
             }
-            sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
-            free(buffer);
-        }
             break;
 #endif
 #ifdef USE_FREERTOS
@@ -643,65 +657,74 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #endif
 #if defined(RTE_APP) || defined(PLC)
-        case CB_SET_FORCE:
-            for (int i = 0; i < argc;) {
-                const u16 *byte = (u16 *) &argv[i];
-                len = argv[i + 2];
-                index = *byte;
-                if (plc_var.info.plc_state == (u8) PLC_STATUS::Started) {
-                    plc_var.info.plc_curr_app->dbg_set_force(index, len ? &argv[i + 3] : nullptr);
-                }
-                i += len + 3;
-            }
-            FirmataStream->write(START_SYSEX);
-            FirmataStream->write(CB_SET_FORCE);
-            FirmataStream->write(argc);
-            FirmataStream->write(END_SYSEX);
-            FirmataStream->flush();
-            break;
-
-        case CB_CLEAR_V:
-            if (plc_var.info.plc_curr_app && (plc_var.info.plc_state == (u8) PLC_STATUS::Started)) {
-                plc_var.info.plc_curr_app->dbg_vars_reset(__IEC_DEBUG_FLAG);
-                logger.debug("monitor var reset.");
-            } else {
-                logger.debug("monitor var not reset.plc_state=0x%x ", plc_var.info.plc_state);
-            }
-            FirmataStream->write(START_SYSEX);
-            FirmataStream->write(CB_CLEAR_V);
-            FirmataStream->write((uint8_t) 0);
-            FirmataStream->write(END_SYSEX);
-            FirmataStream->flush();
-            break;
-        case CB_SET_V:
-            if (argc > 2) {
-                for (int i = 0; i < argc; i += 2) {
-                    const u16 *byte = (u16 *) &argv[i];
-                    indexv = *byte;
-                    // logger.debug("%d %d", i, indexv);
-                    if (plc_var.info.plc_curr_app) {
-                        plc_var.info.plc_curr_app->dbg_var_register(indexv);
+            case CB_SET_FORCE:
+                for (int i = 0; i < argc;)
+                {
+                    const u16 *byte = (u16 *)&argv[i];
+                    len = argv[i + 2];
+                    index = *byte;
+                    if (plc_var.info.plc_state == (u8)PLC_STATUS::Started)
+                    {
+                        plc_var.info.plc_curr_app->dbg_set_force(index, len ? &argv[i + 3] : nullptr);
                     }
+                    i += len + 3;
                 }
                 FirmataStream->write(START_SYSEX);
-                FirmataStream->write(CB_SET_V);
+                FirmataStream->write(CB_SET_FORCE);
                 FirmataStream->write(argc);
                 FirmataStream->write(END_SYSEX);
                 FirmataStream->flush();
-            }
-            break;
-        case CB_GET_V:
-            len = 0;
-            data = (u8 *) malloc(512);
-            if (plc_var.info.plc_state == (u8) PLC_STATUS::Started) {
-                void *b = &data[4];
-                plc_var.info.plc_curr_app->dbg_data_get((u32 *) &data[0], (u32 *) &len, (void **) &b);
-                memcpy(&data[4], b, len);
-                plc_var.info.plc_curr_app->dbg_data_free();
-            }
-            sendSysex(FirmataStream, CB_GET_V, len + 4, data);
-            free(data);
-            break;
+                break;
+
+            case CB_CLEAR_V:
+                if (plc_var.info.plc_curr_app && (plc_var.info.plc_state == (u8)PLC_STATUS::Started))
+                {
+                    plc_var.info.plc_curr_app->dbg_vars_reset(__IEC_DEBUG_FLAG);
+                    logger.debug("monitor var reset.");
+                }
+                else
+                {
+                    logger.debug("monitor var not reset.plc_state=0x%x ", plc_var.info.plc_state);
+                }
+                FirmataStream->write(START_SYSEX);
+                FirmataStream->write(CB_CLEAR_V);
+                FirmataStream->write((uint8_t)0);
+                FirmataStream->write(END_SYSEX);
+                FirmataStream->flush();
+                break;
+            case CB_SET_V:
+                if (argc > 2)
+                {
+                    for (int i = 0; i < argc; i += 2)
+                    {
+                        const u16 *byte = (u16 *)&argv[i];
+                        indexv = *byte;
+                        // logger.debug("%d %d", i, indexv);
+                        if (plc_var.info.plc_curr_app)
+                        {
+                            plc_var.info.plc_curr_app->dbg_var_register(indexv);
+                        }
+                    }
+                    FirmataStream->write(START_SYSEX);
+                    FirmataStream->write(CB_SET_V);
+                    FirmataStream->write(argc);
+                    FirmataStream->write(END_SYSEX);
+                    FirmataStream->flush();
+                }
+                break;
+            case CB_GET_V:
+                len = 0;
+                data = (u8 *)malloc(512);
+                if (plc_var.info.plc_state == (u8)PLC_STATUS::Started)
+                {
+                    void *b = &data[4];
+                    plc_var.info.plc_curr_app->dbg_data_get((u32 *)&data[0], (u32 *)&len, (void **)&b);
+                    memcpy(&data[4], b, len);
+                    plc_var.info.plc_curr_app->dbg_data_free();
+                }
+                sendSysex(FirmataStream, CB_GET_V, len + 4, data);
+                free(data);
+                break;
 #endif
 #ifdef ARDUINO
         case CB_SET_SERIAL_RX:
@@ -721,20 +744,22 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
-        case FM_GET_TASK_NRS:
-            sendSysex(FirmataStream, FM_GET_TASK_NRS, 1, &(plc_var.info.plc_task_cnt));
-            break;
-        case FM_GET_TASK_NAME:
-            if (tasks[argv[0]]) {
-                sendSysex(FirmataStream, FM_GET_TASK_NAME, (byte) strlen(tasks[argv[0]]->task_name),
-                          (byte *) tasks[argv[0]]->task_name);
-            }
-            break;
-        case FM_GET_TASK_DETAIL:
-            if (argv[0] < PLC_TASK_NRS && tasks[argv[0]]) {
-                sendSysex(FirmataStream, FM_GET_TASK_DETAIL, 24, tasks[argv[0]]->mata());
-            }
-            break;
+            case FM_GET_TASK_NRS:
+                sendSysex(FirmataStream, FM_GET_TASK_NRS, 1, &(plc_var.info.plc_task_cnt));
+                break;
+            case FM_GET_TASK_NAME:
+                if (tasks[argv[0]])
+                {
+                    sendSysex(FirmataStream, FM_GET_TASK_NAME, (byte)strlen(tasks[argv[0]]->task_name),
+                              (byte *)tasks[argv[0]]->task_name);
+                }
+                break;
+            case FM_GET_TASK_DETAIL:
+                if (argv[0] < PLC_TASK_NRS && tasks[argv[0]])
+                {
+                    sendSysex(FirmataStream, FM_GET_TASK_DETAIL, 24, tasks[argv[0]]->mata());
+                }
+                break;
 #endif
         case FM_GET_PLC_STATE:
             sendSysex(FirmataStream, FM_GET_PLC_STATE, 1, (byte *) (&plc_var.info.plc_state));
@@ -754,22 +779,22 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             sendSysex(FirmataStream, CB_GET_LOG, 0, (byte *) argv);
             break;
 #ifdef USE_BOOTLOADER
-        case CB_GET_BOOT_VERSION:
+            case CB_GET_BOOT_VERSION:
 #ifdef BOOTINFO
-            boot_t *b;
-            b = (boot_t *) BOOTINFO; // platformio.ini中定义
-            if (b)
-                sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *) b);
-            else
+                boot_t *b;
+                b = (boot_t *)BOOTINFO; // platformio.ini中定义
+                if (b)
+                    sendSysex(FirmataStream, CB_GET_BOOT_VERSION, sizeof(boot_t), (byte *)b);
+                else
 #endif
-            {
-                sendSysex(FirmataStream, CB_GET_BOOT_VERSION, 0, (byte *) b);
-            }
-            break;
-        case FM_FLASH_BOOT:
-            len = board.updateBootbin();
-            sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
-            break;
+                {
+                    sendSysex(FirmataStream, CB_GET_BOOT_VERSION, 0, (byte *)b);
+                }
+                break;
+            case FM_FLASH_BOOT:
+                len = board.updateBootbin();
+                sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *)&len);
+                break;
 #endif
 
 #ifdef USE_KVDB
@@ -921,15 +946,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 soem_scan(this, FirmataStream);
                 break;
 #endif
-#if defined(RTE_APP) || defined(PLC)
-        case CB_SET_PLC_FILE:
-            app.setPLCDLL((char *) argv);
-            sendSysex(FirmataStream, CB_SET_PLC_FILE, 0, (byte *) argv);
-            break;
         case CB_CPU_USAGE:
             sendSysex(FirmataStream, CB_CPU_USAGE, 1, (byte *) &plc_var.info.cpu_usage);
             break;
-#endif
 #ifdef USE_WIFI
             case CB_WIFI_LIST:
                 sendSysex(FirmataStream, CB_WIFI_LIST, plc_var.info.wifi_size, (byte *)&plc_var.info.wifi_list);
@@ -1024,82 +1043,96 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
-        case FM_GET_LOC_SIZE:
-            if (plc_var.info.plc_curr_app) {
-                sendSysex(FirmataStream, FM_GET_LOC_SIZE, 2, (byte *) &plc_var.info.plc_curr_app->l_sz);
-            } else {
-                sendSysex(FirmataStream, FM_GET_LOC_SIZE, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
-            }
-            break;
-        case FM_GET_LOC_TAB:
-            u32 l_index;
-            if (argc == 5) {
-                l_index = *(u32 *) &argv[0];
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz) {
-                    plc_loc_tbl_t loc = plc_var.info.plc_curr_app->l_tab[l_index];
-                    len = (int) sizeof(plc_loc_dsc_t) + loc->a_size + loc->v_size;
-                    byte *buffer = (byte *) malloc(len);
-                    buffer[0] = loc->v_type;
-                    buffer[1] = loc->v_size;
-                    *(u16 *) &buffer[2] = loc->proto;
-                    *(u16 *) &buffer[4] = loc->a_size;
-                    memcpy(&buffer[6], loc->a_data, loc->a_size);
-                    memcpy(&buffer[6 + loc->a_size], loc->v_buf, loc->v_size);
-                    sendSysex(FirmataStream, FM_GET_LOC_TAB, len, (byte *) buffer);
-                    free(buffer);
-                    break;
+            case FM_GET_LOC_SIZE:
+                if (plc_var.info.plc_curr_app)
+                {
+                    sendSysex(FirmataStream, FM_GET_LOC_SIZE, 2, (byte *)&plc_var.info.plc_curr_app->l_sz);
                 }
-            }
-            sendSysex(FirmataStream, FM_GET_LOC_TAB, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
-            break;
-        case FM_SET_LOC_TAB:
-            if (argc == 5) {
-                l_index = *(u32 *) &argv[0];
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz) {
-                    sendSysex(FirmataStream, FM_SET_LOC_TAB, sizeof(plc_loc_tbl_t),
-                              (byte *) &plc_var.info.plc_curr_app->l_tab[l_index]);
-                    break;
+                else
+                {
+                    sendSysex(FirmataStream, FM_GET_LOC_SIZE, 0, (byte *)&plc_var.info.plc_curr_app->l_sz);
                 }
-            }
-            sendSysex(FirmataStream, FM_SET_LOC_TAB, 0, (byte *) &plc_var.info.plc_curr_app->l_sz);
-            break;
+                break;
+            case FM_GET_LOC_TAB:
+                u32 l_index;
+                if (argc == 5)
+                {
+                    l_index = *(u32 *)&argv[0];
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz)
+                    {
+                        plc_loc_tbl_t loc = plc_var.info.plc_curr_app->l_tab[l_index];
+                        len = (int)sizeof(plc_loc_dsc_t) + loc->a_size + loc->v_size;
+                        byte *buffer = (byte *)malloc(len);
+                        buffer[0] = loc->v_type;
+                        buffer[1] = loc->v_size;
+                        *(u16 *)&buffer[2] = loc->proto;
+                        *(u16 *)&buffer[4] = loc->a_size;
+                        memcpy(&buffer[6], loc->a_data, loc->a_size);
+                        memcpy(&buffer[6 + loc->a_size], loc->v_buf, loc->v_size);
+                        sendSysex(FirmataStream, FM_GET_LOC_TAB, len, (byte *)buffer);
+                        free(buffer);
+                        break;
+                    }
+                }
+                sendSysex(FirmataStream, FM_GET_LOC_TAB, 0, (byte *)&plc_var.info.plc_curr_app->l_sz);
+                break;
+            case FM_SET_LOC_TAB:
+                if (argc == 5)
+                {
+                    l_index = *(u32 *)&argv[0];
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->l_sz)
+                    {
+                        sendSysex(FirmataStream, FM_SET_LOC_TAB, sizeof(plc_loc_tbl_t),
+                                  (byte *)&plc_var.info.plc_curr_app->l_tab[l_index]);
+                        break;
+                    }
+                }
+                sendSysex(FirmataStream, FM_SET_LOC_TAB, 0, (byte *)&plc_var.info.plc_curr_app->l_sz);
+                break;
 #endif
 #ifdef ONLINE_DEBUG
-        case FM_GET_DBG_SIZE:
-            if (plc_var.info.plc_curr_app) {
-                sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
-                          (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
-            } else {
-                sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
-            }
-            break;
-        case FM_GET_DBG:
-            len = 0;
-            if (argc == 5) {
-                l_index = *(u32 *) &argv[0];
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
-                    len = (int) fill_dbg((int) l_index, argv);
+            case FM_GET_DBG_SIZE:
+                if (plc_var.info.plc_curr_app)
+                {
+                    sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
+                              (byte *)&plc_var.info.plc_curr_app->data->size_dbgvardsc);
                 }
-            }
-            sendSysex(FirmataStream, FM_GET_DBG, len, argv);
-            break;
-        case FM_SET_DBG:
-            len = 0;
-            if (argc > 5) {
-                l_index = *(u32 *) argv;
-                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
-                    set_dbg(l_index, &argv[4], argc - 4);
-                    len = (int) fill_dbg((int) l_index, argv);
+                else
+                {
+                    sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
                 }
-            }
-            sendSysex(FirmataStream, FM_GET_DBG, len, argv);
-            break;
+                break;
+            case FM_GET_DBG:
+                len = 0;
+                if (argc == 5)
+                {
+                    l_index = *(u32 *)&argv[0];
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc)
+                    {
+                        len = (int)fill_dbg((int)l_index, argv);
+                    }
+                }
+                sendSysex(FirmataStream, FM_GET_DBG, len, argv);
+                break;
+            case FM_SET_DBG:
+                len = 0;
+                if (argc > 5)
+                {
+                    l_index = *(u32 *)argv;
+                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc)
+                    {
+                        set_dbg(l_index, &argv[4], argc - 4);
+                        len = (int)fill_dbg((int)l_index, argv);
+                    }
+                }
+                sendSysex(FirmataStream, FM_GET_DBG, len, argv);
+                break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
-        case FM_LOG_SET_LEVEL:
-            plc_var.config.log_level = argv[0];
-            sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 1, &plc_var.config.log_level);
-            break;
+            case FM_LOG_SET_LEVEL:
+                plc_var.config.log_level = argv[0];
+                sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 1, &plc_var.config.log_level);
+                break;
 #endif
 #ifdef ARDUINO_ARCH_STM32
         case FM_GET_CPU_SN:
@@ -1111,147 +1144,164 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
-        case FM_READ_MEM:
-            indexv = 0;
-            len = 0;
-            if (argc == 6) {
-                indexv = *(u32 *) argv;
-                len = *(u16 *) &argv[4];
-            }
-            sendSysex(FirmataStream, FM_READ_MEM, len, (byte *) indexv);
-            break;
-        case FM_WRITE_MEM:
-            if (argc > 6) {
-                indexv = *(u32 *) argv;
-                len = *(u16 *) &argv[4];
-                for (int i = 0; i < len; ++i) {
-                    *((uint8_t *) indexv + i) = argv[6 + i];
+            case FM_READ_MEM:
+                indexv = 0;
+                len = 0;
+                if (argc == 6)
+                {
+                    indexv = *(u32 *)argv;
+                    len = *(u16 *)&argv[4];
                 }
-                sendSysex(FirmataStream, FM_WRITE_MEM, len, (byte *) indexv);
-            }
-            break;
-        case FM_READ_VALUE:
-            u8 region, typ;
-            indexv = 0;
-            len = 0;
-            if (argc == 8 && argv[0] <= REGION_HOLDER) {
-                region = argv[0];
-                indexv = *(u32 *) &argv[1];
-                typ = argv[5];
-                len = *(u16 *) &argv[6];
-                byte *buffer;
-                buffer = (byte *) malloc(len * 4 + 10);
-                memset(buffer, 0, len * 4 + 10);
-                buffer[0] = region;
-                buffer[1] = typ;
-                *(u32 *) &buffer[2] = indexv;
-                const char *p;
-                switch (region) {
+                sendSysex(FirmataStream, FM_READ_MEM, len, (byte *)indexv);
+                break;
+            case FM_WRITE_MEM:
+                if (argc > 6)
+                {
+                    indexv = *(u32 *)argv;
+                    len = *(u16 *)&argv[4];
+                    for (int i = 0; i < len; ++i)
+                    {
+                        *((uint8_t *)indexv + i) = argv[6 + i];
+                    }
+                    sendSysex(FirmataStream, FM_WRITE_MEM, len, (byte *)indexv);
+                }
+                break;
+            case FM_READ_VALUE:
+                u8 region, typ;
+                indexv = 0;
+                len = 0;
+                if (argc == 8 && argv[0] <= REGION_HOLDER)
+                {
+                    region = argv[0];
+                    indexv = *(u32 *)&argv[1];
+                    typ = argv[5];
+                    len = *(u16 *)&argv[6];
+                    byte *buffer;
+                    buffer = (byte *)malloc(len * 4 + 10);
+                    memset(buffer, 0, len * 4 + 10);
+                    buffer[0] = region;
+                    buffer[1] = typ;
+                    *(u32 *)&buffer[2] = indexv;
+                    const char *p;
+                    switch (region)
+                    {
                     default:
-                        p = (const char *) &plc_var.digitalValue;
+                        p = (const char *)&plc_var.digitalValue;
                         break;
                     case REGION_XI:      // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        p = (const char *) &plc_var.digitalValue;
+                        p = (const char *)&plc_var.digitalValue;
                         len = (len + 7) / 8;
                         break;
                     case REGION_16: // analogValue
-                        p = (const char *) &plc_var.analogValue;
+                        p = (const char *)&plc_var.analogValue;
                         break;
                     case REGION_32: // analogValue32
-                        p = (const char *) &plc_var.analogValue32;
+                        p = (const char *)&plc_var.analogValue32;
                         break;
                     case REGION_HOLDER: // holdValue
-                        p = (const char *) &plc_var.holdValue;
+                        p = (const char *)&plc_var.holdValue;
                         break;
                     case REGION_INFO:
-                        p = (const char *) &plc_var.info;
+                        p = (const char *)&plc_var.info;
                         break;
                     case REGION_CONFIG:
-                        p = (const char *) &plc_var.config;
+                        p = (const char *)&plc_var.config;
                         break;
+                    }
+                    memcpy(&buffer[6], &p[indexv], len);
+                    sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *)buffer);
+                    free(buffer);
                 }
-                memcpy(&buffer[6], &p[indexv], len);
-                sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) buffer);
-                free(buffer);
-            } else
-                sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
-            break;
-        case FM_WRITE_VALUE:
-            if (argc > 7) {
-                region = argv[0];
-                indexv = *(u32 *) &argv[1];
-                len = *(u16 *) &argv[5];
-                char *p;
-                switch (region) {
+                else
+                    sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *)&plc_var) + indexv);
+                break;
+            case FM_WRITE_VALUE:
+                if (argc > 7)
+                {
+                    region = argv[0];
+                    indexv = *(u32 *)&argv[1];
+                    len = *(u16 *)&argv[5];
+                    char *p;
+                    switch (region)
+                    {
                     default:
-                        p = ((char *) &plc_var.digitalValue);
+                        p = ((char *)&plc_var.digitalValue);
                         break;
                     case REGION_XI:      // byte from 0
                     case REGION_DIGITAL: // digitalValue
                         u8 v;
-                        v = ((char *) &plc_var.digitalValue)[indexv / 8];
-                        if (argv[7] == 1) {
+                        v = ((char *)&plc_var.digitalValue)[indexv / 8];
+                        if (argv[7] == 1)
+                        {
                             argv[7] = v | (1 << (indexv % 8));
-                        } else {
+                        }
+                        else
+                        {
                             argv[7] = v & ~(1 << (indexv % 8));
                         }
                         indexv = indexv / 8;
                         len = (len + 7) / 8;
-                        p = ((char *) &plc_var.digitalValue);
+                        p = ((char *)&plc_var.digitalValue);
                         break;
                     case REGION_16: // analogValue
-                        p = (char *) &plc_var.analogValue;
+                        p = (char *)&plc_var.analogValue;
                         break;
                     case REGION_32: // analogValue32
-                        p = (char *) &plc_var.analogValue32;
+                        p = (char *)&plc_var.analogValue32;
                         break;
                     case REGION_HOLDER: // holdValue
-                        p = (char *) &plc_var.holdValue;
+                        p = (char *)&plc_var.holdValue;
                         break;
                     case REGION_INFO:
-                        p = (char *) &plc_var.info;
+                        p = (char *)&plc_var.info;
                         break;
                     case REGION_CONFIG:
-                        p = (char *) &plc_var.config;
+                        p = (char *)&plc_var.config;
                         break;
-                }
-                memcpy(p + indexv, &argv[7], len);
-                sendSysex(FirmataStream, FM_WRITE_VALUE_REP, 7, (byte *) argv);
-            }
-            break;
-        case FM_READ_BIT:
-            indexv = 0;
-            len = 0;
-            if (argc == 6) {
-                indexv = *(u32 *) argv;
-                len = *(u16 *) &argv[4];
-            }
-            if (len > 0) {
-                byte *buffer = (byte *) malloc(len / 8 + 6);
-                *(u32 *) argv = indexv;
-                buffer[4] = len;
-                for (int i = 0; i < len; i++) {
-                    u8 b = plcVar.digitalValue(indexv + i);
-                    buffer[i / 8 + 5] |= b << (i % 8);
-                }
-                sendSysex(FirmataStream, FM_READ_BIT_REP, len / 8 + 6, (byte *) buffer);
-                free(buffer);
-            }
-            break;
-        case FM_WRITE_BIT:
-            if (argc > 6) {
-                indexv = *(u32 *) argv;
-                len = *(u16 *) &argv[4];
-                if (len < (argc - 6)) {
-                    for (int i = 0; i < len; i++) {
-                        *(((uint8_t *) &plc_var) + indexv + i) = argv[6 + i];
                     }
+                    memcpy(p + indexv, &argv[7], len);
+                    sendSysex(FirmataStream, FM_WRITE_VALUE_REP, 7, (byte *)argv);
                 }
-                sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len,
-                          (byte *) ((uint8_t *) &plc_var) + indexv);
-            }
-            break;
+                break;
+            case FM_READ_BIT:
+                indexv = 0;
+                len = 0;
+                if (argc == 6)
+                {
+                    indexv = *(u32 *)argv;
+                    len = *(u16 *)&argv[4];
+                }
+                if (len > 0)
+                {
+                    byte *buffer = (byte *)malloc(len / 8 + 6);
+                    *(u32 *)argv = indexv;
+                    buffer[4] = len;
+                    for (int i = 0; i < len; i++)
+                    {
+                        u8 b = plcVar.digitalValue(indexv + i);
+                        buffer[i / 8 + 5] |= b << (i % 8);
+                    }
+                    sendSysex(FirmataStream, FM_READ_BIT_REP, len / 8 + 6, (byte *)buffer);
+                    free(buffer);
+                }
+                break;
+            case FM_WRITE_BIT:
+                if (argc > 6)
+                {
+                    indexv = *(u32 *)argv;
+                    len = *(u16 *)&argv[4];
+                    if (len < (argc - 6))
+                    {
+                        for (int i = 0; i < len; i++)
+                        {
+                            *(((uint8_t *)&plc_var) + indexv + i) = argv[6 + i];
+                        }
+                    }
+                    sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len,
+                              (byte *)((uint8_t *)&plc_var) + indexv);
+                }
+                break;
 #endif
         case FM_READ_VALUE_REP:
             if (argc > 0) {
@@ -1274,23 +1324,25 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             break;
 #ifdef RTE_APP
-        case FM_GET_LOCATION:
-            len = 0;
-            byte *buf_fgl;
-            buf_fgl = (byte *) malloc(32);
-            if (argc >= 4) {
-                len = board.get_input(argv[1], argv[2], argv[3], 0, buf_fgl);
-            }
-            sendSysex(FirmataStream, FM_GET_LOCATION, len, (byte *) buf_fgl);
-            free(buf_fgl);
-            break;
-        case FM_SET_LOCATION:
-            len = -1;
-            if (argc >= 6) {
-                len = board.set_output(argv[1], argv[2], argv[3], 0, &argv[5], argv[4]);
-            }
-            sendSysex(FirmataStream, FM_SET_LOCATION, 4, (byte *) &len);
-            break;
+            case FM_GET_LOCATION:
+                len = 0;
+                byte *buf_fgl;
+                buf_fgl = (byte *)malloc(32);
+                if (argc >= 4)
+                {
+                    len = board.get_input(argv[1], argv[2], argv[3], 0, buf_fgl);
+                }
+                sendSysex(FirmataStream, FM_GET_LOCATION, len, (byte *)buf_fgl);
+                free(buf_fgl);
+                break;
+            case FM_SET_LOCATION:
+                len = -1;
+                if (argc >= 6)
+                {
+                    len = board.set_output(argv[1], argv[2], argv[3], 0, &argv[5], argv[4]);
+                }
+                sendSysex(FirmataStream, FM_SET_LOCATION, 4, (byte *)&len);
+                break;
 #endif
 
         case CB_RESET:
@@ -1301,8 +1353,10 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifndef THIS_IS_BOOTLOADER
 #ifdef ARDUINO
         case CB_GOTO_IAP:
-            sendSysex(FirmataStream, CB_GOTO_IAP, 0, nullptr);
+            len = 0;
+            board.bpr_write(BOOTLOADER_REQUEST_BACKUP_REGISTER, EXEC_IAP);
             rte.set_state(BOOT_WAIT_IAP);
+            sendSysex(FirmataStream, CB_GOTO_IAP, 4, (byte *) &len);
             break;
 #endif case FM_IOT_LOGIN:
             switch (argv[0]) {
@@ -1358,19 +1412,25 @@ void digitalWriteCallback(mFirmata *fm, nStream *FirmataStream, byte port, int v
 #if defined(RTE_APP) || defined(PLC)
     byte lastPin, pinValue, mask = 1, pinWriteMask = 0;
 
-    if (port < IO_XI_NRS + IO_YO_NRS) {
+    if (port < IO_XI_NRS + IO_YO_NRS)
+    {
         // create a mask of the pins on this port that are writable.
         lastPin = port * 8 + 8;
         if (lastPin > IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS)
             lastPin = IO_YO_NRS + IO_XI_NRS + IO_XA_NRS + IO_YA_NRS;
 #ifdef ARDUINO
-        for (byte pin = port * 8; pin < lastPin; pin++) {
+        for (byte pin = port * 8; pin < lastPin; pin++)
+        {
             // do not disturb non-digital pins (eg, Rx & Tx)
-            if (IS_PIN_DIGITAL(pin) && (getPinMode(pin) == OUTPUT || getPinMode(pin) == INPUT)) {
-                pinValue = ((byte) value & mask) ? 1 : 0;
-                if (getPinMode(pin) == OUTPUT) {
+            if (IS_PIN_DIGITAL(pin) && (getPinMode(pin) == OUTPUT || getPinMode(pin) == INPUT))
+            {
+                pinValue = ((byte)value & mask) ? 1 : 0;
+                if (getPinMode(pin) == OUTPUT)
+                {
                     pinWriteMask |= mask;
-                } else if (getPinMode(pin) == INPUT && pinValue == 1 && getPinState(pin) != 1) {
+                }
+                else if (getPinMode(pin) == INPUT && pinValue == 1 && getPinState(pin) != 1)
+                {
                     // only handle INPUT here for backwards compatibility
 #if ARDUINO > 100
                     // pinMode(pin, INPUT_PULLUP);
@@ -1381,9 +1441,9 @@ void digitalWriteCallback(mFirmata *fm, nStream *FirmataStream, byte port, int v
                 }
                 board.setPinState(fm, FirmataStream, pin, pinValue);
             }
-            mask = (byte) (mask << 1);
+            mask = (byte)(mask << 1);
         }
-        writePort(port, (byte) value, pinWriteMask);
+        writePort(port, (byte)value, pinWriteMask);
 #endif
     }
 #endif
@@ -1672,16 +1732,20 @@ void mFirmata::sendDigitalPort(nStream *FirmataStream, uint8_t portNumber, uint1
 void mFirmata::parse(nStream *stream, uint8_t inputData) {
     uint8_t command;
 #ifdef FORWARD_NRS
-    if (stream->flag & FLAG_FORWARD) {
+    if (stream->flag & FLAG_FORWARD)
+    {
         stream->forward(inputData);
-        if (inputData == END_SYSEX || rtos::ticks() > stream->tick_forward) {
+        if (inputData == END_SYSEX || rtos::ticks() > stream->tick_forward)
+        {
             stream->closeForward();
         }
         return;
     }
-    if (forward > 0) {
+    if (forward > 0)
+    {
         board.forwardMessage(forward, inputData);
-        if (inputData == END_SYSEX + forward) {
+        if (inputData == END_SYSEX + forward)
+        {
             forward = 0;
         }
         return;
@@ -1822,7 +1886,8 @@ void mFirmata::parse(nStream *stream, uint8_t inputData) {
                 stream->flag |= FLAG_SYSEX;
             default:
 #ifdef FORWARD_NRS
-                if (command > START_SYSEX && command < START_SYSEX + FORWARD_NRS) {
+                if (command > START_SYSEX && command < START_SYSEX + FORWARD_NRS)
+                {
                     forward = command - START_SYSEX;
                     board.forwardMessage(forward, 0xf0);
                 }
