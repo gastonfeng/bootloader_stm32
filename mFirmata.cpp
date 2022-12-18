@@ -515,35 +515,37 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_GET_RTE_VERSION:
             sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver_t), (uint8_t *) &plc_var.config.rte_ver);
             break;
-        case CB_PLC_START:
-            rte.app_start();
-            len = 0;
-            sendSysex(FirmataStream, CB_PLC_START, 4, (byte *) &len);
-            break;
-        case CB_PLC_STOP:
-            rte.app_stop();
-            len = 0;
-            sendSysex(FirmataStream, CB_PLC_STOP, 4, (byte *) &len);
-            break;
-        case REPORT_PLC_MD5:
-            if (plc_var.info.plc_curr_app)
-                sendSysex(FirmataStream, REPORT_PLC_MD5, 32, (byte *) plc_var.info.plc_curr_app->id);
-            else
-                sendSysex(FirmataStream, REPORT_PLC_MD5, 0, (byte *) "");
-            break;
-        case CB_PLC_LOAD:
-            len = 0;
-            sendSysex(FirmataStream, CB_PLC_LOAD, 4, (byte *) &len);
-            rte.app_stop();
-            app.unload();
-            rte.load_app();
-            break;
-        case CB_PLC_REPAIR:
-            rte.app_stop();
-            app.unload();
-            len = 0;
-            sendSysex(FirmataStream, CB_PLC_REPAIR, 4, (byte *) &len);
-            break;
+#if defined(RTE_APP) || defined(PLC)
+            case CB_PLC_START:
+                rte.app_start();
+                len = 0;
+                sendSysex(FirmataStream, CB_PLC_START, 4, (byte *) &len);
+                break;
+            case CB_PLC_STOP:
+                rte.app_stop();
+                len = 0;
+                sendSysex(FirmataStream, CB_PLC_STOP, 4, (byte *) &len);
+                break;
+            case REPORT_PLC_MD5:
+                if (plc_var.info.plc_curr_app)
+                    sendSysex(FirmataStream, REPORT_PLC_MD5, 32, (byte *) plc_var.info.plc_curr_app->id);
+                else
+                    sendSysex(FirmataStream, REPORT_PLC_MD5, 0, (byte *) "");
+                break;
+            case CB_PLC_LOAD:
+                len = 0;
+                sendSysex(FirmataStream, CB_PLC_LOAD, 4, (byte *) &len);
+                rte.app_stop();
+                app.unload();
+                rte.load_app();
+                break;
+            case CB_PLC_REPAIR:
+                rte.app_stop();
+                app.unload();
+                len = 0;
+                sendSysex(FirmataStream, CB_PLC_REPAIR, 4, (byte *) &len);
+                break;
+#endif
         case FM_FLASH_CLEAR:
             len = 0;
             sendSysex(FirmataStream, FM_FLASH_CLEAR, 4, (byte *) &len);
@@ -854,74 +856,74 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #ifdef USE_TSDB
-            case CB_SET_TSL_RANGE:
-                tsl_query q;
-                key_len = strlen((const char *) argv);
-                if (argc == key_len + 13) {
-                    start = *(u32 *) &argv[key_len + 1];
-                    end = *(u32 *) &argv[key_len + 1 + 4];
-                    state = (int) *(u32 *) &argv[key_len + 1 + 8];
-                    memset(&q, 0, sizeof(q));
-                    tsdb.query((const char *) argv, start, end, (fdb_tsl_status) (state), &q);
-                }
-                sendSysex(FirmataStream, CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *) &q);
-                break;
-            case CB_SET_TSL_STATUS:
-                key_len = strlen((const char *) argv);
-                len = -1;
-                if (argc == key_len + 13) {
-                    start = *(u32 *) &argv[key_len + 1];
-                    end = *(u32 *) &argv[key_len + 1 + 4];
-                    state = (int) *(u32 *) &argv[key_len + 1 + 8];
-                    len = tsdb.set_status((const char *) argv, start, end, (fdb_tsl_status) (state));
-                }
-                sendSysex(FirmataStream, CB_SET_TSL_STATUS, 4, (byte *) &len);
-                break;
-            case CB_GET_TSL:
-                char *tbuf;
-                int tlen;
-                tbuf = (char *) malloc(256);
-                memset(tbuf, 0, 256);
-                tlen = tsdb.query_read((const char *) argv, (u32 *) &tbuf[0], (fdb_time_t *) &tbuf[4],
-                                       (int *) (tbuf + 8),
-                                       tbuf + 12, 256 - 12);
+        case CB_SET_TSL_RANGE:
+            tsl_query q;
+            key_len = strlen((const char *) argv);
+            if (argc == key_len + 13) {
+                start = *(u32 *) &argv[key_len + 1];
+                end = *(u32 *) &argv[key_len + 1 + 4];
+                state = (int) *(u32 *) &argv[key_len + 1 + 8];
+                memset(&q, 0, sizeof(q));
+                tsdb.query((const char *) argv, start, end, (fdb_tsl_status) (state), &q);
+            }
+            sendSysex(FirmataStream, CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *) &q);
+            break;
+        case CB_SET_TSL_STATUS:
+            key_len = strlen((const char *) argv);
+            len = -1;
+            if (argc == key_len + 13) {
+                start = *(u32 *) &argv[key_len + 1];
+                end = *(u32 *) &argv[key_len + 1 + 4];
+                state = (int) *(u32 *) &argv[key_len + 1 + 8];
+                len = tsdb.set_status((const char *) argv, start, end, (fdb_tsl_status) (state));
+            }
+            sendSysex(FirmataStream, CB_SET_TSL_STATUS, 4, (byte *) &len);
+            break;
+        case CB_GET_TSL:
+            char *tbuf;
+            int tlen;
+            tbuf = (char *) malloc(256);
+            memset(tbuf, 0, 256);
+            tlen = tsdb.query_read((const char *) argv, (u32 *) &tbuf[0], (fdb_time_t *) &tbuf[4],
+                                   (int *) (tbuf + 8),
+                                   tbuf + 12, 256 - 12);
+            if (tlen < 0)
+                tlen = 0;
+            else {
+                *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
+                tlen += 4;
+            }
+            sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen, (byte *) tbuf);
+            free(tbuf);
+            break;
+        case CB_GET_TSL_BY_ID:
+            key_len = strlen((const char *) argv);
+            tbuf = (char *) malloc(256);
+            memset(tbuf, 0, 256);
+            tlen = 4;
+            *(int *) tbuf = -1;
+            if (argc == key_len + 5) {
+                tlen = tsdb.query_read_by_id((const char *) argv, *(u32 *) &argv[key_len + 1], (u32 *) &tbuf[0],
+                                             (fdb_time_t *) &tbuf[4],
+                                             (int *) (tbuf + 8),
+                                             tbuf + 12, 256 - 12);
                 if (tlen < 0)
                     tlen = 0;
                 else {
                     *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
                     tlen += 4;
                 }
-                sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen, (byte *) tbuf);
-                free(tbuf);
-                break;
-            case CB_GET_TSL_BY_ID:
-                key_len = strlen((const char *) argv);
-                tbuf = (char *) malloc(256);
-                memset(tbuf, 0, 256);
-                tlen = 4;
-                *(int *) tbuf = -1;
-                if (argc == key_len + 5) {
-                    tlen = tsdb.query_read_by_id((const char *) argv, *(u32 *) &argv[key_len + 1], (u32 *) &tbuf[0],
-                                                 (fdb_time_t *) &tbuf[4],
-                                                 (int *) (tbuf + 8),
-                                                 tbuf + 12, 256 - 12);
-                    if (tlen < 0)
-                        tlen = 0;
-                    else {
-                        *(u32 *) &tbuf[tlen] = GenerateCRC32Sum((const u8 *) tbuf, tlen, 0);
-                        tlen += 4;
-                    }
-                }
-                sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte) tlen, (byte *) tbuf);
-                free(tbuf);
-                break;
-            case CB_TSL_CLEAR:
-                key_len = strlen((const char *) argv);
-                // index = *(int *) &argv[key_len + 1];
+            }
+            sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte) tlen, (byte *) tbuf);
+            free(tbuf);
+            break;
+        case CB_TSL_CLEAR:
+            key_len = strlen((const char *) argv);
+            // index = *(int *) &argv[key_len + 1];
 
-                sendSysex(FirmataStream, CB_TSL_CLEAR, (byte) sizeof(state), (byte *) &state);
-                state = TSL::clear((const char *) (argv));
-                break;
+            sendSysex(FirmataStream, CB_TSL_CLEAR, (byte) sizeof(state), (byte *) &state);
+            state = TSL::clear((const char *) (argv));
+            break;
 #endif
 #ifdef USE_SOEM
             case FM_SOEM_SCAN:
@@ -944,85 +946,62 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
 #ifdef USE_MEMBLOCK
-            case FM_PUT_DATA_BLOCK:
-                u32 crc, crc_r;
-                if (argc < 12)
-                    break;
-                crc = GenerateCRC32Sum((const u8 *)argv, argc - 4, 0);
-                crc_r = *(u32 *)(&argv[argc - 4]);
-                if (crc_r != crc)
-                {
-                    state = CRC_ERROR;
-                    logger.error("crc error block %d 0x%x 0x%x argc=%d len=%d", *(int *)&argv[0], crc, crc_r, argc,
-                                 argc);
-                }
-                else
-                {
-                    rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
-                    int block = *(int *)&argv[0];
-                    if (block == 0)
-                    {
-                        if (dev)
-                        {
-                            state = DEV_IS_OPEN;
-                        }
-                        else
-                        {
-                            u32 object = *(u32 *)&argv[4];
-                            u32 data_address = *(u32 *)&argv[8];
-                            u32 data_len = *(u32 *)&argv[12];
-
-                            dev = mem_block::mems[object];
-                            if (!dev)
-                            {
-                                state = NO_DEVICE;
-                            }
-                            else
-                            {
-                                state = dev->begin(&argv[16], argc - 16, data_address, data_len);
-                                if (state > 0 && state > dataBufferSize * 7 / 8 - 4)
-                                {
-                                    state = (int)(dataBufferSize * 7 / 8 - 4);
-                                }
-                                logger.info("recv %s ,size= %d", &argv[12], *(u32 *)&argv[8]);
-                            }
-                        }
-                    }
-                    else if (block == -1)
-                    {
-                        if (dev)
-                        {
-                            if (dev->Shutdown() < 0)
-                            {
-                                state = DEVICE_SHUTDOWN_ERR;
-                            }
-                            else
-                            {
-                                state = 1;
-                                rte.set_state(PLC_STATUS::APP_FLASH_END);
-                                logger.info("recv end.");
-                                dev = nullptr;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (dev)
-                        {
-                            if (dev->Write(&argv[4], argc - 8) < 0)
-                            {
-                                state = DEVICE_WRITE_ERR;
-                            }
-                            else
-                            {
-                                state = block;
-                            }
-                            logger.info("recv %d ,size= %d", block, argc - 8);
-                        }
-                    }
-                }
-                sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *)&state);
+        case FM_PUT_DATA_BLOCK:
+            u32 crc, crc_r;
+            if (argc < 12)
                 break;
+            crc = GenerateCRC32Sum((const u8 *) argv, argc - 4, 0);
+            crc_r = *(u32 *) (&argv[argc - 4]);
+            if (crc_r != crc) {
+                state = CRC_ERROR;
+                logger.error("crc error block %d 0x%x 0x%x argc=%d len=%d", *(int *) &argv[0], crc, crc_r, argc,
+                             argc);
+            } else {
+                rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
+                int block = *(int *) &argv[0];
+                if (block == 0) {
+                    if (dev) {
+                        state = DEV_IS_OPEN;
+                    } else {
+                        u32 object = *(u32 *) &argv[4];
+                        u32 data_address = *(u32 *) &argv[8];
+                        u32 data_len = *(u32 *) &argv[12];
+
+                        dev = mem_block::mems[object];
+                        if (!dev) {
+                            state = NO_DEVICE;
+                        } else {
+                            state = dev->begin(&argv[16], argc - 16, data_address, data_len);
+                            if (state > 0 && state > dataBufferSize * 7 / 8 - 4) {
+                                state = (int) (dataBufferSize * 7 / 8 - 4);
+                            }
+                            logger.info("recv %s ,size= %d", &argv[12], *(u32 *) &argv[8]);
+                        }
+                    }
+                } else if (block == -1) {
+                    if (dev) {
+                        if (dev->Shutdown() < 0) {
+                            state = DEVICE_SHUTDOWN_ERR;
+                        } else {
+                            state = 1;
+                            rte.set_state(PLC_STATUS::APP_FLASH_END);
+                            logger.info("recv end.");
+                            dev = nullptr;
+                        }
+                    }
+                } else {
+                    if (dev) {
+                        if (dev->Write(&argv[4], argc - 8) < 0) {
+                            state = DEVICE_WRITE_ERR;
+                        } else {
+                            state = block;
+                        }
+                        logger.info("recv %d ,size= %d", block, argc - 8);
+                    }
+                }
+            }
+            sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *) &state);
+            break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
             case FM_GET_LOC_SIZE:
@@ -1930,11 +1909,11 @@ bool mFirmata::bufferDataAtPosition(nStream *stream, const uint8_t data, const s
 }
 
 void mFirmata::currentReportFirmwareCallback(nStream *FirmataStream) {
-    byte *buffer = (byte *) malloc(sizeof(firmwareVersionString) + 3);
+    byte *buffer = (byte *) malloc(sizeof(HWMODEL) + 3);
     buffer[0] = FIRMWARE_MAJOR_VERSION;
     buffer[1] = FIRMWARE_MINOR_VERSION;
-    memcpy(buffer + 2, firmwareVersionString, sizeof(firmwareVersionString));
-    sendSysex(FirmataStream, REPORT_FIRMWARE, sizeof(firmwareVersionString) + 2, buffer);
+    memcpy(buffer + 2, HWMODEL, sizeof(HWMODEL));
+    sendSysex(FirmataStream, REPORT_FIRMWARE, sizeof(HWMODEL) + 2, buffer);
     free(buffer);
 }
 
