@@ -920,7 +920,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_TSL_CLEAR:
             key_len = strlen((const char *) argv);
             // index = *(int *) &argv[key_len + 1];
-
+            state = 0;
             sendSysex(FirmataStream, CB_TSL_CLEAR, (byte) sizeof(state), (byte *) &state);
             state = TSL::clear((const char *) (argv));
             break;
@@ -1104,7 +1104,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             sendSysex(FirmataStream, FM_GET_CPU_SN, 12, (byte *) sn);
             break;
 #endif
-#if defined(RTE_APP) || defined(PLC)
             case FM_READ_MEM:
                 indexv = 0;
                 len = 0;
@@ -1263,7 +1262,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                               (byte *)((uint8_t *)&plc_var) + indexv);
                 }
                 break;
-#endif
         case FM_READ_VALUE_REP:
             if (argc > 0) {
                 memcpy(valueBuf, argv, argc);
