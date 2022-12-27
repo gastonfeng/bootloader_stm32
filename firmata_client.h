@@ -10,13 +10,11 @@ using u8 = unsigned char;
 class firmata_client : public mFirmata {
 
 public:
-    int begin(nStream *s) {
-        stream = s;
-#ifdef USE_FREERTOS
-        rtos::create_thread_run("fc", 512, PriorityNormal, (void *) thd_loop, s);
-#endif
-        return 0;
-    }
+    firmata_client() = default;
+
+    ~firmata_client() = default;
+
+    int begin(nStream *s);
 
     static int get_var_bool(int index, u8 len);
 
@@ -37,7 +35,7 @@ public:
 
     static int get_plc_var(int index);
 
-    static int set_plc_var(int index, byte *value, int);
+    static int set_plc_var(int index, byte *value, int v);
 };
 
 extern firmata_client fm_client;

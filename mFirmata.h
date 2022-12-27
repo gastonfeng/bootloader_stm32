@@ -232,8 +232,6 @@ private:
     uint32_t traversed_len{};
 #endif
 
-    int setValue(nStream *FirmataStream, int index, void *valBuf, u8 size);
-
     int get_flag(u16 cmd);
 
     int clr_flag(u16 cmd);
@@ -241,8 +239,6 @@ private:
     int set_flag(u16 cmd);
 
     u8 respose[FM_LAST / 8 + 1]{};
-
-    int getValue(nStream *pStream, int index, u8 *value_buf, u16 len);
 
     int getBit(nStream *pStream, int index, u8 *value_buf, u16 len);
 
@@ -307,6 +303,10 @@ private:
     void analogWriteCallback(Stream *, byte i, int val);
 
     bool crc_en;
+protected:
+    int getValue(nStream *pStream, int index, u8 *value_buf, u16 len);
+
+    int setValue(nStream *FirmataStream, int index, void *valBuf, u8 size);
 };
 
 #endif
