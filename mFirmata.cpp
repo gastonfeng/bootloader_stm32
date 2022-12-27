@@ -1312,7 +1312,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifndef THIS_IS_BOOTLOADER
 #ifdef ARDUINO
         case CB_GOTO_IAP:
-            len = 0;
+            len = 1;
             board.bpr_write(BOOTLOADER_REQUEST_BACKUP_REGISTER, EXEC_IAP);
             rte.set_state(BOOT_WAIT_IAP);
             sendSysex(FirmataStream, CB_GOTO_IAP, 4, (byte *) &len);
