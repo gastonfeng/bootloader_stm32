@@ -53,6 +53,18 @@ public:
 
     const char *name() final { return "socketFirmata"; }
 
+    const u32 type() final { return MODULE_TYPE_SKFM; }
+
+    const int data_len() override { return sizeof(data); }
+
+    int read_data(u8 *data) override {
+        memcpy(data, &this->data, sizeof(data));
+        return sizeof(data);
+    }
+
+    struct {
+    } data;
+
     int begin(u32 tick) override;
 
     int run(u32 tick) override;
