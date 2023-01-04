@@ -1104,164 +1104,147 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             sendSysex(FirmataStream, FM_GET_CPU_SN, 12, (byte *) sn);
             break;
 #endif
-            case FM_READ_MEM:
-                indexv = 0;
-                len = 0;
-                if (argc == 6)
-                {
-                    indexv = *(u32 *)argv;
-                    len = *(u16 *)&argv[4];
+        case FM_READ_MEM:
+            indexv = 0;
+            len = 0;
+            if (argc == 6) {
+                indexv = *(u32 *) argv;
+                len = *(u16 *) &argv[4];
+            }
+            sendSysex(FirmataStream, FM_READ_MEM, len, (byte *) indexv);
+            break;
+        case FM_WRITE_MEM:
+            if (argc > 6) {
+                indexv = *(u32 *) argv;
+                len = *(u16 *) &argv[4];
+                for (int i = 0; i < len; ++i) {
+                    *((uint8_t *) indexv + i) = argv[6 + i];
                 }
-                sendSysex(FirmataStream, FM_READ_MEM, len, (byte *)indexv);
-                break;
-            case FM_WRITE_MEM:
-                if (argc > 6)
-                {
-                    indexv = *(u32 *)argv;
-                    len = *(u16 *)&argv[4];
-                    for (int i = 0; i < len; ++i)
-                    {
-                        *((uint8_t *)indexv + i) = argv[6 + i];
-                    }
-                    sendSysex(FirmataStream, FM_WRITE_MEM, len, (byte *)indexv);
-                }
-                break;
-            case FM_READ_VALUE:
-                u8 region, typ;
-                indexv = 0;
-                len = 0;
-                if (argc == 8 && argv[0] <= REGION_HOLDER)
-                {
-                    region = argv[0];
-                    indexv = *(u32 *)&argv[1];
-                    typ = argv[5];
-                    len = *(u16 *)&argv[6];
-                    byte *buffer;
-                    buffer = (byte *)malloc(len * 4 + 10);
-                    memset(buffer, 0, len * 4 + 10);
-                    buffer[0] = region;
-                    buffer[1] = typ;
-                    *(u32 *)&buffer[2] = indexv;
-                    const char *p;
-                    switch (region)
-                    {
+                sendSysex(FirmataStream, FM_WRITE_MEM, len, (byte *) indexv);
+            }
+            break;
+        case FM_READ_VALUE:
+            u8 region, typ;
+            indexv = 0;
+            len = 0;
+            if (argc == 8 && argv[0] <= REGION_HOLDER) {
+                region = argv[0];
+                indexv = *(u32 *) &argv[1];
+                typ = argv[5];
+                len = *(u16 *) &argv[6];
+                byte *buffer;
+                buffer = (byte *) malloc(len * 4 + 10);
+                memset(buffer, 0, len * 4 + 10);
+                buffer[0] = region;
+                buffer[1] = typ;
+                *(u32 *) &buffer[2] = indexv;
+                const char *p;
+                switch (region) {
                     default:
-                        p = (const char *)&plc_var.digitalValue;
+                        p = (const char *) &plc_var.digitalValue;
                         break;
                     case REGION_XI:      // byte from 0
                     case REGION_DIGITAL: // digitalValue
-                        p = (const char *)&plc_var.digitalValue;
+                        p = (const char *) &plc_var.digitalValue;
                         len = (len + 7) / 8;
                         break;
                     case REGION_16: // analogValue
-                        p = (const char *)&plc_var.analogValue;
+                        p = (const char *) &plc_var.analogValue;
                         break;
                     case REGION_32: // analogValue32
-                        p = (const char *)&plc_var.analogValue32;
+                        p = (const char *) &plc_var.analogValue32;
                         break;
                     case REGION_HOLDER: // holdValue
-                        p = (const char *)&plc_var.holdValue;
+                        p = (const char *) &plc_var.holdValue;
                         break;
                     case REGION_INFO:
-                        p = (const char *)&plc_var.info;
+                        p = (const char *) &plc_var.info;
                         break;
                     case REGION_CONFIG:
-                        p = (const char *)&plc_var.config;
+                        p = (const char *) &plc_var.config;
                         break;
-                    }
-                    memcpy(&buffer[6], &p[indexv], len);
-                    sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *)buffer);
-                    free(buffer);
                 }
-                else
-                    sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *)&plc_var) + indexv);
-                break;
-            case FM_WRITE_VALUE:
-                if (argc > 7)
-                {
-                    region = argv[0];
-                    indexv = *(u32 *)&argv[1];
-                    len = *(u16 *)&argv[5];
-                    char *p;
-                    switch (region)
-                    {
+                memcpy(&buffer[6], &p[indexv], len);
+                sendSysex(FirmataStream, FM_READ_VALUE_REP, len + 6, (byte *) buffer);
+                free(buffer);
+            } else
+                sendSysex(FirmataStream, FM_READ_VALUE_REP, len, ((byte *) &plc_var) + indexv);
+            break;
+        case FM_WRITE_VALUE:
+            if (argc > 7) {
+                region = argv[0];
+                indexv = *(u32 *) &argv[1];
+                len = *(u16 *) &argv[5];
+                char *p;
+                switch (region) {
                     default:
-                        p = ((char *)&plc_var.digitalValue);
+                        p = ((char *) &plc_var.digitalValue);
                         break;
                     case REGION_XI:      // byte from 0
                     case REGION_DIGITAL: // digitalValue
                         u8 v;
-                        v = ((char *)&plc_var.digitalValue)[indexv / 8];
-                        if (argv[7] == 1)
-                        {
+                        v = ((char *) &plc_var.digitalValue)[indexv / 8];
+                        if (argv[7] == 1) {
                             argv[7] = v | (1 << (indexv % 8));
-                        }
-                        else
-                        {
+                        } else {
                             argv[7] = v & ~(1 << (indexv % 8));
                         }
                         indexv = indexv / 8;
                         len = (len + 7) / 8;
-                        p = ((char *)&plc_var.digitalValue);
+                        p = ((char *) &plc_var.digitalValue);
                         break;
                     case REGION_16: // analogValue
-                        p = (char *)&plc_var.analogValue;
+                        p = (char *) &plc_var.analogValue;
                         break;
                     case REGION_32: // analogValue32
-                        p = (char *)&plc_var.analogValue32;
+                        p = (char *) &plc_var.analogValue32;
                         break;
                     case REGION_HOLDER: // holdValue
-                        p = (char *)&plc_var.holdValue;
+                        p = (char *) &plc_var.holdValue;
                         break;
                     case REGION_INFO:
-                        p = (char *)&plc_var.info;
+                        p = (char *) &plc_var.info;
                         break;
                     case REGION_CONFIG:
-                        p = (char *)&plc_var.config;
+                        p = (char *) &plc_var.config;
                         break;
+                }
+                memcpy(p + indexv, &argv[7], len);
+                sendSysex(FirmataStream, FM_WRITE_VALUE_REP, 7, (byte *) argv);
+            }
+            break;
+        case FM_READ_BIT:
+            indexv = 0;
+            len = 0;
+            if (argc == 6) {
+                indexv = *(u32 *) argv;
+                len = *(u16 *) &argv[4];
+            }
+            if (len > 0) {
+                byte *buffer = (byte *) malloc(len / 8 + 6);
+                *(u32 *) argv = indexv;
+                buffer[4] = len;
+                for (int i = 0; i < len; i++) {
+                    u8 b = plcVar.digitalValue(indexv + i);
+                    buffer[i / 8 + 5] |= b << (i % 8);
+                }
+                sendSysex(FirmataStream, FM_READ_BIT_REP, len / 8 + 6, (byte *) buffer);
+                free(buffer);
+            }
+            break;
+        case FM_WRITE_BIT:
+            if (argc > 6) {
+                indexv = *(u32 *) argv;
+                len = *(u16 *) &argv[4];
+                if (len < (argc - 6)) {
+                    for (int i = 0; i < len; i++) {
+                        *(((uint8_t *) &plc_var) + indexv + i) = argv[6 + i];
                     }
-                    memcpy(p + indexv, &argv[7], len);
-                    sendSysex(FirmataStream, FM_WRITE_VALUE_REP, 7, (byte *)argv);
                 }
-                break;
-            case FM_READ_BIT:
-                indexv = 0;
-                len = 0;
-                if (argc == 6)
-                {
-                    indexv = *(u32 *)argv;
-                    len = *(u16 *)&argv[4];
-                }
-                if (len > 0)
-                {
-                    byte *buffer = (byte *)malloc(len / 8 + 6);
-                    *(u32 *)argv = indexv;
-                    buffer[4] = len;
-                    for (int i = 0; i < len; i++)
-                    {
-                        u8 b = plcVar.digitalValue(indexv + i);
-                        buffer[i / 8 + 5] |= b << (i % 8);
-                    }
-                    sendSysex(FirmataStream, FM_READ_BIT_REP, len / 8 + 6, (byte *)buffer);
-                    free(buffer);
-                }
-                break;
-            case FM_WRITE_BIT:
-                if (argc > 6)
-                {
-                    indexv = *(u32 *)argv;
-                    len = *(u16 *)&argv[4];
-                    if (len < (argc - 6))
-                    {
-                        for (int i = 0; i < len; i++)
-                        {
-                            *(((uint8_t *)&plc_var) + indexv + i) = argv[6 + i];
-                        }
-                    }
-                    sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len,
-                              (byte *)((uint8_t *)&plc_var) + indexv);
-                }
-                break;
+                sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len,
+                          (byte *) ((uint8_t *) &plc_var) + indexv);
+            }
+            break;
         case FM_READ_VALUE_REP:
             if (argc > 0) {
                 memcpy(valueBuf, argv, argc);
@@ -1360,6 +1343,16 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         }
             break;
 #endif
+#endif
+#ifdef USE_LFS
+            case FM_LFS_LS:
+                if (argc > 0) {
+                    buffer = (byte *) malloc(1024);
+                    len = flash_fs.dir(argv[0], buffer);
+                    sendSysex(FirmataStream, FM_LFS_LS, len, buffer);
+                    free(buffer);
+                }
+                break;
 #endif
         default:
             len = -1;

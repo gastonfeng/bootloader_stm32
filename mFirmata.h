@@ -178,6 +178,7 @@ enum {
     FM_IOT_LOGIN,
     FM_INFO_SERIAL_RX,
     FM_INFO_SERIAL_TX,
+    FM_LFS_LS,
     FM_LAST
 };
 enum {
