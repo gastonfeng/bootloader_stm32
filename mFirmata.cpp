@@ -1,6 +1,7 @@
 #include "mFirmata.h"
 #include "plc_const.h"
 #include "kFs.h"
+#include "rte_rtc.h"
 #include <plc_rte.h>
 #include <ctime>
 #include <cassert>
