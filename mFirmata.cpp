@@ -415,6 +415,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     int len;
     u8 *data;
     tm new_time{};
+    size_t key_len;
     byte *buffer;
     struct {
         u32 build;
@@ -795,7 +796,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             free(data);
             break;
         case CB_WRITE_KEY:
-            size_t key_len;
             key_len = strlen((const char *) argv);
             int rw;
             rw = argc - key_len - 2;
