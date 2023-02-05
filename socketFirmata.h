@@ -118,6 +118,8 @@ public:
 private:
     std::vector<u8> txbuf;
     mFirmata firm;
+
+    void check_socket();
 };
 
 #endif

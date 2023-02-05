@@ -41,6 +41,7 @@ using peer_t = struct {
     /* The same for the receiving message. */
     char receiving_buffer[DATA_MAXSIZE]{};
     size_t current_receiving_byte{};
+    u32 last_tick;
 };
 peer_t connection_list[MAX_CLIENTS]{};
 peer_t *cur_peer{};
@@ -98,6 +99,7 @@ int socketFirmata::receive_from_peer(void *p) {
     size_t len_to_receive;
     ssize_t received_count;
     size_t received_total = 0;
+    peer->last_tick = rtos::ticks();
     len_to_receive = sizeof(peer->receiving_buffer) - peer->current_receiving_byte;
 
     // logger.error("Let's try to recv() %zd bytes... ", len_to_receive);
@@ -230,6 +232,7 @@ int socketFirmata::handle_new_connection() {
             i.socket = new_client_sock;
             i.addres = client_addr;
             i.current_receiving_byte = 0;
+            i.last_tick = rtos::ticks();
             return 0;
         }
     }
@@ -250,8 +253,8 @@ int close_client_connection(peer_t *client) {
 }
 
 int socketFirmata::handle_received_message() {
-    while(available()){
-    firm.loop(this);
+    while (available()) {
+        firm.loop(this);
     }
     return 0;
 }
@@ -287,6 +290,7 @@ int socketFirmata::loop() {
     while (true) {
 
         int high_sock = listen_sock;
+        check_socket();
         build_fd_sets(&read_fds, &write_fds, &except_fds);
 
         high_sock = listen_sock;
@@ -376,6 +380,15 @@ int socketFirmata::read_wait(int timeout) {
     if (available_wait(timeout))
         return read();
     return -1;
+}
+
+void socketFirmata::check_socket() {
+    for (auto &i: connection_list) {
+        if ((i.socket != -1) && ((rtos::ticks() - i.last_tick) > 10000)) {
+            close_client_connection(&i);
+        }
+    }
+
 }
 
 #endif

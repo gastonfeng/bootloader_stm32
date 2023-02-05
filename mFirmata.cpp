@@ -5,6 +5,8 @@
 #include <plc_rte.h>
 #include <ctime>
 #include <cassert>
+#include <pb_encode.h>
+#include "firmata.pb.h"
 
 #if defined(RTE_APP) || defined(PLC)
 
@@ -502,7 +504,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
             break;
         case CB_GET_RTE_VERSION:
-            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver_t), (uint8_t *) &plc_var.config.rte_ver);
+            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver_t), (uint8_t *) &plc_var.info.rte_ver);
             break;
 #if defined(RTE_APP) || defined(PLC)
         case CB_PLC_START:
@@ -1255,63 +1257,60 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #ifndef THIS_IS_BOOTLOADER
 #ifdef ARDUINO
-            case CB_GOTO_IAP:
-                len = 1;
-                board.bpr_write(BOOTLOADER_REQUEST_BACKUP_REGISTER, EXEC_IAP);
-                rte.set_state(BOOT_WAIT_IAP);
-                sendSysex(FirmataStream, CB_GOTO_IAP, 4, (byte *) &len);
-                break;
+        case CB_GOTO_IAP:
+            len = 1;
+            board.bpr_write(BOOTLOADER_REQUEST_BACKUP_REGISTER, EXEC_IAP);
+            rte.set_state(BOOT_WAIT_IAP);
+            sendSysex(FirmataStream, CB_GOTO_IAP, 4, (byte *) &len);
+            break;
 #endif
-            case FM_IOT_LOGIN:
-                switch (argv[0]) {
-                    case IOT_LOGIN_OK:
-                        break;
-                }
-                break;
+        case FM_IOT_LOGIN:
+            switch (argv[0]) {
+                case IOT_LOGIN_OK:
+                    break;
+            }
+            break;
 #ifdef ARDUINO_ARCH_STM32
-            case FM_INFO_SERIAL_RX: {
-                kSerial *serial = kSerial::get_serial(argv[0]);
-                if (nullptr == serial) {
-                    buffer = (byte *) malloc(4);
-                    len = 4;
-                    *(int *) buffer = NO_DEVICE;
-                } else {
-                    buffer = (byte *) malloc(serial->rx_buf_size + 16);
-                    *(int *) buffer = serial->rx_count;
-                    memcpy(buffer + 4, rtos::queue_buf(serial->rx_buff), serial->rx_buf_size);
-                    len = serial->rx_buf_size + 4;
-                }
-                sendSysex(FirmataStream, FM_INFO_SERIAL_RX, len, buffer);
-                free(buffer);
+        case FM_INFO_SERIAL_RX: {
+            kSerial *serial = kSerial::get_serial(argv[0]);
+            if (nullptr == serial) {
+                buffer = (byte *) malloc(4);
+                len = 4;
+                *(int *) buffer = NO_DEVICE;
+            } else {
+                buffer = (byte *) malloc(serial->rx_buf_size + 16);
+                *(int *) buffer = serial->rx_count;
+                memcpy(buffer + 4, rtos::queue_buf(serial->rx_buff), serial->rx_buf_size);
+                len = serial->rx_buf_size + 4;
             }
-                break;
-            case FM_INFO_SERIAL_TX: {
-                kSerial *serial = kSerial::get_serial(argv[0]);
-                if (nullptr == serial) {
-                    buffer = (byte *) malloc(4);
-                    len = 4;
-                    *(int *) buffer = NO_DEVICE;
-                } else {
-                    buffer = (byte *) malloc(serial->tx_buf_size + 16);
-                    *(int *) buffer = serial->tx_count;
-                    memcpy(buffer + 4, serial->_serial.tx_buff + serial->_serial.tx_head,
-                           serial->tx_buf_size - serial->_serial.tx_head);
-                    memcpy(buffer + 4, serial->_serial.tx_buff, serial->_serial.tx_head);
-                    len = serial->tx_buf_size + 4;
-                }
-                sendSysex(FirmataStream, FM_INFO_SERIAL_TX, len, buffer);
-                free(buffer);
+            sendSysex(FirmataStream, FM_INFO_SERIAL_RX, len, buffer);
+            free(buffer);
+        }
+            break;
+        case FM_INFO_SERIAL_TX: {
+            kSerial *serial = kSerial::get_serial(argv[0]);
+            if (nullptr == serial) {
+                buffer = (byte *) malloc(4);
+                len = 4;
+                *(int *) buffer = NO_DEVICE;
+            } else {
+                buffer = (byte *) malloc(serial->tx_buf_size + 16);
+                *(int *) buffer = serial->tx_count;
+                memcpy(buffer + 4, serial->_serial.tx_buff + serial->_serial.tx_head,
+                       serial->tx_buf_size - serial->_serial.tx_head);
+                memcpy(buffer + 4, serial->_serial.tx_buff, serial->_serial.tx_head);
+                len = serial->tx_buf_size + 4;
             }
-                break;
+            sendSysex(FirmataStream, FM_INFO_SERIAL_TX, len, buffer);
+            free(buffer);
+        }
+            break;
 #endif
 #endif
 #ifdef USE_LFS
         case FM_LFS_LS:
             if (argc > 0) {
-                buffer = (byte *) malloc(1024);
-                len = kfs.dir_buf((const char *) &argv[0], (char *) buffer, 1024);
-                sendSysex(FirmataStream, FM_LFS_LS, len, buffer);
-                free(buffer);
+                len = kfs.dir_buf((const char *) argv, this, FirmataStream);
             }
             break;
 #endif
