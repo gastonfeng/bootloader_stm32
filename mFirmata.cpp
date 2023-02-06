@@ -1309,8 +1309,10 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #ifdef USE_LFS
         case FM_LFS_LS:
-            if (argc > 0) {
-                len = kfs.dir_buf((const char *) argv, this, FirmataStream);
+            if (argc > 8) {
+                u32 since = *(u32 *) argv;
+                u32 size = *(u32 *) &argv[4];
+                len = kfs.dir_buf((const char *) &argv[8], since, size, this, FirmataStream);
             }
             break;
 #endif
