@@ -141,7 +141,7 @@ enum {
     CB_SET_PLC_FILE,
     CB_CPU_USAGE,
 
-    CB_REMOVE_FILE,
+    FM_REMOVE_FILE,
     CB_WIFI_LIST,
     CB_WIFI_SET_PASS,
     CB_GOTO_IAP,
@@ -179,6 +179,7 @@ enum {
     FM_INFO_SERIAL_RX,
     FM_INFO_SERIAL_TX,
     FM_LFS_LS,
+    FM_GET_DATA_BLOCK,
     FM_LAST
 };
 enum {
