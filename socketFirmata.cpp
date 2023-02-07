@@ -355,7 +355,7 @@ void socketFirmata::report() {
 #endif
 
 int socketFirmata::begin(u32 tick) {
-    rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
+    rtos::create_thread_run("socketFirmata", 2048, PriorityNormal, (void *) &socketFirmata::thread, this);
     return 0;
 
 }
