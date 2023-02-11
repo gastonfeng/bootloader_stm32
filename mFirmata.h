@@ -226,7 +226,7 @@ private:
 #ifdef USE_MEMBLOCK
     mem_block *dev = nullptr;
 #endif
-    //时序数据库操作
+    // 时序数据库操作
 #ifdef USE_KVDB
     struct tsdb_sec_info sector
     {
@@ -249,7 +249,7 @@ private:
     u32 last_tick{};
     bool use_sn;
     u32 sn;
-
+    int blocksize;
     void marshaller_sendSysex(nStream *FirmataStream, uint8_t command, size_t bytec, uint8_t *bytev);
 
     void encodeByteStream(nStream *FirmataStream, size_t bytec, uint8_t *bytev, size_t max_bytes);
@@ -305,6 +305,7 @@ private:
     void analogWriteCallback(Stream *, byte i, int val);
 
     bool crc_en;
+
 protected:
     int getValue(nStream *pStream, int index, u8 *value_buf, u16 len);
 

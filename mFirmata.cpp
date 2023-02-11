@@ -1513,9 +1513,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
                 int block = *(int *) &argv[0];
                 if (block == 0) {
-                    if (dev) {
-                        state = DEV_IS_OPEN;
-                    } else {
+                    {
                         u32 object = *(u32 *) &argv[4];
                         u32 data_address = *(u32 *) &argv[8];
                         u32 data_len = *(u32 *) &argv[12];
@@ -1525,10 +1523,15 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             state = NO_DEVICE;
                         } else {
                             state = dev->begin(&argv[16], argc - 16, data_address, data_len);
-                            if (state > 0 && state > dataBufferSize * 7 / 8 - 4) {
-                                state = (int) (dataBufferSize * 7 / 8 - 4);
+                            blocksize = FirmataStream->tx_max_size() * 7 / 8 - 16;
+                            if ((state > 0) && (state > blocksize)) {
+                                state = blocksize;
                             }
-                            logger.info("recv %s ,size= %d", &argv[12], *(u32 *) &argv[8]);
+                            if (state > FIRMATA_BUFFER_SZ * 7 / 8 - 16) {
+                                blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
+                                state = blocksize;
+                            }
+                            logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16], data_address, data_len);
                         }
                     }
                 } else if (block == -1) {
@@ -1544,12 +1547,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     }
                 } else {
                     if (dev) {
-                        if (dev->Write(&argv[4], argc - 8) < 0) {
+                        if (dev->Write(&argv[4], argc - 4) < 0) {
                             state = DEVICE_WRITE_ERR;
+                            logger.error("write error %d ,size= %d", block, argc - 8);
                         } else {
                             state = block;
                         }
-                        logger.info("recv %d ,size= %d", block, argc - 8);
+                        logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
                     }
                 }
             }
@@ -1572,7 +1576,17 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         byte *tbuf = (byte *) malloc(16);
                         *(int *) &tbuf[0] = 0;
                         *(int *) &tbuf[4] = dev->begin_read(&argv[16], argc - 16, data_address, data_len);
-                        *(u32 *) &tbuf[8] = FirmataStream->tx_max_size() * 7 / 8 - 16;
+                        int state = *(int *) &tbuf[4];
+                        blocksize = FirmataStream->tx_max_size() * 7 / 8 - 16;
+                        if ((state > 0) && (state > blocksize)) {
+                            state = blocksize;
+                        }
+                        if (state > FIRMATA_BUFFER_SZ * 7 / 8 - 16) {
+                            blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
+                            state = blocksize;
+                        }
+
+                        *(u32 *) &tbuf[8] = state;
                         sendSysex(FirmataStream, FM_GET_DATA_BLOCK, 12, tbuf);
                         free(tbuf);
                         break;
@@ -1580,11 +1594,10 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 }
             } else {
                 if (dev) {
-                    u32 block_sz = FirmataStream->tx_max_size() * 7 / 8 - 16;
-                    byte *tbuf = (byte *) malloc(block_sz);
+                    byte *tbuf = (byte *) malloc(blocksize + 16);
                     *(int *) &tbuf[0] = block;
-                    *(u32 *) &tbuf[4] = dev->Read(0, block_sz * (block - 1), block_sz, &tbuf[8]);
-                    if (*(u32 *) &tbuf[4] < block_sz) {
+                    *(u32 *) &tbuf[4] = dev->Read(0, blocksize * (block - 1), blocksize, &tbuf[8]);
+                    if (*(u32 *) &tbuf[4] < blocksize) {
                         dev->Shutdown();
                         dev = nullptr;
                     }
@@ -1726,8 +1739,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     default:
                         p = (const char *) &plc_var.digitalValue;
                         break;
-                    case REGION_XI:      // byte from 0
-                    case REGION_DIGITAL: // digitalValue
+                    case REGION_XI: // byte from 0
                         p = (const char *) &plc_var.digitalValue;
                         len = (len + 7) / 8;
                         break;
@@ -1763,8 +1775,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     default:
                         p = ((char *) &plc_var.digitalValue);
                         break;
-                    case REGION_XI:      // byte from 0
-                    case REGION_DIGITAL: // digitalValue
+                    case REGION_XI: // byte from 0
                         u8 v;
                         v = ((char *) &plc_var.digitalValue)[indexv / 8];
                         if (argv[7] == 1) {
