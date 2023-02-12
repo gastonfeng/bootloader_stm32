@@ -74,7 +74,7 @@
 // extensible up to 0x0F
 
 #define SERIAL_PORT_ID_MASK 0x0F
-#define SERIAL_READ_ARR_LEN 12
+
 
 // map configuration query response resolution value to serial pin type
 #define RES_RX1 0x02
