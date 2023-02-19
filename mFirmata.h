@@ -199,9 +199,10 @@ public:
     void sendAnalog(nStream *pStream, byte i, int i1);
 
     void setPinMode(byte i, int i1);
-
+#ifndef THIS_IS_BOOTLOADER
     void report(nStream *FirmataStream);
 
+#endif
     int decodeByteStream(size_t bytec, const byte *bytev, byte *buf);
 
 private:

@@ -1,3 +1,5 @@
+#ifdef USE_FIRMATA
+
 #include "mFirmata.h"
 #include "plc_const.h"
 #include "kFs.h"
@@ -459,6 +461,8 @@ int mFirmata::loop(nStream *FirmataStream) {
     return 0;
 }
 
+#ifndef THIS_IS_BOOTLOADER
+
 void mFirmata::report(nStream *FirmataStream) {
     u32 currentMillis = rtos::ticks();
 
@@ -482,6 +486,8 @@ void mFirmata::report(nStream *FirmataStream) {
     //     }
     // }
 }
+
+#endif
 
 void mFirmata::outputPort(nStream *FirmataStream, byte portNumber, byte portValue, byte forceSend) {
     // pins not configured as INPUT are cleared to zeros
@@ -1003,6 +1009,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case I_AM_HERE:
             break;
+#ifndef THIS_IS_BOOTLOADER
         case SAMPLING_INTERVAL:
             if (argc > 1) {
                 plc_var.info.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
@@ -1109,6 +1116,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             hwboard::reset();
             break;
 #endif
+#endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
             case CB_GET_RTC:
                 sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *)&plc_var.info.rtc);
@@ -1203,52 +1211,44 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 const u16 *byte = (u16 *) &argv[i];
                 len = argv[i + 2];
                 index = *byte;
-                if (plc_var.info.plc_state == (u8) PLC_STATUS::Started) {
+                if (plc_var.info.plc_curr_app) {
                     plc_var.info.plc_curr_app->dbg_set_force(index, len ? &argv[i + 3] : nullptr);
                 }
                 i += len + 3;
             }
-            FirmataStream->write(START_SYSEX);
-            FirmataStream->write(CB_SET_FORCE);
-            FirmataStream->write(argc);
-            FirmataStream->write(END_SYSEX);
-            FirmataStream->flush();
+            sendSysex(FirmataStream, CB_SET_FORCE, 4, (byte *) &len);
             break;
 
         case CB_CLEAR_V:
-            if (plc_var.info.plc_curr_app && (plc_var.info.plc_state == (u8) PLC_STATUS::Started)) {
+            len = -1;
+            if (plc_var.info.plc_curr_app) {
                 plc_var.info.plc_curr_app->dbg_vars_reset(__IEC_DEBUG_FLAG);
                 logger.debug("monitor var reset.");
+                len = 0;
             } else {
                 logger.debug("monitor var not reset.plc_state=0x%x ", plc_var.info.plc_state);
             }
-            FirmataStream->write(START_SYSEX);
-            FirmataStream->write(CB_CLEAR_V);
-            FirmataStream->write((uint8_t) 0);
-            FirmataStream->write(END_SYSEX);
-            FirmataStream->flush();
+            sendSysex(FirmataStream, CB_CLEAR_V, 4, (byte *) &len);
             break;
         case CB_SET_V:
+            len = -1;
             if (argc > 2) {
                 for (int i = 0; i < argc; i += 2) {
                     const u16 *byte = (u16 *) &argv[i];
                     indexv = *byte;
-                    // logger.debug("%d %d", i, indexv);
+                    logger.debug("%d %d", i, indexv);
                     if (plc_var.info.plc_curr_app) {
                         plc_var.info.plc_curr_app->dbg_var_register(indexv);
                     }
                 }
-                FirmataStream->write(START_SYSEX);
-                FirmataStream->write(CB_SET_V);
-                FirmataStream->write(argc);
-                FirmataStream->write(END_SYSEX);
-                FirmataStream->flush();
+                len = argc / 2;
             }
+            sendSysex(FirmataStream, CB_SET_V, 4, (byte *) &len);
             break;
         case CB_GET_V:
             len = 0;
             data = (u8 *) malloc(512);
-            if (plc_var.info.plc_state == (u8) PLC_STATUS::Started) {
+            if (plc_var.info.plc_curr_app) {
                 void *b = &data[4];
                 plc_var.info.plc_curr_app->dbg_data_get((u32 *) &data[0], (u32 *) &len, (void **) &b);
                 memcpy(&data[4], b, len);
@@ -1960,3 +1960,5 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     }
     set_flag(command);
 }
+
+#endif

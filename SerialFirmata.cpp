@@ -1,3 +1,4 @@
+#ifndef THIS_IS_BOOTLOADER
 /*
   SerialFirmata.cpp
   Copyright (C) 2016 Jeff Hoefs. All rights reserved.
@@ -16,7 +17,6 @@
 
   Last updated March 16th, 2020
 */
-#ifdef ARDUINO
 
 #include <kSerial.h>
 #include <rte_data.h>
