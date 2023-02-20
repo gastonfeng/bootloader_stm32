@@ -1232,7 +1232,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case CB_SET_V:
             len = -1;
-            if (argc > 2) {
+            if (argc >= 2) {
                 for (int i = 0; i < argc; i += 2) {
                     const u16 *byte = (u16 *) &argv[i];
                     indexv = *byte;
