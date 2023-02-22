@@ -9,7 +9,7 @@
 #include <cassert>
 #include <pb_encode.h>
 #include "firmata.pb.h"
-
+#include "hwboard.h"
 #if defined(RTE_APP) || defined(PLC)
 
 #include <iec_types.h>
