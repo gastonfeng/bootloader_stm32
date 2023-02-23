@@ -44,6 +44,13 @@ SerialFirmata::SerialFirmata() {
 #endif
 }
 
+int min(int v1, int v2) {
+    if (v1 < v2) {
+        return v1;
+    }
+    return v2;
+}
+
 bool SerialFirmata::handlePinMode(mFirmata *fm, byte pin, int mode) {
     // used for both HW and SW serial
     if (mode == PIN_MODE_SERIAL) {
@@ -80,7 +87,7 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                     break;
                 }
                 u32 baud;
-                baud = *(u32 *) &argv[1];
+                baud = *(u32 * ) & argv[1];
                 if (baud > 115200) {
                     return false;
                 }
