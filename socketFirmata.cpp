@@ -1,4 +1,4 @@
-#if defined(USE_LWIP) || defined(windows_x86) || defined(SYLIXOS) && defined(USE_FIRMATA)
+#if  defined(USE_FIRMATA_SOCKET)
 #ifdef windows_x86
 #include <ws2tcpip.h>
 #define MSG_DONTWAIT 0x0

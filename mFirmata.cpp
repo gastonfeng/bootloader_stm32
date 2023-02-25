@@ -10,6 +10,7 @@
 #include <pb_encode.h>
 #include "firmata.pb.h"
 #include "hwboard.h"
+
 #if defined(RTE_APP) || defined(PLC)
 
 #include <iec_types.h>
@@ -166,7 +167,7 @@ void mFirmata::setPinValueCallback(Stream *, byte pin, int value) {
 void mFirmata::systemResetCallback(Stream *) {
 #if defined(RTE_APP) || defined(PLC)
     rte.set_state(BOOT_WAIT_RESTART);
-    logger.debug("systemResetCallback");
+//    logger.debug("systemResetCallback");
 #ifdef FIRMATA_SERIAL_FEATURE
     serialFeature->reset();
 #endif
@@ -461,7 +462,7 @@ int mFirmata::loop(nStream *FirmataStream) {
     return 0;
 }
 
-#ifndef THIS_IS_BOOTLOADER
+#ifndef FIRMATA_DISABLE_REPORT
 
 void mFirmata::report(nStream *FirmataStream) {
     u32 currentMillis = rtos::ticks();
@@ -1007,8 +1008,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->write(END_SYSEX);
             FirmataStream->flush();
             break;
-        case I_AM_HERE:
-            break;
 #ifndef THIS_IS_BOOTLOADER
         case SAMPLING_INTERVAL:
             if (argc > 1) {
@@ -1118,20 +1117,20 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
-            case CB_GET_RTC:
-                sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *)&plc_var.info.rtc);
-                break;
-            case CB_SET_RTC:
-                new_time.tm_year = *(u16 *)&argv[0];
-                new_time.tm_mon = argv[2];
-                new_time.tm_mday = argv[3];
-                new_time.tm_hour = argv[4];
-                new_time.tm_min = argv[5];
-                new_time.tm_sec = argv[6];
-                new_time.tm_wday = argv[7];
-                rtc.set_time(&new_time);
-                sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
-                break;
+        case CB_GET_RTC:
+            sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
+            break;
+        case CB_SET_RTC:
+            new_time.tm_year = *(u16 *) &argv[0];
+            new_time.tm_mon = argv[2];
+            new_time.tm_mday = argv[3];
+            new_time.tm_hour = argv[4];
+            new_time.tm_min = argv[5];
+            new_time.tm_sec = argv[6];
+            new_time.tm_wday = argv[7];
+            rtc.set_time(&new_time);
+            sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
+            break;
 #endif
 #ifdef ARDUINO
 #ifdef USE_LWIP
@@ -1448,7 +1447,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     tlen = 0;
                 else
                 {
-                    *(u32 *)&tbuf[tlen] = GenerateCRC32Sum((const u8 *)tbuf, tlen, 0);
+                    *(u32 *)&tbuf[tlen] = crc_16((const u8 *)tbuf, tlen, 0);
                     tlen += 4;
                 }
                 sendSysex(FirmataStream, CB_GET_TSL, (byte)tlen, (byte *)tbuf);
@@ -1470,7 +1469,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         tlen = 0;
                     else
                     {
-                        *(u32 *)&tbuf[tlen] = GenerateCRC32Sum((const u8 *)tbuf, tlen, 0);
+                        *(u32 *)&tbuf[tlen] = crc_16((const u8 *)tbuf, tlen, 0);
                         tlen += 4;
                     }
                 }
@@ -1888,7 +1887,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef ARDUINO
         case CB_GOTO_IAP:
             len = 1;
-            board.bpr_write(BOOTLOADER_REQUEST_BACKUP_REGISTER, EXEC_IAP);
+            ctrl->iap = CTRL_ACTION_RUN;
             rte.set_state(BOOT_WAIT_IAP);
             sendSysex(FirmataStream, CB_GOTO_IAP, 4, (byte *) &len);
             break;
