@@ -1108,12 +1108,14 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             len = 0;
             sendSysex(FirmataStream, CB_PLC_REPAIR, 4, (byte *) &len);
             break;
+#ifdef ARDUINO
         case FM_FLASH_CLEAR:
             len = 0;
             sendSysex(FirmataStream, FM_FLASH_CLEAR, 4, (byte *) &len);
             board.flashClear();
             hwboard::reset();
             break;
+#endif
 #endif
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)

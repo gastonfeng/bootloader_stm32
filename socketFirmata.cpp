@@ -20,7 +20,24 @@
 
 #define closesocket close
 #endif
+#ifdef LINUX
+//#include <termio.h> /* POSIX terminal control definitions */
+#include <sys/socket.h>
+#include <netinet/in.h>  /* required for htons() and ntohs() */
+#include <netinet/tcp.h> /* TCP level socket options */
+#include <netinet/ip.h>  /* IP  level socket options */
+#include <pthread.h>
+#include <sched.h> /* sched_yield() */
+#include <unistd.h>
 
+#include <fcntl.h>
+#define lwip_connect connect
+#define lwip_accept accept
+// #define sendmsg send
+#define lwip_read read
+#define closesocket close
+#define MSG_DONTWAIT 0x0
+#endif
 
 #ifdef windows_x86
 #include <ws2tcpip.h>

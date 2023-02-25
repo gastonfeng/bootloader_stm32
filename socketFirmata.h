@@ -1,6 +1,6 @@
 #ifndef SOCKETFIRMATA_H
 #define SOCKETFIRMATA_H
-#if defined(USE_LWIP) || defined(windows_x86) || defined(SYLIXOS)
+
 
 #include <vector>
 
@@ -38,7 +38,7 @@
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
-#ifndef windows_x86
+#if !(defined( windows_x86) || defined( LINUX))
 extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
 #endif
 #undef write
@@ -116,11 +116,10 @@ public:
     }
 
 private:
-    std::vector<u8> txbuf;
+    std::vector <u8> txbuf;
     mFirmata firm;
 
     void check_socket();
 };
 
-#endif
 #endif
