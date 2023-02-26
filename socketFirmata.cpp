@@ -38,7 +38,18 @@
 #define closesocket close
 #define MSG_DONTWAIT 0x0
 #endif
+#ifdef MACOSX
 
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <netinet/tcp.h>
+#include <cstdio>
+#include <unistd.h>
+
+#define closesocket close
+#endif
 #ifdef windows_x86
 #include <ws2tcpip.h>
 #define MSG_DONTWAIT 0x0
@@ -48,9 +59,7 @@
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
-#ifndef windows_x86
-extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
-#endif
+
 using peer_t = struct {
     int socket{};
     struct sockaddr_in addres{};
@@ -81,9 +90,6 @@ int create_peer(peer_t *peer) {
     return 0;
 }
 
-
-#undef write
-#undef read
 
 size_t socketFirmata::write(u8 c) {
     txbuf.push_back(c);
@@ -140,6 +146,7 @@ int socketFirmata::receive_from_peer(void *p) {
     return 0;
 }
 
+#undef bind
 /* Start listening socket sock. */
 int socketFirmata::start_listen_socket(int *sock) {
     // Obtain a file descriptor for our "listening" socket.
@@ -165,7 +172,7 @@ int socketFirmata::start_listen_socket(int *sock) {
 #else
     my_addr.sin_port = 0;
 #endif
-    if (bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr)) != 0) {
+    if (::bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr))) {
         logger.error("bind %d", errno);
         return -1;
     }
