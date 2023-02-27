@@ -40,7 +40,7 @@ using peer_t = struct {
 
     /* The same for the receiving message. */
     char receiving_buffer[DATA_MAXSIZE]{};
-    size_t current_receiving_byte{};
+    int current_receiving_byte{};
     u32 last_tick;
 };
 peer_t connection_list[MAX_CLIENTS]{};
@@ -68,7 +68,7 @@ int create_peer(peer_t *peer) {
 #undef write
 #undef read
 
-size_t socketFirmata::write(u8 c) {
+int socketFirmata::write(u8 c) {
     txbuf.push_back(c);
     return 1;
 }
@@ -96,9 +96,9 @@ int socketFirmata::peek() {
 int socketFirmata::receive_from_peer(void *p) {
     //    logger.debug("Ready for recv() from %s.\n", peer_get_addres_str(peer));
     auto *peer = (peer_t *) p;
-    size_t len_to_receive;
-    ssize_t received_count;
-    size_t received_total = 0;
+    int len_to_receive;
+    int received_count;
+    int received_total = 0;
     peer->last_tick = rtos::ticks();
     len_to_receive = sizeof(peer->receiving_buffer) - peer->current_receiving_byte;
 

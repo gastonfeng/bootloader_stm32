@@ -74,7 +74,7 @@ public:
     int diag(u32 tick) override;
 
 
-    size_t write(u8 c) override;
+    int write(u8 c) override;
 
     int available() override;
 
@@ -111,7 +111,7 @@ public:
 
     int connect_server(const char *host, int port);
 
-    size_t tx_max_size() override {
+    int tx_max_size() override {
         return 536;
     }
 

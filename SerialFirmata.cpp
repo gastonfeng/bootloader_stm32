@@ -20,6 +20,7 @@
 
 #include <kSerial.h>
 #include <rte_data.h>
+#include "SerialFirmata.h"
 
 // The RX and TX hardware FIFOs of the ESP8266 hold 128 bytes that can be
 // extended using interrupt handlers. The Arduino constants are not available
