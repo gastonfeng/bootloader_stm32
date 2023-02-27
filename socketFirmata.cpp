@@ -172,7 +172,11 @@ int socketFirmata::start_listen_socket(int *sock) {
 #else
     my_addr.sin_port = 0;
 #endif
+#ifdef MACOSX
     if (::bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr))) {
+#else
+    if (lwip_bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr))) {
+#endif
         logger.error("bind %d", errno);
         return -1;
     }
