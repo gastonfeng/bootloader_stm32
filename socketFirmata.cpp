@@ -20,8 +20,36 @@
 
 #define closesocket close
 #endif
+#ifdef LINUX
+//#include <termio.h> /* POSIX terminal control definitions */
+#include <sys/socket.h>
+#include <netinet/in.h>  /* required for htons() and ntohs() */
+#include <netinet/tcp.h> /* TCP level socket options */
+#include <netinet/ip.h>  /* IP  level socket options */
+#include <pthread.h>
+#include <sched.h> /* sched_yield() */
+#include <unistd.h>
 
+#include <fcntl.h>
+#define lwip_connect connect
+#define lwip_accept accept
+// #define sendmsg send
+#define lwip_read read
+#define closesocket close
+#define MSG_DONTWAIT 0x0
+#endif
+#ifdef MACOSX
 
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <netinet/tcp.h>
+#include <cstdio>
+#include <unistd.h>
+
+#define closesocket close
+#endif
 #ifdef windows_x86
 #include <ws2tcpip.h>
 #define MSG_DONTWAIT 0x0
@@ -31,9 +59,7 @@
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
-#ifndef windows_x86
-extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
-#endif
+
 using peer_t = struct {
     int socket{};
     struct sockaddr_in addres{};
@@ -123,6 +149,7 @@ int socketFirmata::receive_from_peer(void *p) {
     return 0;
 }
 
+#undef bind
 /* Start listening socket sock. */
 int socketFirmata::start_listen_socket(int *sock) {
     // Obtain a file descriptor for our "listening" socket.
@@ -148,7 +175,7 @@ int socketFirmata::start_listen_socket(int *sock) {
 #else
     my_addr.sin_port = 0;
 #endif
-    if (bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr)) != 0) {
+    if (::bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr))) {
         logger.error("bind %d", errno);
         return -1;
     }
