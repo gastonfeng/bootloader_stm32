@@ -175,7 +175,7 @@ int socketFirmata::start_listen_socket(int *sock) {
 #else
     my_addr.sin_port = 0;
 #endif
-#if defined( MACOSX)||defined(LINUX)
+#if defined( MACOSX)||defined(LINUX)||defined(windows_x86)
     if (::bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr))) {
 #else
     if (lwip_bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr))) {
