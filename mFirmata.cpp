@@ -1532,6 +1532,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                                 blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
                                 state = blocksize;
                             }
+
                             logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16], data_address, data_len);
                         }
                     }
@@ -1548,6 +1549,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     }
                 } else {
                     if (dev) {
+                         rte.set_state(PLC_STATUS::APP_FLASHING);
                         if (dev->Write(&argv[4], argc - 4) < 0) {
                             state = DEVICE_WRITE_ERR;
                             logger.error("write error %d ,size= %d", block, argc - 8);
