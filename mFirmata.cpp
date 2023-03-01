@@ -1888,7 +1888,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             rte.set_state(BOOT_WAIT_RESTART);
             break;
 #ifndef THIS_IS_BOOTLOADER
-#ifdef ARDUINO
+#ifdef USE_IAP
         case CB_GOTO_IAP:
             len = 1;
             ctrl->iap = CTRL_ACTION_RUN;
