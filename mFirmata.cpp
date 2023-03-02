@@ -1469,11 +1469,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                                                  tbuf + 12, 256 - 12);
                     if (tlen < 0)
                         tlen = 0;
-                    else
-                    {
-                        *(u32 *)&tbuf[tlen] = crc_16((const u8 *)tbuf, tlen, 0);
-                        tlen += 4;
-                    }
+          
                 }
                 sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte)tlen, (byte *)tbuf);
                 free(tbuf);
@@ -1532,7 +1528,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                                 blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
                                 state = blocksize;
                             }
-
+state&=~0x3;
                             logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16], data_address, data_len);
                         }
                     }
@@ -1556,7 +1552,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         } else {
                             state = block;
                         }
-                        logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
+                        // logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
                     }
                 }
             }
@@ -1589,7 +1585,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             state = blocksize;
                         }
 
-                        *(u32 *) &tbuf[8] = state;
+                        *(u32 *) &tbuf[8] = state&(~0x3);
                         sendSysex(FirmataStream, FM_GET_DATA_BLOCK, 12, tbuf);
                         free(tbuf);
                         break;
