@@ -1527,6 +1527,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                                 blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
                                 state = blocksize;
                             }
+
                             logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16], data_address, data_len);
                         }
                     }
@@ -1543,6 +1544,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     }
                 } else {
                     if (dev) {
+                         rte.set_state(PLC_STATUS::APP_FLASHING);
                         if (dev->Write(&argv[4], argc - 4) < 0) {
                             state = DEVICE_WRITE_ERR;
                             logger.error("write error %d ,size= %d", block, argc - 8);
@@ -1881,7 +1883,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             rte.set_state(BOOT_WAIT_RESTART);
             break;
 #ifndef THIS_IS_BOOTLOADER
-#ifdef ARDUINO
+#ifdef USE_IAP
         case CB_GOTO_IAP:
             len = 1;
             ctrl->iap = CTRL_ACTION_RUN;
