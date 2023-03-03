@@ -1469,7 +1469,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                                                  tbuf + 12, 256 - 12);
                     if (tlen < 0)
                         tlen = 0;
-          
+
                 }
                 sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte)tlen, (byte *)tbuf);
                 free(tbuf);
