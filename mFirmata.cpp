@@ -21,7 +21,7 @@
 
 #endif
 
-#ifdef USE_RTC
+#if defined(USE_RTC) || defined(USE_PCF8563)
 
 #include <rte_rtc.h>
 
@@ -1080,14 +1080,14 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
             break;
         case CB_GET_RTE_VERSION: {
-            pb_rte pb;
-            pb.sn = plc_var.info.sn;
-            pb.major = plc_var.info.major;
-            pb.minor = plc_var.info.minor;
-            pb.build = plc_var.info.build;
-            pb.feature = plc_var.info.feature;
-            pb.serial_nrs = plc_var.info.serial_nrs;
-            pb.tx_buffer_size = FirmataStream->tx_max_size() * 7 / 8;
+            pb_rte pb=pb_rte_init_zero;
+            pb.sn = plc_var.info.rte_ver.sn;
+            pb.major = plc_var.info.rte_ver.major;
+            pb.minor = plc_var.info.rte_ver.minor;
+            pb.build = plc_var.info.rte_ver.build;
+            pb.feature = plc_var.info.rte_ver.feature;
+            pb.serial_nrs = plc_var.info.rte_ver.serial_nrs;
+            pb.tx_buffer_size = min(FirmataStream->tx_max_size() ,FIRMATA_BUFFER_SZ)* 7 / 8;
             byte *buffer = (byte *) malloc(sizeof(rte_ver_t) + 4);
             pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(rte_ver_t) + 4);
             int ret = pb_encode(&ostream, pb_rte_fields, &pb);
@@ -1095,7 +1095,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 const char *error = PB_GET_ERROR(&ostream);
                 logger.error("dir_buf pb_encode error: %s", error);
             }
-            mf->sendSysex(FirmataStream, CB_GET_RTE_VERSION, ostream.bytes_written, buffer);
+            sendSysex(FirmataStream, CB_GET_RTE_VERSION, ostream.bytes_written, buffer);
             free(buffer);
         }
             break;
@@ -1258,22 +1258,24 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 for (int i = 0; i < argc; i += 2) {
                     const u16 *byte = (u16 *) &argv[i];
                     indexv = *byte;
-                    logger.debug("%d %d", i, indexv);
                     if (plc_var.info.plc_curr_app) {
                         plc_var.info.plc_curr_app->dbg_var_register(indexv);
                     }
                 }
                 len = argc / 2;
+                logger.debug("CB_SET_V %d", len);
             }
             sendSysex(FirmataStream, CB_SET_V, 4, (byte *) &len);
             break;
         case CB_GET_V:
             len = 0;
-            data = (u8 *) malloc(512);
+            data = (u8 *) malloc(FirmataStream->tx_max_size());
             if (plc_var.info.plc_curr_app) {
                 void *b = &data[4];
                 plc_var.info.plc_curr_app->dbg_data_get((u32 *) &data[0], (u32 *) &len, (void **) &b);
+                if(len<FirmataStream->tx_max_size())
                 memcpy(&data[4], b, len);
+                else logger.error("CB_GET_V len=%d",len);
                 plc_var.info.plc_curr_app->dbg_data_free();
             }
             sendSysex(FirmataStream, CB_GET_V, len + 4, data);
@@ -1672,42 +1674,35 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #ifdef ONLINE_DEBUG
-            case FM_GET_DBG_SIZE:
-                if (plc_var.info.plc_curr_app)
-                {
-                    sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
-                              (byte *)&plc_var.info.plc_curr_app->data->size_dbgvardsc);
+        case FM_GET_DBG_SIZE:
+            if (plc_var.info.plc_curr_app) {
+                sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
+                          (byte *) &plc_var.info.plc_curr_app->data->size_dbgvardsc);
+            } else {
+                sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
+            }
+            break;
+        case FM_GET_DBG:
+            len = 0;
+            if (argc == 5) {
+                l_index = *(u32 *) &argv[0];
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                    len = (int) fill_dbg((int) l_index, argv);
                 }
-                else
-                {
-                    sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
+            }
+            sendSysex(FirmataStream, FM_GET_DBG, len, argv);
+            break;
+        case FM_SET_DBG:
+            len = 0;
+            if (argc > 5) {
+                l_index = *(u32 *) argv;
+                if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc) {
+                    set_dbg(l_index, &argv[4], argc - 4);
+                    len = (int) fill_dbg((int) l_index, argv);
                 }
-                break;
-            case FM_GET_DBG:
-                len = 0;
-                if (argc == 5)
-                {
-                    l_index = *(u32 *)&argv[0];
-                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc)
-                    {
-                        len = (int)fill_dbg((int)l_index, argv);
-                    }
-                }
-                sendSysex(FirmataStream, FM_GET_DBG, len, argv);
-                break;
-            case FM_SET_DBG:
-                len = 0;
-                if (argc > 5)
-                {
-                    l_index = *(u32 *)argv;
-                    if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc)
-                    {
-                        set_dbg(l_index, &argv[4], argc - 4);
-                        len = (int)fill_dbg((int)l_index, argv);
-                    }
-                }
-                sendSysex(FirmataStream, FM_GET_DBG, len, argv);
-                break;
+            }
+            sendSysex(FirmataStream, FM_GET_DBG, len, argv);
+            break;
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_LOG_SET_LEVEL:

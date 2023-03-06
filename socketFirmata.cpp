@@ -65,7 +65,7 @@ using peer_t = struct {
     struct sockaddr_in addres{};
 
     /* The same for the receiving message. */
-    char receiving_buffer[DATA_MAXSIZE]{};
+    char receiving_buffer[FIRMATA_BUFFER_SZ]{};
     int current_receiving_byte{};
     u32 last_tick;
 };
