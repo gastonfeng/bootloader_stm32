@@ -1575,7 +1575,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         } else {
                             state = block;
                         }
-                        // logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
+                         logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
                     }
                 }
             }
