@@ -3,6 +3,7 @@
 
 
 #include <vector>
+#include <csignal>
 
 #ifdef RTE_APP
 
@@ -32,9 +33,12 @@
 #define closesocket close
 #endif
 
-#include <csignal>
+#ifdef ARDUINO_ARCH_STM32
 #include <stm32_def.h>
-
+#endif
+#ifndef ETH_MAX_PAYLOAD
+#define ETH_MAX_PAYLOAD FIRMATA_BUFFER_SZ
+#endif
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
