@@ -34,7 +34,6 @@
 
 #include <csignal>
 
-#define DATA_MAXSIZE FIRMATA_BUFFER_SZ
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
@@ -112,7 +111,7 @@ public:
     int connect_server(const char *host, int port);
 
     int tx_max_size() override {
-        return 536;
+        return FIRMATA_BUFFER_SZ;
     }
 
 private:
