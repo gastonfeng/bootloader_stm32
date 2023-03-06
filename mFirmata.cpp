@@ -1472,7 +1472,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     tlen = 0;
                 else
                 {
-                    *(u32 *)&tbuf[tlen] = crc_16((const u8 *)tbuf, tlen, 0);
+                    *(u32 *) &tbuf[tlen] = crc_16((u8 *) tbuf, tlen, 0);
                     tlen += 4;
                 }
                 sendSysex(FirmataStream, CB_GET_TSL, (byte)tlen, (byte *)tbuf);
