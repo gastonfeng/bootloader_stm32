@@ -1552,7 +1552,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                                 state = blocksize;
                             }
                             state &= ~0x3;
-                            logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16], data_address, data_len);
+                            // logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16], data_address, data_len);
                         }
                     }
                 } else if (block == -1) {
@@ -1562,7 +1562,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         } else {
                             state = 1;
                             rte.set_state(PLC_STATUS::APP_FLASH_END);
-                            logger.info("recv end.");
+                            // logger.info("recv end.");
                             dev = nullptr;
                         }
                     }
@@ -1575,7 +1575,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         } else {
                             state = block;
                         }
-                         logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
+                        //  logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
                     }
                 }
             }

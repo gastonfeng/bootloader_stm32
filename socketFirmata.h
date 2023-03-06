@@ -33,6 +33,7 @@
 #endif
 
 #include <csignal>
+#include <stm32_def.h>
 
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
@@ -111,7 +112,7 @@ public:
     int connect_server(const char *host, int port);
 
     int tx_max_size() override {
-        return FIRMATA_BUFFER_SZ;
+        return ETH_MAX_PAYLOAD;
     }
 
 private:
