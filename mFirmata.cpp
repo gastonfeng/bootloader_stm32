@@ -28,6 +28,8 @@
 #endif
 
 #include <plc_var_class.h>
+#include <flashdb.h>
+#include <kvdb.h>
 
 #ifdef USE_WIFI
 
@@ -1351,9 +1353,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
 
-#ifdef USE_KVDB
+#ifdef USE_KVDB_LFS
             case FM_LIST_KEY:
-                kvdb.list(this, FirmataStream);
+                kfs.dir_buf(FM_LIST_KEY,(const char *) &argv[8], 0, 16, this, FirmataStream);
                 break;
             case CB_READ_KEY:
                 size_t vlen, name_len;
@@ -1956,7 +1958,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 if (argc > 8) {
                     u32 since = *(u32 *) argv;
                     u32 size = *(u32 *) &argv[4];
-                    len = kfs.dir_buf((const char *) &argv[8], since, size, this, FirmataStream);
+                    len = kfs.dir_buf(FM_LFS_LS,(const char *) &argv[8], since, size, this, FirmataStream);
                 }
                 break;
             case FM_REMOVE_FILE:
