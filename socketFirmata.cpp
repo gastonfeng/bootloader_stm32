@@ -59,7 +59,9 @@
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
-
+#if !(defined( windows_x86) || defined( MACOSX))
+extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
+#endif
 using peer_t = struct {
     int socket{};
     struct sockaddr_in addres{};
