@@ -28,9 +28,13 @@
 #endif
 
 #include <plc_var_class.h>
-#include <flashdb.h>
-#include <kvdb.h>
 
+#ifdef USE_TSDB
+#include <flashdb.h>
+#endif
+#ifdef USE_KVDB
+#include <kvdb.h>
+#endif
 #ifdef USE_WIFI
 
 #include <iWiFi.h>
@@ -686,15 +690,15 @@ void mFirmata::marshaller_sendSysex(nStream *FirmataStream, uint8_t command, siz
         //        core_debug("FirmataMarshaller byte limit");
         return;
     }
-    if (crc_en)
-        FirmataStream->write(0xFA);
+    if (use_sn)
+        FirmataStream->write(0xE0);
     else
         FirmataStream->write(START_SYSEX);
     FirmataStream->write(command);
     if (bytec > 0)
         encodeByteStream(FirmataStream, bytec, bytev, FIRMATA_BUFFER_SZ);
-    if (use_sn)
-        FirmataStream->write(0xE0);
+    if (crc_en)
+        FirmataStream->write(0xFA);
     else
         FirmataStream->write(END_SYSEX);
     FirmataStream->flush();
@@ -1074,22 +1078,22 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->flush();
             break;
 #ifdef FIRMATA_SERIAL_FEATURE
-        case SERIAL_MESSAGE:
-            serialFeature->handleSysex(this, FirmataStream, command, argc, argv);
-            break;
+            case SERIAL_MESSAGE:
+                serialFeature->handleSysex(this, FirmataStream, command, argc, argv);
+                break;
 #endif
         case CB_GET_REMAIN_MEM:
             sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
             break;
         case CB_GET_RTE_VERSION: {
-            pb_rte pb=pb_rte_init_zero;
+            pb_rte pb = pb_rte_init_zero;
             pb.sn = plc_var.info.rte_ver.sn;
             pb.major = plc_var.info.rte_ver.major;
             pb.minor = plc_var.info.rte_ver.minor;
             pb.build = plc_var.info.rte_ver.build;
             pb.feature = plc_var.info.rte_ver.feature;
             pb.serial_nrs = plc_var.info.rte_ver.serial_nrs;
-            pb.tx_buffer_size = min(FirmataStream->tx_max_size() ,FIRMATA_BUFFER_SZ)* 7 / 8;
+            pb.tx_buffer_size = min(FirmataStream->tx_max_size(), FIRMATA_BUFFER_SZ) * 7 / 8;
             byte *buffer = (byte *) malloc(sizeof(rte_ver_t) + 4);
             pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(rte_ver_t) + 4);
             int ret = pb_encode(&ostream, pb_rte_fields, &pb);
@@ -1142,20 +1146,20 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
-            case CB_GET_RTC:
-                sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
-                break;
-            case CB_SET_RTC:
-                new_time.tm_year = *(u16 *) &argv[0];
-                new_time.tm_mon = argv[2];
-                new_time.tm_mday = argv[3];
-                new_time.tm_hour = argv[4];
-                new_time.tm_min = argv[5];
-                new_time.tm_sec = argv[6];
-                new_time.tm_wday = argv[7];
-                rtc.set_time(&new_time);
-                sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
-                break;
+        case CB_GET_RTC:
+            sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &plc_var.info.rtc);
+            break;
+        case CB_SET_RTC:
+            new_time.tm_year = *(u16 *) &argv[0];
+            new_time.tm_mon = argv[2];
+            new_time.tm_mday = argv[3];
+            new_time.tm_hour = argv[4];
+            new_time.tm_min = argv[5];
+            new_time.tm_sec = argv[6];
+            new_time.tm_wday = argv[7];
+            rtc.set_time(&new_time);
+            sendSysex(FirmataStream, CB_SET_RTC, 0, nullptr);
+            break;
 #endif
 #ifdef ARDUINO
 #ifdef USE_LWIP
@@ -1275,9 +1279,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             if (plc_var.info.plc_curr_app) {
                 void *b = &data[4];
                 plc_var.info.plc_curr_app->dbg_data_get((u32 *) &data[0], (u32 *) &len, (void **) &b);
-                if(len<FirmataStream->tx_max_size())
-                memcpy(&data[4], b, len);
-                else logger.error("CB_GET_V len=%d",len);
+                if (len < FirmataStream->tx_max_size())
+                    memcpy(&data[4], b, len);
+                else logger.error("CB_GET_V len=%d", len);
                 plc_var.info.plc_curr_app->dbg_data_free();
             }
             sendSysex(FirmataStream, CB_GET_V, len + 4, data);
@@ -1377,13 +1381,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     else
                     {
 
-                        vlen = 4;
+                        vlen = 2;
                         *(int *)value_crk = KV_VALUE_ILLEAGAL;
                     }
                 }
                 else
                 {
-                    vlen = 4;
+                    vlen = 2;
                     *(int *)value_crk = KV_NAME_ILLEAGL;
                 }
                 sendSysex(FirmataStream, CB_READ_KEY, vlen, (byte *)value_crk);
@@ -1528,23 +1532,79 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
 #ifdef USE_MEMBLOCK
-        case FM_PUT_DATA_BLOCK:
-            if (argc < 12)
+            case FM_PUT_DATA_BLOCK:
+                if (argc < 12)
+                    break;
+                {
+                    rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
+                    int block = *(int *) &argv[0];
+                    if (block == 0) {
+                        {
+                            u32 object = *(u32 *) &argv[4];
+                            u32 data_address = *(u32 *) &argv[8];
+                            u32 data_len = *(u32 *) &argv[12];
+
+                            dev = mem_block::mems[object];
+                            if (!dev) {
+                                state = NO_DEVICE;
+                            } else {
+                                state = dev->begin(&argv[16], argc - 16, data_address, data_len);
+                                blocksize = FirmataStream->tx_max_size() * 7 / 8 - 16;
+                                if ((state > 0) && (state > blocksize)) {
+                                    state = blocksize;
+                                }
+                                if (state > FIRMATA_BUFFER_SZ * 7 / 8 - 16) {
+                                    blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
+                                    state = blocksize;
+                                }
+                                state &= ~0x3;
+                                // logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16], data_address, data_len);
+                            }
+                        }
+                    } else if (block == -1) {
+                        if (dev) {
+                            if (dev->Shutdown() < 0) {
+                                state = DEVICE_SHUTDOWN_ERR;
+                            } else {
+                                state = 1;
+                                rte.set_state(PLC_STATUS::APP_FLASH_END);
+                                // logger.info("recv end.");
+                                dev = nullptr;
+                            }
+                        }
+                    } else {
+                        if (dev) {
+                            rte.set_state(PLC_STATUS::APP_FLASHING);
+                            if (dev->Write(&argv[4], argc - 4) < 0) {
+                                state = DEVICE_WRITE_ERR;
+                                logger.error("write error %d ,size= %d", block, argc - 8);
+                            } else {
+                                state = block;
+                            }
+                            //  logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
+                        }
+                    }
+                }
+                sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *) &state);
                 break;
-            {
-                rte.set_state(PLC_STATUS::APP_FLASH_BEGIN);
+            case FM_GET_DATA_BLOCK: {
+                state = -1;
                 int block = *(int *) &argv[0];
                 if (block == 0) {
-                    {
+                    if (dev) {
+                        state = DEV_IS_OPEN;
+                    } else {
                         u32 object = *(u32 *) &argv[4];
                         u32 data_address = *(u32 *) &argv[8];
                         u32 data_len = *(u32 *) &argv[12];
-
                         dev = mem_block::mems[object];
                         if (!dev) {
                             state = NO_DEVICE;
                         } else {
-                            state = dev->begin(&argv[16], argc - 16, data_address, data_len);
+                            byte *tbuf = (byte *) malloc(16);
+                            *(int *) &tbuf[0] = 0;
+                            *(int *) &tbuf[4] = dev->begin_read(&argv[16], argc - 16, data_address, data_len);
+                            int state = *(int *) &tbuf[4];
                             blocksize = FirmataStream->tx_max_size() * 7 / 8 - 16;
                             if ((state > 0) && (state > blocksize)) {
                                 state = blocksize;
@@ -1553,86 +1613,30 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                                 blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
                                 state = blocksize;
                             }
-                            state &= ~0x3;
-                            // logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16], data_address, data_len);
+
+                            *(u32 *) &tbuf[8] = state & (~0x3);
+                            sendSysex(FirmataStream, FM_GET_DATA_BLOCK, 12, tbuf);
+                            free(tbuf);
+                            break;
                         }
                     }
-                } else if (block == -1) {
+                } else {
                     if (dev) {
-                        if (dev->Shutdown() < 0) {
-                            state = DEVICE_SHUTDOWN_ERR;
-                        } else {
-                            state = 1;
-                            rte.set_state(PLC_STATUS::APP_FLASH_END);
-                            // logger.info("recv end.");
+                        byte *tbuf = (byte *) malloc(blocksize + 16);
+                        *(int *) &tbuf[0] = block;
+                        *(u32 *) &tbuf[4] = dev->Read(0, blocksize * (block - 1), blocksize, &tbuf[8]);
+                        if (*(u32 *) &tbuf[4] < blocksize) {
+                            dev->Shutdown();
                             dev = nullptr;
                         }
-                    }
-                } else {
-                    if (dev) {
-                        rte.set_state(PLC_STATUS::APP_FLASHING);
-                        if (dev->Write(&argv[4], argc - 4) < 0) {
-                            state = DEVICE_WRITE_ERR;
-                            logger.error("write error %d ,size= %d", block, argc - 8);
-                        } else {
-                            state = block;
-                        }
-                        //  logger.info("recv %d ,size= %d 0x%x 0x%x", block, argc - 4, argv[4], argv[5]);
-                    }
-                }
-            }
-            sendSysex(FirmataStream, FM_PUT_DATA_BLOCK, 4, (byte *) &state);
-            break;
-        case FM_GET_DATA_BLOCK: {
-            state = -1;
-            int block = *(int *) &argv[0];
-            if (block == 0) {
-                if (dev) {
-                    state = DEV_IS_OPEN;
-                } else {
-                    u32 object = *(u32 *) &argv[4];
-                    u32 data_address = *(u32 *) &argv[8];
-                    u32 data_len = *(u32 *) &argv[12];
-                    dev = mem_block::mems[object];
-                    if (!dev) {
-                        state = NO_DEVICE;
-                    } else {
-                        byte *tbuf = (byte *) malloc(16);
-                        *(int *) &tbuf[0] = 0;
-                        *(int *) &tbuf[4] = dev->begin_read(&argv[16], argc - 16, data_address, data_len);
-                        int state = *(int *) &tbuf[4];
-                        blocksize = FirmataStream->tx_max_size() * 7 / 8 - 16;
-                        if ((state > 0) && (state > blocksize)) {
-                            state = blocksize;
-                        }
-                        if (state > FIRMATA_BUFFER_SZ * 7 / 8 - 16) {
-                            blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
-                            state = blocksize;
-                        }
-
-                        *(u32 *) &tbuf[8] = state & (~0x3);
-                        sendSysex(FirmataStream, FM_GET_DATA_BLOCK, 12, tbuf);
+                        sendSysex(FirmataStream, FM_GET_DATA_BLOCK, *(u32 *) &tbuf[4] + 8, tbuf);
                         free(tbuf);
                         break;
                     }
                 }
-            } else {
-                if (dev) {
-                    byte *tbuf = (byte *) malloc(blocksize + 16);
-                    *(int *) &tbuf[0] = block;
-                    *(u32 *) &tbuf[4] = dev->Read(0, blocksize * (block - 1), blocksize, &tbuf[8]);
-                    if (*(u32 *) &tbuf[4] < blocksize) {
-                        dev->Shutdown();
-                        dev = nullptr;
-                    }
-                    sendSysex(FirmataStream, FM_GET_DATA_BLOCK, *(u32 *) &tbuf[4] + 8, tbuf);
-                    free(tbuf);
-                    break;
-                }
+                sendSysex(FirmataStream, FM_GET_DATA_BLOCK, 4, (byte *) &state);
+                break;
             }
-            sendSysex(FirmataStream, FM_GET_DATA_BLOCK, 4, (byte *) &state);
-            break;
-        }
 #endif
 #if defined(RTE_APP) || defined(PLC)
         case FM_GET_LOC_SIZE:
@@ -1969,10 +1973,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 sendSysex(FirmataStream, FM_REMOVE_FILE, 4, (byte *) &len);
                 break;
 #endif
-        default:
-            len = -1;
+        default: {
+            short len = -1;
             logger.error("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
-            sendSysex(FirmataStream, command, 4, (byte *) &len);
+            sendSysex(FirmataStream, command, 2, (byte *) &len);
+        }
             break;
     }
     set_flag(command);
