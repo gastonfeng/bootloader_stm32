@@ -291,16 +291,6 @@ private:
 
     virtual void sysexCallback(nStream *FirmataStream, byte command, uint16_t argc, byte *argv);
 
-    void reportDigitalCallback(Stream *, byte port, int value);
-
-    void setPinValueCallback(Stream *, byte pin, int value);
-
-    void systemResetCallback(Stream *);
-
-    void setPinModeCallback(nStream *Fs, byte pin, int mode);
-
-    void analogWriteCallback(mFirmata *fm, Stream *, byte i, int val);
-
     void stringCallback(nStream *Fs, char *myString);
 
     void analogWriteCallback(Stream *, byte i, int val);
