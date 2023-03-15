@@ -1,4 +1,3 @@
-#ifdef USE_FIRMATA
 
 #include "mFirmata.h"
 #include "plc_const.h"
@@ -1723,4 +1722,3 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     set_flag(command);
 }
 
-#endif
