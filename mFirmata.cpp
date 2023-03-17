@@ -452,6 +452,9 @@ void mFirmata::marshaller_sendSysex(nStream *FirmataStream, uint8_t command, siz
     FirmataStream->write(command);
     if (bytec > 0)
         encodeByteStream(FirmataStream, bytec, bytev, FIRMATA_BUFFER_SZ);
+    else {
+        crc_en = false;
+    }
     if (crc_en)
         FirmataStream->write(0xFA);
     else
@@ -860,12 +863,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_PLC_START:
             rte.app_start();
             len = 0;
-            sendSysex(FirmataStream, CB_PLC_START, 4, (byte *) &len);
+            sendSysex(FirmataStream, CB_PLC_START, 2, (byte *) &len);
             break;
         case CB_PLC_STOP:
             rte.app_stop();
             len = 0;
-            sendSysex(FirmataStream, CB_PLC_STOP, 4, (byte *) &len);
+            sendSysex(FirmataStream, CB_PLC_STOP, 2, (byte *) &len);
             break;
         case REPORT_PLC_MD5:
             if (plc_var.info.plc_curr_app)
@@ -875,7 +878,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case CB_PLC_LOAD:
             len = 0;
-            sendSysex(FirmataStream, CB_PLC_LOAD, 4, (byte *) &len);
+            sendSysex(FirmataStream, CB_PLC_LOAD, 2, (byte *) &len);
             rte.app_stop();
             app.unload();
             rte.load_app();
@@ -884,12 +887,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             rte.app_stop();
             app.unload();
             len = 0;
-            sendSysex(FirmataStream, CB_PLC_REPAIR, 4, (byte *) &len);
+            sendSysex(FirmataStream, CB_PLC_REPAIR, 2, (byte *) &len);
             break;
 #ifdef ARDUINO
         case FM_FLASH_CLEAR:
             len = 0;
-            sendSysex(FirmataStream, FM_FLASH_CLEAR, 4, (byte *) &len);
+            sendSysex(FirmataStream, FM_FLASH_CLEAR, 2, (byte *) &len);
             board.flashClear();
             hwboard::reset();
             break;
@@ -996,7 +999,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 }
                 i += len + 3;
             }
-            sendSysex(FirmataStream, CB_SET_FORCE, 4, (byte *) &len);
+            sendSysex(FirmataStream, CB_SET_FORCE, 2, (byte *) &len);
             break;
 
         case CB_CLEAR_V:
@@ -1008,7 +1011,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             } else {
                 logger.debug("monitor var not reset.plc_state=0x%x ", plc_var.info.plc_state);
             }
-            sendSysex(FirmataStream, CB_CLEAR_V, 4, (byte *) &len);
+            sendSysex(FirmataStream, CB_CLEAR_V, 2, (byte *) &len);
             break;
         case CB_SET_V:
             len = -1;
@@ -1023,13 +1026,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 len = argc / 2;
                 logger.debug("CB_SET_V %d", len);
             }
-            sendSysex(FirmataStream, CB_SET_V, 4, (byte *) &len);
+            sendSysex(FirmataStream, CB_SET_V, 2, (byte *) &len);
             break;
         case CB_GET_V: {
             int len = 0;
             data = (u8 *) malloc(FirmataStream->tx_max_size());
             if (plc_var.info.plc_curr_app) {
-                void *b = &data[4];
+                void *b = nullptr;
                 plc_var.info.plc_curr_app->dbg_data_get((u32 *) &data[0], (u32 *) &len, (void **) &b);
                 if (len < FirmataStream->tx_max_size())
                     memcpy(&data[4], b, len);
@@ -1037,6 +1040,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 plc_var.info.plc_curr_app->dbg_data_free();
             }
             sendSysex(FirmataStream, CB_GET_V, len + 4, data);
+
             free(data);
         }
             break;

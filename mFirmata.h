@@ -192,7 +192,7 @@ public:
 
     int loop(nStream *FirmataStream);
 
-    void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool crc_en = false);
+    void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool crc_en = true);
 
     void replySysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev);
 
