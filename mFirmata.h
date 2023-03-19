@@ -141,7 +141,7 @@ enum {
     CB_SET_PLC_FILE,
     CB_CPU_USAGE,
 
-    CB_REMOVE_FILE,
+    FM_REMOVE_FILE,
     CB_WIFI_LIST,
     CB_WIFI_SET_PASS,
     CB_GOTO_IAP,
@@ -179,6 +179,7 @@ enum {
     FM_INFO_SERIAL_RX,
     FM_INFO_SERIAL_TX,
     FM_LFS_LS,
+    FM_GET_DATA_BLOCK,
     FM_LAST
 };
 enum {
@@ -191,16 +192,17 @@ public:
 
     int loop(nStream *FirmataStream);
 
-    void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool crc_en = false);
+    void sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool crc_en = true);
 
     void replySysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev);
 
     void sendAnalog(nStream *pStream, byte i, int i1);
 
     void setPinMode(byte i, int i1);
-
+#ifndef THIS_IS_BOOTLOADER
     void report(nStream *FirmataStream);
 
+#endif
     int decodeByteStream(size_t bytec, const byte *bytev, byte *buf);
 
 private:
@@ -225,7 +227,7 @@ private:
 #ifdef USE_MEMBLOCK
     mem_block *dev = nullptr;
 #endif
-    //时序数据库操作
+    // 时序数据库操作
 #ifdef USE_KVDB
     struct tsdb_sec_info sector
     {
@@ -248,7 +250,7 @@ private:
     u32 last_tick{};
     bool use_sn;
     u32 sn;
-
+    int blocksize;
     void marshaller_sendSysex(nStream *FirmataStream, uint8_t command, size_t bytec, uint8_t *bytev);
 
     void encodeByteStream(nStream *FirmataStream, size_t bytec, uint8_t *bytev, size_t max_bytes);
@@ -289,21 +291,12 @@ private:
 
     virtual void sysexCallback(nStream *FirmataStream, byte command, uint16_t argc, byte *argv);
 
-    void reportDigitalCallback(Stream *, byte port, int value);
-
-    void setPinValueCallback(Stream *, byte pin, int value);
-
-    void systemResetCallback(Stream *);
-
-    void setPinModeCallback(nStream *Fs, byte pin, int mode);
-
-    void analogWriteCallback(mFirmata *fm, Stream *, byte i, int val);
-
     void stringCallback(nStream *Fs, char *myString);
 
     void analogWriteCallback(Stream *, byte i, int val);
 
     bool crc_en;
+
 protected:
     int getValue(nStream *pStream, int index, u8 *value_buf, u16 len);
 

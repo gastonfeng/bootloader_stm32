@@ -1,4 +1,4 @@
-#if defined(USE_LWIP) || defined(windows_x86) || defined(SYLIXOS) && defined(USE_FIRMATA)
+#if  defined(USE_FIRMATA_SOCKET)
 #ifdef windows_x86
 #include <ws2tcpip.h>
 #define MSG_DONTWAIT 0x0
@@ -20,8 +20,36 @@
 
 #define closesocket close
 #endif
+#ifdef LINUX
+//#include <termio.h> /* POSIX terminal control definitions */
+#include <sys/socket.h>
+#include <netinet/in.h>  /* required for htons() and ntohs() */
+#include <netinet/tcp.h> /* TCP level socket options */
+#include <netinet/ip.h>  /* IP  level socket options */
+#include <pthread.h>
+#include <sched.h> /* sched_yield() */
+#include <unistd.h>
 
+#include <fcntl.h>
+#define lwip_connect connect
+#define lwip_accept accept
+// #define sendmsg send
+#define lwip_read read
+#define closesocket close
+#define MSG_DONTWAIT 0x0
+#endif
+#ifdef MACOSX
 
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <netinet/tcp.h>
+#include <cstdio>
+#include <unistd.h>
+
+#define closesocket close
+#endif
 #ifdef windows_x86
 #include <ws2tcpip.h>
 #define MSG_DONTWAIT 0x0
@@ -31,7 +59,7 @@
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
-#ifndef windows_x86
+#if !(defined( windows_x86) || defined( MACOSX))
 extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
 #endif
 using peer_t = struct {
@@ -39,8 +67,9 @@ using peer_t = struct {
     struct sockaddr_in addres{};
 
     /* The same for the receiving message. */
-    char receiving_buffer[DATA_MAXSIZE]{};
-    size_t current_receiving_byte{};
+    char receiving_buffer[ETH_MAX_PAYLOAD]{};
+    int current_receiving_byte{};
+    u32 last_tick;
 };
 peer_t connection_list[MAX_CLIENTS]{};
 peer_t *cur_peer{};
@@ -67,7 +96,7 @@ int create_peer(peer_t *peer) {
 #undef write
 #undef read
 
-size_t socketFirmata::write(u8 c) {
+int socketFirmata::write(u8 c) {
     txbuf.push_back(c);
     return 1;
 }
@@ -95,9 +124,10 @@ int socketFirmata::peek() {
 int socketFirmata::receive_from_peer(void *p) {
     //    logger.debug("Ready for recv() from %s.\n", peer_get_addres_str(peer));
     auto *peer = (peer_t *) p;
-    size_t len_to_receive;
-    ssize_t received_count;
-    size_t received_total = 0;
+    int len_to_receive;
+    int received_count;
+    int received_total = 0;
+    peer->last_tick = rtos::ticks();
     len_to_receive = sizeof(peer->receiving_buffer) - peer->current_receiving_byte;
 
     // logger.error("Let's try to recv() %zd bytes... ", len_to_receive);
@@ -121,6 +151,7 @@ int socketFirmata::receive_from_peer(void *p) {
     return 0;
 }
 
+#undef bind
 /* Start listening socket sock. */
 int socketFirmata::start_listen_socket(int *sock) {
     // Obtain a file descriptor for our "listening" socket.
@@ -146,7 +177,11 @@ int socketFirmata::start_listen_socket(int *sock) {
 #else
     my_addr.sin_port = 0;
 #endif
-    if (bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr)) != 0) {
+#if defined( MACOSX)||defined(LINUX)||defined(windows_x86)
+    if (::bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr))) {
+#else
+    if (lwip_bind(*sock, (struct sockaddr *) &my_addr, sizeof(struct sockaddr))) {
+#endif
         logger.error("bind %d", errno);
         return -1;
     }
@@ -230,6 +265,7 @@ int socketFirmata::handle_new_connection() {
             i.socket = new_client_sock;
             i.addres = client_addr;
             i.current_receiving_byte = 0;
+            i.last_tick = rtos::ticks();
             return 0;
         }
     }
@@ -250,8 +286,8 @@ int close_client_connection(peer_t *client) {
 }
 
 int socketFirmata::handle_received_message() {
-    while(available()){
-    firm.loop(this);
+    while (available()) {
+        firm.loop(this);
     }
     return 0;
 }
@@ -287,6 +323,7 @@ int socketFirmata::loop() {
     while (true) {
 
         int high_sock = listen_sock;
+        check_socket();
         build_fd_sets(&read_fds, &write_fds, &except_fds);
 
         high_sock = listen_sock;
@@ -376,6 +413,15 @@ int socketFirmata::read_wait(int timeout) {
     if (available_wait(timeout))
         return read();
     return -1;
+}
+
+void socketFirmata::check_socket() {
+    for (auto &i: connection_list) {
+        if ((i.socket != -1) && ((rtos::ticks() - i.last_tick) > 10000)) {
+            close_client_connection(&i);
+        }
+    }
+
 }
 
 #endif

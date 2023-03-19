@@ -1,8 +1,9 @@
 #ifndef SOCKETFIRMATA_H
 #define SOCKETFIRMATA_H
-#if defined(USE_LWIP) || defined(windows_x86) || defined(SYLIXOS)
+
 
 #include <vector>
+#include <csignal>
 
 #ifdef RTE_APP
 
@@ -32,19 +33,21 @@
 #define closesocket close
 #endif
 
-#include <csignal>
+#ifdef ARDUINO_ARCH_STM32
+#include <stm32_def.h>
+#endif
 
-#define DATA_MAXSIZE FIRMATA_BUFFER_SZ
+#ifndef ETH_MAX_PAYLOAD
+#define ETH_MAX_PAYLOAD FIRMATA_BUFFER_SZ
+#endif
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16
 #endif
-#ifndef windows_x86
-extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
-#endif
+
 #undef write
 #undef read
 #undef close
-
+#undef bind
 
 class socketFirmata : public nStream, public smodule {
 
@@ -74,7 +77,7 @@ public:
     int diag(u32 tick) override;
 
 
-    size_t write(u8 c) override;
+    int write(u8 c) override;
 
     int available() override;
 
@@ -111,14 +114,15 @@ public:
 
     int connect_server(const char *host, int port);
 
-    size_t tx_max_size() override {
-        return 536;
+    int tx_max_size() override {
+        return ETH_MAX_PAYLOAD;
     }
 
 private:
-    std::vector<u8> txbuf;
+    std::vector <u8> txbuf;
     mFirmata firm;
+
+    void check_socket();
 };
 
-#endif
 #endif

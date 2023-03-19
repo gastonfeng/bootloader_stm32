@@ -1,3 +1,4 @@
+#ifndef THIS_IS_BOOTLOADER
 /*
   SerialFirmata.cpp
   Copyright (C) 2016 Jeff Hoefs. All rights reserved.
@@ -16,10 +17,10 @@
 
   Last updated March 16th, 2020
 */
-#ifdef ARDUINO
 
 #include <kSerial.h>
 #include <rte_data.h>
+#include "SerialFirmata.h"
 
 // The RX and TX hardware FIFOs of the ESP8266 hold 128 bytes that can be
 // extended using interrupt handlers. The Arduino constants are not available
@@ -42,6 +43,13 @@ SerialFirmata::SerialFirmata() {
       maxRxDelay[i] = FIRMATA_SERIAL_RX_DELAY; // @todo provide setter
     }
 #endif
+}
+
+int min(int v1, int v2) {
+    if (v1 < v2) {
+        return v1;
+    }
+    return v2;
 }
 
 bool SerialFirmata::handlePinMode(mFirmata *fm, byte pin, int mode) {
@@ -80,7 +88,7 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                     break;
                 }
                 u32 baud;
-                baud = *(u32 *) &argv[1];
+                baud = *(u32 * ) & argv[1];
                 if (baud > 115200) {
                     return false;
                 }
