@@ -1120,22 +1120,23 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             byte *value_crk;
             value_crk = (byte *) malloc(FDB_KV_NAME_MAX + FDB_STR_KV_VALUE_MAX_SIZE + 2);
             memset(value_crk, 0, FDB_KV_NAME_MAX + FDB_STR_KV_VALUE_MAX_SIZE + 2);
-            strncpy((char *) value_crk, (const char *) argv, name_len);
+            strncpy((char *) &value_crk[2], (const char *) argv, name_len);
             if (name_len < FDB_KV_NAME_MAX && name_len > 0) {
 
                 buffer = (byte *) kvdb.get((const char *) argv);
                 vlen = strlen((const char *) buffer);
                 if (buffer && (vlen > 0) && (vlen < FDB_STR_KV_VALUE_MAX_SIZE)) {
-                    strncpy((char *) &value_crk[name_len + 1], (const char *) buffer, vlen);
-                    vlen += name_len + 2;
+                    strncpy((char *) &value_crk[name_len + 3], (const char *) buffer, vlen);
+                    vlen += name_len + 4;
+                    *(short *) value_crk = 0;
                 } else {
 
-                    vlen = 2;
-                    *(int *) value_crk = KV_VALUE_ILLEAGAL;
+                    vlen = name_len +3;
+                    *(short *) value_crk = KV_VALUE_ILLEAGAL;
                 }
             } else {
-                vlen = 2;
-                *(int *) value_crk = KV_NAME_ILLEAGL;
+                vlen = name_len +3;
+                *(short *) value_crk = KV_NAME_ILLEAGL;
             }
             sendSysex(FirmataStream, CB_READ_KEY, vlen, (byte *) value_crk);
             free(value_crk);
@@ -1163,8 +1164,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     strncpy((char *) &value[key_len + 1], (const char *) buffer, vlen);
                     vlen += key_len + 2;
                 } else {
-                    vlen = 4;
-                    *(int *) value = KV_VALUE_ILLEAGAL;
+                    vlen = 2;
+                    *(short *) value = KV_VALUE_ILLEAGAL;
                 }
             }
             sendSysex(FirmataStream, CB_WRITE_KEY, vlen, (byte *) value);
