@@ -1137,11 +1137,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     *(short *) value_crk = 0;
                 } else {
 
-                    vlen = name_len + 3;
+                    vlen = name_len + 4;
                     *(short *) value_crk = KV_VALUE_ILLEAGAL;
                 }
             } else {
-                vlen = name_len + 3;
+                vlen = name_len + 4;
                 *(short *) value_crk = KV_NAME_ILLEAGL;
             }
             sendSysex(FirmataStream, CB_READ_KEY, vlen, (byte *) value_crk);
