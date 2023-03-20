@@ -664,10 +664,12 @@ void mFirmata::processSysexMessage(nStream *stream) {
             if (sysexBytesRead > 1) {
                 byte *buffer = (byte *) malloc(sysexBytesRead);
                 int len = decodeByteStream(sysexBytesRead - 1, &dataBuffer[1], buffer);
+                byte *data = buffer;
                 if (use_sn) {
                     sn = *(uint32_t *) buffer;
+                    data=buffer+4;
                 }
-                sysexCallback(stream, dataBuffer[0], len, buffer);
+                sysexCallback(stream, dataBuffer[0], len, data);
                 free(buffer);
             } else {
                 sysexCallback(stream, dataBuffer[0], sysexBytesRead - 1, &dataBuffer[1]);
