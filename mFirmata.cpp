@@ -667,7 +667,7 @@ void mFirmata::processSysexMessage(nStream *stream) {
                 byte *data = buffer;
                 if (use_sn) {
                     sn = *(uint32_t *) buffer;
-                    data=buffer+4;
+                    data = buffer + 4;
                 }
                 sysexCallback(stream, dataBuffer[0], len, data);
                 free(buffer);
@@ -1214,41 +1214,43 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             sendSysex(FirmataStream, CB_SET_TSL_STATUS, 2, (byte *) &len);
             break;
-        case CB_GET_TSL:
+        case CB_GET_TSL: {
             char *tbuf;
             int tlen;
-            tbuf = (char *) malloc(256);
-            memset(tbuf, 0, 256);
-            tlen = tsdb.query_read((const char *) argv, (u32 *) &tbuf[0], (fdb_time_t *) &tbuf[4],
-                                   (int *) (tbuf + 8),
-                                   tbuf + 12, 256 - 12);
-            if (tlen < 0)
+            int buf_sz = FirmataStream->tx_max_size();
+            tbuf = (char *) malloc(buf_sz);
+            memset(tbuf, 0, buf_sz);
+            tlen = tsdb.query_read((const char *) argv, (u32 *) &tbuf[2], (fdb_time_t *) &tbuf[6],
+                                   (int *) (tbuf + 10),
+                                   tbuf + 14, buf_sz - 14);
+            if (tlen < 0) {
+                *(short *) tbuf = tlen;
                 tlen = 0;
-            else {
-                *(u32 *) &tbuf[tlen] = crc_16((u8 *) tbuf, tlen, 0);
-                tlen += 4;
             }
-            sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen, (byte *) tbuf);
+            sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen + 14, (byte *) tbuf);
             free(tbuf);
+        }
             break;
-        case CB_GET_TSL_BY_ID:
+        case CB_GET_TSL_BY_ID: {
+            char *tbuf;
+            int tlen;
             key_len = strlen((const char *) argv);
-            tbuf = (char *) malloc(256);
-            memset(tbuf, 0, 256);
+            int buf_sz = FirmataStream->tx_max_size() * 7 / 8;
+            tbuf = (char *) malloc(buf_sz);
+            memset(tbuf, 0, buf_sz);
             tlen = 4;
             *(int *) tbuf = -1;
-            if (argc == key_len + 5) {
-                tlen = tsdb.query_read_by_id((const char *) argv, *(u32 *) &argv[key_len + 1], (u32 *) &tbuf[0],
-                                             (fdb_time_t *) &tbuf[4],
-                                             (int *) (tbuf + 8),
-                                             tbuf + 12, 256 - 12);
-                if (tlen < 0)
-                    tlen = 0;
-
-
+            tlen = tsdb.query_read_by_id((const char *) argv, *(u32 *) &argv[key_len + 1], (u32 *) &tbuf[2],
+                                         (fdb_time_t *) &tbuf[6],
+                                         (int *) (tbuf + 10),
+                                         tbuf + 14, buf_sz - 14);
+            if (tlen < 0) {
+                *(short *) tbuf = tlen;
+                tlen = 0;
             }
-            sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte) tlen, (byte *) tbuf);
+            sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte) tlen + 14, (byte *) tbuf);
             free(tbuf);
+        }
             break;
         case CB_TSL_CLEAR:
             key_len = strlen((const char *) argv);
