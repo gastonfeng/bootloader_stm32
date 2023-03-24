@@ -668,6 +668,7 @@ void mFirmata::processSysexMessage(nStream *stream) {
                 if (use_sn) {
                     sn = *(uint32_t *) buffer;
                     data = buffer + 4;
+                    len -= 4;
                 }
                 sysexCallback(stream, dataBuffer[0], len, data);
                 free(buffer);
@@ -1193,12 +1194,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef USE_TSDB
         case CB_SET_TSL_RANGE:
             tsl_query q;
+            memset(&q, 0, sizeof(q));
             key_len = strlen((const char *) argv);
             if (argc == key_len + 13) {
                 start = *(u32 *) &argv[key_len + 1];
                 end = *(u32 *) &argv[key_len + 1 + 4];
                 state = (int) *(u32 *) &argv[key_len + 1 + 8];
-                memset(&q, 0, sizeof(q));
                 tsdb.query((const char *) argv, start, end, (fdb_tsl_status) (state), &q);
             }
             sendSysex(FirmataStream, CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *) &q);
