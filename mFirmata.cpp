@@ -1195,23 +1195,29 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_SET_TSL_RANGE:
             tsl_query q;
             memset(&q, 0, sizeof(q));
-            key_len = strlen((const char *) argv);
-            if (argc == key_len + 13) {
-                start = *(u32 *) &argv[key_len + 1];
-                end = *(u32 *) &argv[key_len + 1 + 4];
-                state = (int) *(u32 *) &argv[key_len + 1 + 8];
-                tsdb.query((const char *) argv, start, end, (fdb_tsl_status) (state), &q);
+            if (argc == 13) {
+                u8 db = argv[0];
+                start = *(u32 *) &argv[1];
+                end = *(u32 *) &argv[1 + 4];
+                state = (int) *(u32 *) &argv[1 + 8];
+                TSDB *tsdb = TSDB::db(db);
+                if (tsdb) {
+                    tsdb->query(start, end, (fdb_tsl_status) (state), &q);
+                }
             }
             sendSysex(FirmataStream, CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *) &q);
             break;
         case CB_SET_TSL_STATUS:
-            key_len = strlen((const char *) argv);
             len = -1;
-            if (argc == key_len + 13) {
-                start = *(u32 *) &argv[key_len + 1];
-                end = *(u32 *) &argv[key_len + 1 + 4];
-                state = (int) *(u32 *) &argv[key_len + 1 + 8];
-                len = tsdb.set_status((const char *) argv, start, end, (fdb_tsl_status) (state));
+            if (argc == 13) {
+                u8 db = argv[0];
+                start = *(u32 *) &argv[1];
+                end = *(u32 *) &argv[1 + 4];
+                state = (int) *(u32 *) &argv[1 + 8];
+                TSDB *tsdb = TSDB::db(db);
+                if (tsdb) {
+                    len = tsdb->set_status(start, end, (fdb_tsl_status) (state));
+                }
             }
             sendSysex(FirmataStream, CB_SET_TSL_STATUS, 2, (byte *) &len);
             break;
@@ -1221,9 +1227,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             int buf_sz = FirmataStream->tx_max_size();
             tbuf = (char *) malloc(buf_sz);
             memset(tbuf, 0, buf_sz);
-            tlen = tsdb.query_read((const char *) argv, (u32 *) &tbuf[2], (fdb_time_t *) &tbuf[6],
-                                   (int *) (tbuf + 10),
-                                   tbuf + 14, buf_sz - 14);
+            u8 db = argv[0];
+            TSDB *tsdb = TSDB::db(db);
+            if (tsdb) {
+                tlen = tsdb->query_read((u32 *) &tbuf[2], (fdb_time_t *) &tbuf[6],
+                                        (int *) (tbuf + 10),
+                                        tbuf + 14, buf_sz - 14);
+            }
             if (tlen < 0) {
                 *(short *) tbuf = tlen;
                 tlen = 0;
@@ -1235,16 +1245,19 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_GET_TSL_BY_ID: {
             char *tbuf;
             int tlen;
-            key_len = strlen((const char *) argv);
+            u8 db = argv[0];
             int buf_sz = FirmataStream->tx_max_size() * 7 / 8;
             tbuf = (char *) malloc(buf_sz);
             memset(tbuf, 0, buf_sz);
             tlen = 4;
             *(int *) tbuf = -1;
-            tlen = tsdb.query_read_by_id((const char *) argv, *(u32 *) &argv[key_len + 1], (u32 *) &tbuf[2],
-                                         (fdb_time_t *) &tbuf[6],
-                                         (int *) (tbuf + 10),
-                                         tbuf + 14, buf_sz - 14);
+            TSDB *tsdb = TSDB::db(db);
+            if (tsdb) {
+                tlen = tsdb->query_read_by_id(*(u32 *) &argv[key_len + 1], (u32 *) &tbuf[2],
+                                              (fdb_time_t *) &tbuf[6],
+                                              (int *) (tbuf + 10),
+                                              tbuf + 14, buf_sz - 14);
+            }
             if (tlen < 0) {
                 *(short *) tbuf = tlen;
                 tlen = 0;
@@ -1253,12 +1266,17 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             free(tbuf);
         }
             break;
-        case CB_TSL_CLEAR:
+        case CB_TSL_CLEAR: {
             key_len = strlen((const char *) argv);
             // index = *(int *) &argv[key_len + 1];
             state = 0;
-            sendSysex(FirmataStream, CB_TSL_CLEAR, (byte) sizeof(state), (byte *) &state);
-            state = TSL::clear((const char *) (argv));
+            u8 db = argv[0];
+            TSDB *tsdb = TSDB::db(db);
+            if (tsdb) {
+                sendSysex(FirmataStream, CB_TSL_CLEAR, (byte) sizeof(state), (byte *) &state);
+                state = tsdb->clear();
+            }
+        }
             break;
 #endif
 #ifdef USE_SOEM
