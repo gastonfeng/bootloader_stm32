@@ -1221,27 +1221,27 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             sendSysex(FirmataStream, CB_SET_TSL_STATUS, 2, (byte *) &len);
             break;
-        case CB_GET_TSL: {
-            char *tbuf;
-            int tlen;
-            int buf_sz = FirmataStream->tx_max_size();
-            tbuf = (char *) malloc(buf_sz);
-            memset(tbuf, 0, buf_sz);
-            u8 db = argv[0];
-            TSDB *tsdb = TSDB::db(db);
-            if (tsdb) {
-                tlen = tsdb->query_read((u32 *) &tbuf[2], (fdb_time_t *) &tbuf[6],
-                                        (int *) (tbuf + 10),
-                                        tbuf + 14, buf_sz - 14);
-            }
-            if (tlen < 0) {
-                *(short *) tbuf = tlen;
-                tlen = 0;
-            }
-            sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen + 14, (byte *) tbuf);
-            free(tbuf);
-        }
-            break;
+            // case CB_GET_TSL: {
+            //     char *tbuf;
+            //     int tlen;
+            //     int buf_sz = FirmataStream->tx_max_size();
+            //     tbuf = (char *) malloc(buf_sz);
+            //     memset(tbuf, 0, buf_sz);
+            //     u8 db = argv[0];
+            //     TSDB *tsdb = TSDB::db(db);
+            //     if (tsdb) {
+            //         tlen = tsdb->query_read((u32 *) &tbuf[1], (fdb_time_t *) &tbuf[6],
+            //                                 (int *) (tbuf + 10),
+            //                                 tbuf + 14, buf_sz - 14);
+            //     }
+            //     if (tlen < 0) {
+            //         *(short *) tbuf = tlen;
+            //         tlen = 0;
+            //     }
+            //     sendSysex(FirmataStream, CB_GET_TSL, (byte) tlen + 14, (byte *) tbuf);
+            //     free(tbuf);
+            // }
+            //     break;
         case CB_GET_TSL_BY_ID: {
             char *tbuf;
             int tlen;
@@ -1249,20 +1249,22 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             int buf_sz = FirmataStream->tx_max_size() * 7 / 8;
             tbuf = (char *) malloc(buf_sz);
             memset(tbuf, 0, buf_sz);
-            tlen = 4;
-            *(int *) tbuf = -1;
+            tlen = 2;
+            *(short *) tbuf = 0;
             TSDB *tsdb = TSDB::db(db);
             if (tsdb) {
-                tlen = tsdb->query_read_by_id(*(u32 *) &argv[key_len + 1], (u32 *) &tbuf[2],
+                tlen = tsdb->query_read_by_id(*(u32 *) &argv[1], (u32 *) &tbuf[2],
                                               (fdb_time_t *) &tbuf[6],
                                               (int *) (tbuf + 10),
                                               tbuf + 14, buf_sz - 14);
             }
             if (tlen < 0) {
                 *(short *) tbuf = tlen;
-                tlen = 0;
+                tlen = 2;
+            } else {
+                tlen += 14;
             }
-            sendSysex(FirmataStream, CB_GET_TSL_BY_ID, (byte) tlen + 14, (byte *) tbuf);
+            sendSysex(FirmataStream, CB_GET_TSL_BY_ID, tlen, (byte *) tbuf);
             free(tbuf);
         }
             break;
