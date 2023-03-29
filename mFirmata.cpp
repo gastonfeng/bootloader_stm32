@@ -1320,12 +1320,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             state = NO_DEVICE;
                         } else {
                             state = dev->begin(&argv[16], argc - 16, data_address, data_len);
-                            blocksize = FirmataStream->tx_max_size() * 7 / 8 - 16;
+                            blocksize = (FirmataStream->tx_max_size() * 7 / 8 - 16) & (~0x3);
                             if ((state > 0) && (state > blocksize)) {
                                 state = blocksize;
                             }
                             if (state > FIRMATA_BUFFER_SZ * 7 / 8 - 16) {
-                                blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
+                                blocksize = (FIRMATA_BUFFER_SZ * 7 / 8 - 16) & (~0x3);
                                 state = blocksize;
                             }
                             state &= ~0x3;
@@ -1375,17 +1375,14 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         byte *tbuf = (byte *) malloc(16);
                         *(int *) &tbuf[0] = 0;
                         *(int *) &tbuf[4] = dev->begin_read(&argv[16], argc - 16, data_address, data_len);
-                        int state = *(int *) &tbuf[4];
-                        blocksize = FirmataStream->tx_max_size() * 7 / 8 - 16;
-                        if ((state > 0) && (state > blocksize)) {
-                            state = blocksize;
-                        }
-                        if (state > FIRMATA_BUFFER_SZ * 7 / 8 - 16) {
-                            blocksize = FIRMATA_BUFFER_SZ * 7 / 8 - 16;
-                            state = blocksize;
+                        blocksize = (FirmataStream->tx_max_size() * 7 / 8 - 16) & (~0x3);
+
+                        if (blocksize > FIRMATA_BUFFER_SZ * 7 / 8 - 16) {
+                            blocksize = (FIRMATA_BUFFER_SZ * 7 / 8 - 16) & (~0x3);
+
                         }
 
-                        *(u32 *) &tbuf[8] = state & (~0x3);
+                        *(u32 *) &tbuf[8] = blocksize;
                         sendSysex(FirmataStream, FM_GET_DATA_BLOCK, 12, tbuf);
                         free(tbuf);
                         break;
