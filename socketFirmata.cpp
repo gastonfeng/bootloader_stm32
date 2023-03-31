@@ -257,7 +257,7 @@ int socketFirmata::handle_new_connection() {
     char client_ipv4_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &client_addr.sin_addr, client_ipv4_str, INET_ADDRSTRLEN);
 
-    logger.debug("Incoming connection from %s:%d.\n", client_ipv4_str, client_addr.sin_port);
+    logger.debug("Incoming connection from %s:%d.", client_ipv4_str, client_addr.sin_port);
 #endif
 
     for (auto &i: connection_list) {
