@@ -1112,7 +1112,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             break;
         case FM_FLASH_BOOT:
-            len = board.updateBootbin();
+            len = board.flash_bootloader_from_lfs();
             sendSysex(FirmataStream, FM_FLASH_BOOT, len, (byte *) &len);
             break;
 #endif
