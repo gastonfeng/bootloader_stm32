@@ -842,25 +842,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_GET_REMAIN_MEM:
             sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var.info.remain_mem);
             break;
-        case CB_GET_RTE_VERSION: {
-            pb_rte pb = pb_rte_init_zero;
-            pb.sn = plc_var.info.rte_ver.sn;
-            pb.major = plc_var.info.rte_ver.major;
-            pb.minor = plc_var.info.rte_ver.minor;
-            pb.build = plc_var.info.rte_ver.build;
-            pb.feature = plc_var.info.rte_ver.feature;
-            pb.serial_nrs = plc_var.info.rte_ver.serial_nrs;
-            pb.tx_buffer_size = min(FirmataStream->tx_max_size(), FIRMATA_BUFFER_SZ) * 7 / 8;
-            byte *buffer = (byte *) malloc(sizeof(rte_ver_t) + 4);
-            pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(rte_ver_t) + 4);
-            int ret = pb_encode(&ostream, pb_rte_fields, &pb);
-            if (!ret) {
-                const char *error = PB_GET_ERROR(&ostream);
-                logger.error("dir_buf pb_encode error: %s", error);
-            }
-            sendSysex(FirmataStream, CB_GET_RTE_VERSION, ostream.bytes_written, buffer);
-            free(buffer);
-        }
+        case CB_GET_RTE_VERSION:
+            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver_t), (uint8_t *) &plc_var.info.rte_ver);
             break;
 #if defined(RTE_APP) || defined(PLC)
         case CB_PLC_START:
