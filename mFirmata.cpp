@@ -1601,7 +1601,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         *(((uint8_t *) &plc_var) + indexv + i) = argv[6 + i];
                     }
                 }
-                sendSysex(FirmataStream, FM_WRITE_VALUE_REP, len,
+                sendSysex(FirmataStream, FM_WRITE_BIT_REP, len,
                           (byte *) ((uint8_t *) &plc_var) + indexv);
             }
             break;
