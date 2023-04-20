@@ -385,7 +385,7 @@ void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream) {
     int serialData;
     int bytesToRead;
     int numBytesToRead;
-    Stream *serialPort;
+    nStream *serialPort;
 
     if (serialIndex > -1) {
 

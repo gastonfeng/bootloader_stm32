@@ -199,7 +199,7 @@ void detachServo(byte pin)
 }
 #endif
 
-void mFirmata::analogWriteCallback(Stream *, byte i, int val) {
+void mFirmata::analogWriteCallback(nStream *, byte i, int val) {
 #if defined(RTE_APP) || defined(PLC)
     auto v = (u16) val;
     plcVar.analogValue(i, v);
@@ -662,18 +662,16 @@ void mFirmata::processSysexMessage(nStream *stream) {
             break;
         default:
             if (sysexBytesRead > 1) {
-                byte *buffer = (byte *) malloc(sysexBytesRead);
-                int len = decodeByteStream(sysexBytesRead - 1, &dataBuffer[1], buffer);
-                byte *data = buffer;
+                int len = decodeByteStream(sysexBytesRead - 1, &dataBuffer[1], dataBufferDecode);
+                byte *data = dataBufferDecode;
                 if (use_sn) {
-                    sn = *(uint32_t *) buffer;
-                    data = buffer + 4;
+                    sn = *(uint32_t *) dataBufferDecode;
+                    data = dataBufferDecode + 4;
                     len -= 4;
                 }
                 sysexCallback(stream, dataBuffer[0], len, data);
-                free(buffer);
             } else {
-                sysexCallback(stream, dataBuffer[0], sysexBytesRead - 1, &dataBuffer[1]);
+                sysexCallback(stream, dataBuffer[0], sysexBytesRead - 1, nullptr);
             }
     }
 }
