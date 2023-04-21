@@ -270,6 +270,7 @@ private:
 
     int sysexBytesRead;
     byte dataBuffer[FIRMATA_BUFFER_SZ];
+    byte dataBufferDecode[FIRMATA_BUFFER_SZ];
 
     bool bufferDataAtPosition(nStream *stream, const uint8_t data, const size_t pos);
 
@@ -293,7 +294,7 @@ private:
 
     void stringCallback(nStream *Fs, char *myString);
 
-    void analogWriteCallback(Stream *, byte i, int val);
+    void analogWriteCallback(nStream *, byte i, int val);
 
     bool crc_en;
 
