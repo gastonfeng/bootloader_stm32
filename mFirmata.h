@@ -180,6 +180,7 @@ enum {
     FM_INFO_SERIAL_TX,
     FM_LFS_LS,
     FM_GET_DATA_BLOCK,
+    FM_GET_SERIAL_INFO,
     FM_LAST
 };
 enum {
