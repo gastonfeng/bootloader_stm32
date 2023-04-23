@@ -21,6 +21,7 @@
 #ifndef SerialFirmata_h
 #define SerialFirmata_h
 
+#include "rte_data.h"
 #include <mFirmata.h>
 // SoftwareSerial is currently only supported for AVR-based boards and the Arduino 101.
 // Limited to Arduino 1.6.6 or higher because Arduino builder cannot find SoftwareSerial
