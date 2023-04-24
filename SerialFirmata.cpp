@@ -89,8 +89,8 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
         }
             u32 baud;
             baud = *(u32 *) &argv[1];
-            if (baud > 115200) {
-              return false;
+            if ((baud > 115200) || (baud < 9600)) {
+                return false;
             }
             u8 format;
             format = argv[5];
