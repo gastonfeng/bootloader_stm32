@@ -303,6 +303,8 @@ protected:
     int getValue(nStream *pStream, int index, u8 *value_buf, u16 len);
 
     int setValue(nStream *FirmataStream, int index, void *valBuf, u8 size);
+
+    void* lock;
 };
 
 #endif
