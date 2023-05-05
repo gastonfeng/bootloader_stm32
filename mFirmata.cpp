@@ -225,7 +225,7 @@ void mFirmata::stringCallback(nStream *Fs, char *myString)
     }
     else
 #endif
-    sendString(Fs, "unknown input");
+        sendString(Fs, "unknown input");
 }
 
 int fill_dbg(int index, u8 *buf);
@@ -480,7 +480,9 @@ void mFirmata::encodeByteStream(nStream *FirmataStream, size_t bytec, uint8_t *b
         FirmataStream->write((crc >> 7) & 0x7f);
         FirmataStream->write((crc >> 14) & 0x7f);
         // logger.debug("%d,0x%x", bytec, crc);
-    } else {
+    }
+    else
+    {
         // logger.debug("%d", bytec);
     }
 }
@@ -710,16 +712,19 @@ void mFirmata::parse(nStream *stream, uint8_t inputData)
             parsingSysex = true;
             sysexBytesRead = 0;
             stream->flag |= FLAG_SYSEX;
+            memset(dataBuffer, 0, sizeof(dataBuffer));
             break;
         case 0xE0:
             use_sn = true;
             parsingSysex = true;
             sysexBytesRead = 0;
             stream->flag |= FLAG_SYSEX;
+            memset(dataBuffer, 0, sizeof(dataBuffer));
+            break;
         default:
 #ifdef FORWARD_NRS
             if (command > START_SYSEX && command < START_SYSEX + FORWARD_NRS)
-                {
+            {
                 forward = command - START_SYSEX;
                 board.forwardMessage(forward, 0xf0);
             }
@@ -747,6 +752,7 @@ void mFirmata::processSysexMessage(nStream *stream)
     default:
         if (sysexBytesRead > 1)
         {
+            memset(dataBufferDecode, 0, sizeof(dataBufferDecode));
             int len = decodeByteStream(sysexBytesRead - 1, &dataBuffer[1], dataBufferDecode);
             byte *data = dataBufferDecode;
             if (use_sn)
@@ -759,7 +765,9 @@ void mFirmata::processSysexMessage(nStream *stream)
         }
         else
         {
-            sysexCallback(stream, dataBuffer[0], sysexBytesRead - 1, nullptr);
+            if (sysexBytesRead > 0)
+                sysexBytesRead -= 1;
+            sysexCallback(stream, dataBuffer[0], sysexBytesRead, nullptr);
         }
     }
 }
@@ -847,6 +855,7 @@ mFirmata::mFirmata()
 #ifdef FIRMATA_SERIAL_FEATURE
     serialFeature = new SerialFirmata();
 #endif
+    core_debug("mFirmata::mFirmata");
 }
 
 void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc, byte *argv)
@@ -1250,7 +1259,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             buffer = (byte *)kvdb.get((const char *)argv);
             vlen = strlen((const char *)buffer);
             if (buffer && (vlen > 0) && (vlen < FDB_STR_KV_VALUE_MAX_SIZE))
-                    {
+            {
                 strncpy((char *)&value_crk[name_len + 3], (const char *)buffer, vlen);
                 vlen += name_len + 4;
                 *(short *)value_crk = 0;
@@ -1263,7 +1272,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
         }
         else
-                {
+        {
             vlen = name_len + 4;
             *(short *)value_crk = KV_NAME_ILLEAGL;
         }
@@ -1291,7 +1300,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             buffer = (byte *)kvdb.get((const char *)argv);
             vlen = strlen((const char *)buffer);
             if (buffer && (vlen < FDB_STR_KV_VALUE_MAX_SIZE))
-                    {
+            {
                 strncpy((char *)&value[key_len + 3], (const char *)buffer, vlen);
                 vlen += key_len + 4;
             }
@@ -1322,7 +1331,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         tsl_query q;
         memset(&q, 0, sizeof(q));
         if (argc == 13)
-                {
+        {
             u8 db = argv[0];
             start = *(u32 *)&argv[1];
             end = *(u32 *)&argv[1 + 4];
@@ -1339,14 +1348,14 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 
         len = -1;
         if (argc == 13)
-                {
+        {
             u8 db = argv[0];
             start = *(u32 *)&argv[1];
             end = *(u32 *)&argv[1 + 4];
             state = (int)*(u32 *)&argv[1 + 8];
             TSDB *tsdb = TSDB::db(db);
             if (tsdb)
-                    {
+            {
                 len = tsdb->set_status(start, end, (fdb_tsl_status)(state));
             }
         }
@@ -1385,14 +1394,14 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         *(short *)tbuf = 0;
         TSDB *tsdb = TSDB::db(db);
         if (tsdb)
-                {
+        {
             tlen = tsdb->query_read_by_id(*(u32 *)&argv[1], (u32 *)&tbuf[2],
                                           (fdb_time_t *)&tbuf[6],
                                           (int *)(tbuf + 10),
                                           tbuf + 14, buf_sz - 14);
         }
         if (tlen < 0)
-                {
+        {
             *(short *)tbuf = tlen;
             tlen = 2;
         }
@@ -1616,7 +1625,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef ONLINE_DEBUG
     case FM_GET_DBG_SIZE:
         if (plc_var.info.plc_curr_app)
-                {
+        {
             sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
                       (byte *)&plc_var.info.plc_curr_app->data->size_dbgvardsc);
         }
@@ -1628,10 +1637,10 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     case FM_GET_DBG:
         len = 0;
         if (argc == 4)
-                {
+        {
             l_index = *(u32 *)&argv[0];
             if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc)
-                    {
+            {
                 len = (int)fill_dbg((int)l_index, argv);
             }
         }
@@ -1640,7 +1649,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     case FM_SET_DBG:
         len = 0;
         if (argc > 5)
-                {
+        {
             l_index = *(u32 *)argv;
             if (plc_var.info.plc_curr_app && l_index < plc_var.info.plc_curr_app->data->size_dbgvardsc)
             {
@@ -1697,7 +1706,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             len = *(u16 *)&argv[6];
             byte *buffer;
             buffer = (byte *)malloc(len * 4 + 10);
-            memset(buffer, 0, len * 4 + 10);
             buffer[0] = region;
             buffer[1] = typ;
             *(u32 *)&buffer[2] = indexv;
@@ -1943,7 +1951,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef USE_LFS
     case FM_LFS_LS:
         if (argc > 8)
-                {
+        {
             u32 since = *(u32 *)argv;
             u32 size = *(u32 *)&argv[4];
             len = kfs.dir_buf(FM_LFS_LS, (const char *)&argv[8], since, size, this, FirmataStream);
