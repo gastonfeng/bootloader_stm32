@@ -29,7 +29,8 @@
 #define SERIAL_RX_BUFFER_SIZE UART_TX_FIFO_SIZE
 #endif
 
-SerialFirmata::SerialFirmata() {
+SerialFirmata::SerialFirmata()
+{
 #if defined(SoftwareSerial_h)
   swSerial0 = NULL;
   swSerial1 = NULL;
@@ -45,253 +46,300 @@ SerialFirmata::SerialFirmata() {
 #endif
 }
 
-int min(int v1, int v2) {
-  if (v1 < v2) {
+int min(int v1, int v2)
+{
+  if (v1 < v2)
+  {
     return v1;
   }
   return v2;
 }
 
-bool SerialFirmata::handlePinMode(mFirmata *fm, byte pin, int mode) {
+bool SerialFirmata::handlePinMode(mFirmata *fm, byte pin, int mode)
+{
   // used for both HW and SW serial
-  if (mode == PIN_MODE_SERIAL) {
+  if (mode == PIN_MODE_SERIAL)
+  {
     fm->setPinMode(pin, PIN_MODE_SERIAL);
     return true;
   }
   return false;
 }
 
-void SerialFirmata::handleCapability(mFirmata *fm, nStream *FirmataStream, byte pin) {
+void SerialFirmata::handleCapability(mFirmata *fm, nStream *FirmataStream, byte pin)
+{
 
-  if (IS_PIN_SERIAL(pin)) {
+  if (IS_PIN_SERIAL(pin))
+  {
     FirmataStream->write(PIN_MODE_SERIAL);
     FirmataStream->write(FirmataSerial::getSerialPinType(pin));
   }
 }
 
-bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte command, byte argc, byte *argv) {
+bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte command, byte argc, byte *argv)
+{
   //  logger.debug("SerialFirmata::handleSysex: fm=0x%x S=0x%x cmd=0x%x argc=%d argv=0x%x", fm, FirmataStream, command,
   //               argc, argv);
-  if (command == SERIAL_MESSAGE) {
+  if (command == SERIAL_MESSAGE)
+  {
 
     kSerial *serialPort;
     byte mode = argv[0] & SERIAL_MODE_MASK;
     byte portId = argv[0] & SERIAL_PORT_ID_MASK;
     // logger.debug("mode =0x%x port=%d", mode, portId);
-    if (portId >= SERIAL_READ_ARR_LEN) {
+    if (portId >= SERIAL_READ_ARR_LEN)
+    {
       return false;
     }
 
-    switch (mode) {
-      case SERIAL_CONFIG:
-        if (argc != 6) {
+    switch (mode)
+    {
+    case SERIAL_CONFIG:
+      if (argc != 6)
+      {
+        break;
+      }
+      u32 baud;
+      baud = *(u32 *)&argv[1];
+      if ((baud > 115200) || (baud < 9600))
+      {
+        return false;
+      }
+      u8 format;
+      format = argv[5];
+#if defined(FIRMATA_SERIAL_RX_DELAY)
+      lastBytesAvailable[portId] = 0;
+      lastBytesReceived[portId] = 0;
+#endif
+      if (portId < 8)
+      {
+        serialPort = getPortFromId(portId);
+        if (serialPort != nullptr)
+        {
+          // pins = FirmataSerial::getSerialPinNumbers(portId);
+          // if (pins.rx != 0 && pins.tx != 0)
+          // {
+          //   fm->setPinMode(pins.rx, PIN_MODE_SERIAL);
+          //   fm->setPinMode(pins.tx, PIN_MODE_SERIAL);
+          //   // Fixes an issue where some serial devices would not work properly with Arduino Due
+          //   // because all Arduino pins are set to OUTPUT by default in StandardFirmata.
+          //   pinMode(pins.rx, INPUT);
+          // }
+          if (serialPort->flag & IS_OPEN)
+          {
+            serialPort->end();
+          }
+          ((kSerial *)serialPort)->begin(baud, format);
+          argv[0] = SERIAL_STATUS | portId;
+          if (serialPort->flag & IS_OPEN)
+            argv[1] = SERIAL_IS_OPEN;
+          else
+            argv[1] = SERIAL_IS_CLOSE;
+          fm->sendSysex(FirmataStream, SERIAL_MESSAGE, 2, argv);
+        }
+      }
+      else
+      {
+#if defined(SoftwareSerial_h)
+        byte swTxPin, swRxPin;
+        if (argc > 4)
+        {
+          swRxPin = argv[4];
+          swTxPin = argv[5];
+        }
+        else
+        {
+          // RX and TX pins must be specified when using SW serial
+          fm->sendString("Specify serial RX and TX pins");
+          return false;
+        }
+        switch (portId)
+        {
+        case SW_SERIAL0:
+          if (swSerial0 == NULL)
+          {
+            swSerial0 = new SoftwareSerial(swRxPin, swTxPin);
+          }
+          break;
+        case SW_SERIAL1:
+          if (swSerial1 == NULL)
+          {
+            swSerial1 = new SoftwareSerial(swRxPin, swTxPin);
+          }
+          break;
+        case SW_SERIAL2:
+          if (swSerial2 == NULL)
+          {
+            swSerial2 = new SoftwareSerial(swRxPin, swTxPin);
+          }
+          break;
+        case SW_SERIAL3:
+          if (swSerial3 == NULL)
+          {
+            swSerial3 = new SoftwareSerial(swRxPin, swTxPin);
+          }
           break;
         }
-            u32 baud;
-            baud = *(u32 *) &argv[1];
-            if ((baud > 115200) || (baud < 9600)) {
-                return false;
-            }
-            u8 format;
-            format = argv[5];
-#if defined(FIRMATA_SERIAL_RX_DELAY)
-            lastBytesAvailable[portId] = 0;
-            lastBytesReceived[portId] = 0;
-#endif
-            if (portId < 8) {
-              serialPort = getPortFromId(portId);
-              if (serialPort != nullptr) {
-                // pins = FirmataSerial::getSerialPinNumbers(portId);
-                // if (pins.rx != 0 && pins.tx != 0)
-                // {
-                //   fm->setPinMode(pins.rx, PIN_MODE_SERIAL);
-                //   fm->setPinMode(pins.tx, PIN_MODE_SERIAL);
-                //   // Fixes an issue where some serial devices would not work properly with Arduino Due
-                //   // because all Arduino pins are set to OUTPUT by default in StandardFirmata.
-                //   pinMode(pins.rx, INPUT);
-                // }
-                if (serialPort->flag & IS_OPEN) {
-                  serialPort->end();
-                }
-                ((kSerial *) serialPort)->begin(baud, format);
-                argv[0] = SERIAL_STATUS | portId;
-                if (serialPort->flag & IS_OPEN)
-                  argv[1] = SERIAL_IS_OPEN;
-                else
-                  argv[1] = SERIAL_IS_CLOSE;
-                fm->sendSysex(FirmataStream, SERIAL_MESSAGE, 2, argv);
-              }
-            } else {
-#if defined(SoftwareSerial_h)
-              byte swTxPin, swRxPin;
-              if (argc > 4)
-              {
-                swRxPin = argv[4];
-                swTxPin = argv[5];
-              }
-              else
-              {
-                // RX and TX pins must be specified when using SW serial
-                fm->sendString("Specify serial RX and TX pins");
-                return false;
-              }
-              switch (portId)
-              {
-              case SW_SERIAL0:
-                if (swSerial0 == NULL)
-                {
-                  swSerial0 = new SoftwareSerial(swRxPin, swTxPin);
-                }
-                break;
-              case SW_SERIAL1:
-                if (swSerial1 == NULL)
-                {
-                  swSerial1 = new SoftwareSerial(swRxPin, swTxPin);
-                }
-                break;
-              case SW_SERIAL2:
-                if (swSerial2 == NULL)
-                {
-                  swSerial2 = new SoftwareSerial(swRxPin, swTxPin);
-                }
-                break;
-              case SW_SERIAL3:
-                if (swSerial3 == NULL)
-                {
-                  swSerial3 = new SoftwareSerial(swRxPin, swTxPin);
-                }
-                break;
-              }
-              serialPort = getPortFromId(portId);
-              if (serialPort != NULL)
-              {
-                fm->setPinMode(swRxPin, PIN_MODE_SERIAL);
-                fm->setPinMode(swTxPin, PIN_MODE_SERIAL);
-                ((SoftwareSerial *)serialPort)->begin(baud);
-              }
-#endif
-            }
-            break; // SERIAL_CONFIG
-
-      case SERIAL_WRITE:
         serialPort = getPortFromId(portId);
-            if (serialPort == nullptr) {
-              break;
-            }
-            if (serialPort->flag & IS_OPEN) {
-              serialPort->write(&argv[1], argc - 1);
-            } else {
-              argv[0] = SERIAL_STATUS | portId;
-              argv[1] = SERIAL_IS_CLOSE;
-              fm->sendSysex(FirmataStream, SERIAL_MESSAGE, 2, argv);
-            }
-            break; // SERIAL_WRITE
-
-      case SERIAL_READ:
-        serialPort = getPortFromId(portId);
-            if (serialPort == nullptr) {
-              break;
-            }
-            if ((serialPort->flag & IS_OPEN) == 0) {
-              argv[0] = SERIAL_STATUS | portId;
-              argv[1] = SERIAL_IS_CLOSE;
-              fm->sendSysex(FirmataStream, SERIAL_MESSAGE, 2, argv);
-              break;
-            }
-            if (argv[1] == SERIAL_READ_CONTINUOUSLY) {
-              if (serialIndex + 1 >= SERIAL_NRS) {
-                break;
-              }
-
-              if (argc > 2) {
-                // maximum number of bytes to read from argvfer per iteration of loop()
-                plc_var.info.serialBytesToRead[portId] = argv[2];
-              } else {
-                // read all available bytes per iteration of loop()
-                plc_var.info.serialBytesToRead[portId] = 0;
-              }
-              byte serialIndexToSkip = 0;
-              for (byte i = 0; i < serialIndex + 1; i++) {
-                if (plc_var.info.reportSerial[i] == portId) {
-                  serialIndexToSkip = 1;
-                  break;
-                }
-              }
-              if (0 == serialIndexToSkip) {
-                serialIndex++;
-                plc_var.info.reportSerial[serialIndex] = portId;
-              }
-            } else if (argv[1] == SERIAL_STOP_READING) {
-              byte serialIndexToSkip = 0;
-              if (serialIndex <= 0) {
-                serialIndex = -1;
-              } else {
-                for (byte i = 0; i < min(serialIndex + 1, SERIAL_NRS); i++) {
-                  if (plc_var.info.reportSerial[i] == portId) {
-                    serialIndexToSkip = i;
-                    break;
-                  }
-                }
-                // shift elements over to fill space left by removed element
-                for (byte i = serialIndexToSkip; i < min(serialIndex + 1, SERIAL_NRS); i++) {
-                  if (i < (SERIAL_NRS - 1)) {
-                    plc_var.info.reportSerial[i] = plc_var.info.reportSerial[i + 1];
-                  }
-                }
-                serialIndex--;
-              }
-            }
-            break; // SERIAL_READ
-      case SERIAL_CLOSE:
-        serialPort = getPortFromId(portId);
-            if (serialPort != nullptr) {
-              if (portId < 8) {
-                ((kSerial *) serialPort)->end();
-              } else {
-#if defined(SoftwareSerial_h)
-                ((SoftwareSerial *)serialPort)->end();
-                if (serialPort != NULL)
-                {
-                  free(serialPort);
-                  serialPort = NULL;
-                }
+        if (serialPort != NULL)
+        {
+          fm->setPinMode(swRxPin, PIN_MODE_SERIAL);
+          fm->setPinMode(swTxPin, PIN_MODE_SERIAL);
+          ((SoftwareSerial *)serialPort)->begin(baud);
+        }
 #endif
-              }
-            }
-            break; // SERIAL_CLOSE
-      case SERIAL_FLUSH:
-        serialPort = getPortFromId(portId);
-            if (serialPort != nullptr) {
-              getPortFromId(portId)->flush();
-            }
-            break; // SERIAL_FLUSH
-#if defined(SoftwareSerial_h)
-            case SERIAL_LISTEN:
-              // can only call listen() on software serial ports
-              if (portId > 7)
-              {
-                serialPort = getPortFromId(portId);
-                if (serialPort != NULL)
-                {
-                  ((SoftwareSerial *)serialPort)->listen();
-                }
-              }
-              break; // SERIAL_LISTEN
-#endif
+      }
+      break; // SERIAL_CONFIG
 
-      default:
+    case SERIAL_WRITE:
+      serialPort = getPortFromId(portId);
+      if (serialPort == nullptr)
+      {
         break;
+      }
+      if (serialPort->flag & IS_OPEN)
+      {
+        serialPort->write(&argv[1], argc - 1);
+      }
+      else
+      {
+        argv[0] = SERIAL_STATUS | portId;
+        argv[1] = SERIAL_IS_CLOSE;
+        fm->sendSysex(FirmataStream, SERIAL_MESSAGE, 2, argv);
+      }
+      break; // SERIAL_WRITE
+
+    case SERIAL_READ:
+      serialPort = getPortFromId(portId);
+      if (serialPort == nullptr)
+      {
+        break;
+      }
+      if ((serialPort->flag & IS_OPEN) == 0)
+      {
+        argv[0] = SERIAL_STATUS | portId;
+        argv[1] = SERIAL_IS_CLOSE;
+        fm->sendSysex(FirmataStream, SERIAL_MESSAGE, 2, argv);
+        break;
+      }
+      if (argv[1] == SERIAL_READ_CONTINUOUSLY)
+      {
+        if (serialIndex + 1 >= SERIAL_NRS)
+        {
+          break;
+        }
+
+        if (argc > 2)
+        {
+          // maximum number of bytes to read from argvfer per iteration of loop()
+          plc_var.info.serialBytesToRead[portId] = argv[2];
+        }
+        else
+        {
+          // read all available bytes per iteration of loop()
+          plc_var.info.serialBytesToRead[portId] = 0;
+        }
+        byte serialIndexToSkip = 0;
+        for (byte i = 0; i < serialIndex + 1; i++)
+        {
+          if (plc_var.info.reportSerial[i] == portId)
+          {
+            serialIndexToSkip = 1;
+            break;
+          }
+        }
+        if (0 == serialIndexToSkip)
+        {
+          serialIndex++;
+          plc_var.info.reportSerial[serialIndex] = portId;
+        }
+      }
+      else if (argv[1] == SERIAL_STOP_READING)
+      {
+        byte serialIndexToSkip = 0;
+        if (serialIndex <= 0)
+        {
+          serialIndex = -1;
+        }
+        else
+        {
+          for (byte i = 0; i < min(serialIndex + 1, SERIAL_NRS); i++)
+          {
+            if (plc_var.info.reportSerial[i] == portId)
+            {
+              serialIndexToSkip = i;
+              break;
+            }
+          }
+          // shift elements over to fill space left by removed element
+          for (byte i = serialIndexToSkip; i < min(serialIndex + 1, SERIAL_NRS); i++)
+          {
+            if (i < (SERIAL_NRS - 1))
+            {
+              plc_var.info.reportSerial[i] = plc_var.info.reportSerial[i + 1];
+            }
+          }
+          serialIndex--;
+        }
+      }
+      break; // SERIAL_READ
+    case SERIAL_CLOSE:
+      serialPort = getPortFromId(portId);
+      if (serialPort != nullptr)
+      {
+        if (portId < 8)
+        {
+          ((kSerial *)serialPort)->end();
+        }
+        else
+        {
+#if defined(SoftwareSerial_h)
+          ((SoftwareSerial *)serialPort)->end();
+          if (serialPort != NULL)
+          {
+            free(serialPort);
+            serialPort = NULL;
+          }
+#endif
+        }
+      }
+      break; // SERIAL_CLOSE
+    case SERIAL_FLUSH:
+      serialPort = getPortFromId(portId);
+      if (serialPort != nullptr)
+      {
+        getPortFromId(portId)->flush();
+      }
+      break; // SERIAL_FLUSH
+#if defined(SoftwareSerial_h)
+    case SERIAL_LISTEN:
+      // can only call listen() on software serial ports
+      if (portId > 7)
+      {
+        serialPort = getPortFromId(portId);
+        if (serialPort != NULL)
+        {
+          ((SoftwareSerial *)serialPort)->listen();
+        }
+      }
+      break; // SERIAL_LISTEN
+#endif
+
+    default:
+      break;
     } // end switch
     return true;
   }
   return false;
 }
 
-void SerialFirmata::update(mFirmata *fm, nStream *FirmataStream) {
+void SerialFirmata::update(mFirmata *fm, nStream *FirmataStream)
+{
   checkSerial(fm, FirmataStream);
 }
 
-void SerialFirmata::reset() {
+void SerialFirmata::reset()
+{
 #if defined(SoftwareSerial_h)
   Stream *serialPort;
   // free memory allocated for SoftwareSerial ports
@@ -307,7 +355,8 @@ void SerialFirmata::reset() {
 #endif
 
   serialIndex = -1;
-  for (int &i: plc_var.info.serialBytesToRead) {
+  for (int &i : plc_var.info.serialBytesToRead)
+  {
     i = 0;
 #if defined(FIRMATA_SERIAL_RX_DELAY)
     lastBytesAvailable[i] = 0;
@@ -380,25 +429,29 @@ Stream *SerialFirmata::getPortFromId(byte portId) {
 
 // Check serial ports that have READ_CONTINUOUS mode set and relay any data
 // for each port to the device attached to that port.
-void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream) {
+void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream)
+{
   byte portId;
   int serialData;
   int bytesToRead;
   int numBytesToRead;
   kSerial *serialPort;
 
-  if (serialIndex > -1) {
+  if (serialIndex > -1)
+  {
 
 #if defined(FIRMATA_SERIAL_RX_DELAY)
     unsigned long currentMillis = millis();
 #endif
 
     // loop through all reporting (READ_CONTINUOUS) serial ports
-    for (byte i = 0; i < min(serialIndex + 1, SERIAL_NRS); i++) {
+    for (byte i = 0; i < min(serialIndex + 1, SERIAL_NRS); i++)
+    {
       portId = plc_var.info.reportSerial[i];
       bytesToRead = plc_var.info.serialBytesToRead[portId];
       serialPort = getPortFromId(portId);
-      if (serialPort == nullptr) {
+      if (serialPort == nullptr)
+      {
         continue;
       }
 #if defined(SoftwareSerial_h)
@@ -409,7 +462,8 @@ void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream) {
       }
 #endif
       int bytesAvailable = serialPort->available();
-      if (bytesAvailable > 0) {
+      if (bytesAvailable > 0)
+      {
 #if defined(FIRMATA_SERIAL_RX_DELAY)
         if (bytesAvailable > lastBytesAvailable[portId])
         {
@@ -417,9 +471,12 @@ void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream) {
         }
         lastBytesAvailable[portId] = bytesAvailable;
 #endif
-        if (bytesToRead <= 0 || (bytesAvailable <= bytesToRead)) {
+        if (bytesToRead <= 0 || (bytesAvailable <= bytesToRead))
+        {
           numBytesToRead = bytesAvailable;
-        } else {
+        }
+        else
+        {
           numBytesToRead = bytesToRead;
         }
 #if defined(FIRMATA_SERIAL_RX_DELAY)
@@ -437,15 +494,16 @@ void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream) {
         }
 #endif
         // relay serial data to the serial device
-        if (numBytesToRead > 0) {
+        if (numBytesToRead > 0)
+        {
 #if defined(FIRMATA_SERIAL_RX_DELAY)
           lastBytesAvailable[portId] -= numBytesToRead;
 #endif
-          byte *buf = (byte *) malloc(numBytesToRead + 1);
+          byte *buf = (byte *)malloc(numBytesToRead + 1);
           // relay serial data to the serial device
           buf[0] = SERIAL_REPLY | portId;
           int count = 1;
-          count += serialPort->readBytes((char *) &buf[1], numBytesToRead);
+          count += serialPort->readBytes((char *)&buf[1], numBytesToRead);
           fm->sendSysex(FirmataStream, SERIAL_MESSAGE, count, buf);
           // fm->flush(FirmataStream);
           free(buf);
@@ -455,7 +513,8 @@ void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream) {
   }
 }
 
-bool SerialFirmata::IS_PIN_SERIAL(byte pin) {
+bool SerialFirmata::IS_PIN_SERIAL(byte pin)
+{
   return false;
 }
 
