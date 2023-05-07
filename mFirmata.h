@@ -200,7 +200,7 @@ public:
     void sendAnalog(nStream *pStream, byte i, int i1);
 
     void setPinMode(byte i, int i1);
-#ifndef THIS_IS_BOOTLOADER
+#ifndef FIRMATA_DISABLE_REPORT
     void report(nStream *FirmataStream);
 
 #endif
