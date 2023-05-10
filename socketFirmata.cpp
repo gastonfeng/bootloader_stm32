@@ -379,7 +379,7 @@ void socketFirmata::flush() {
     txbuf.clear();
 }
 
-#if defined(RTE_APP) || defined(PLC)
+#ifndef FIRMATA_DISABLE_REPORT
 
 void socketFirmata::report() {
     firm.report(this);
@@ -401,10 +401,11 @@ int socketFirmata::diag(u32 tick) {
     return 0;
 }
 
+#ifdef __PLATFORMIO_BUILD_DEBUG__
 int socketFirmata::dev_test(u32 tick) {
     return 0;
 }
-
+#endif
 int socketFirmata::available_wait(int Delay) {
     return available();
 }

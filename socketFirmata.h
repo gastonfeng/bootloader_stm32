@@ -71,9 +71,9 @@ public:
     int begin(u32 tick) override;
 
     int run(u32 tick) override;
-
+#ifdef __PLATFORMIO_BUILD_DEBUG__
     int dev_test(u32 tick) override;
-
+#endif
     int diag(u32 tick) override;
 
 
