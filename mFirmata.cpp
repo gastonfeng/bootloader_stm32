@@ -1970,9 +1970,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         sendSysex(FirmataStream, FM_REMOVE_FILE, 2, (byte *)&len);
         break;
 #endif
+#ifndef THIS_IS_BOOTLOADER
     case FM_GET_SERIAL_INFO:
         kSerial::get_info(this, FirmataStream, command, argc, argv);
         break;
+#endif
     default:
     {
         short len = -1;
