@@ -512,7 +512,7 @@ void mFirmata::marshaller_sendSysex(nStream *FirmataStream, uint8_t command, siz
         FirmataStream->write(END_SYSEX);
     FirmataStream->flush();
 }
-int s = 0;
+u32 s = 0;
 
 void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool _crc_en)
 {
@@ -521,8 +521,9 @@ void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, b
         rtos::mutex_lock(lock);
     if (FirmataStream->lock)
         rtos::mutex_lock(FirmataStream->lock);
-    assert(s == 0);
-    s = 1;
+    if(s != 0)
+        logger.error("sendSysex:%p c=%p", s,rtos::pthread_self());
+    s = rtos::pthread_self();
     if (use_sn)
     {
         auto *c = (byte *)malloc(bytec + 4);
@@ -536,11 +537,11 @@ void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, b
         marshaller_sendSysex(FirmataStream, command, bytec, bytev);
     }
     crc_en = false;
+    s = 0;
     if (FirmataStream->lock)
         rtos::mutex_unlock(FirmataStream->lock);
     if (lock)
         rtos::mutex_unlock(lock);
-    s = 0;
 }
 
 void mFirmata::processInput(nStream *FirmataStream)
@@ -1258,7 +1259,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         name_len = strlen((const char *)argv);
         byte *value_crk;
         value_crk = (byte *)malloc(FDB_KV_NAME_MAX + FDB_STR_KV_VALUE_MAX_SIZE + 2);
-        memset(value_crk, 0, FDB_KV_NAME_MAX + FDB_STR_KV_VALUE_MAX_SIZE + 2);
         strncpy((char *)&value_crk[2], (const char *)argv, name_len);
         if (name_len < FDB_KV_NAME_MAX && name_len > 0)
         {
@@ -1298,7 +1298,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         rw = argc - key_len - 2;
         byte *value;
         value = (byte *)malloc(FDB_KV_NAME_MAX + FDB_STR_KV_VALUE_MAX_SIZE + 2);
-        memset(value, 0, FDB_KV_NAME_MAX + FDB_STR_KV_VALUE_MAX_SIZE + 2);
         strncpy((char *)&value[2], (const char *)argv, key_len);
         if ((key_len < FDB_KV_NAME_MAX) && (rw < FDB_STR_KV_VALUE_MAX_SIZE))
         {
@@ -1396,7 +1395,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         u8 db = argv[0];
         int buf_sz = FirmataStream->tx_max_size() * 7 / 8;
         tbuf = (char *)malloc(buf_sz);
-        memset(tbuf, 0, buf_sz);
         tlen = 2;
         *(short *)tbuf = 0;
         TSDB *tsdb = TSDB::db(db);
@@ -1712,7 +1710,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             typ = argv[5];
             byte *buffer;
             buffer = (byte *)malloc(len * 4 + 10);
-            memset(buffer, 0, len * 4 + 10);
             buffer[0] = region;
             buffer[1] = typ;
             *(u32 *)&buffer[2] = indexv;
