@@ -1920,8 +1920,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         else
         {
             buffer = (byte *)malloc(serial->data.rx_buf_size + 16);
-            *(int *)buffer = serial->data.rx_count;
-            memcpy(buffer + 4, rtos::queue_buf(serial->rx_buff), serial->data.rx_buf_size);
+            *(int *) buffer = serial->data.rx_count;
+            memcpy(buffer + 4, rtos::queue_buf(serial->_serial.rx_buff), serial->data.rx_buf_size);
             len = serial->data.rx_buf_size + 4;
         }
         sendSysex(FirmataStream, FM_INFO_SERIAL_RX, len, buffer);
