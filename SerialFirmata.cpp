@@ -125,11 +125,11 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
           //   // because all Arduino pins are set to OUTPUT by default in StandardFirmata.
           //   pinMode(pins.rx, INPUT);
           // }
-          if (serialPort->flag & IS_OPEN)
-          {
-            serialPort->end();
+          if (serialPort->flag & IS_OPEN) {
+              // serialPort->end();
+          } else {
+              ((kSerial *) serialPort)->begin(baud, format);
           }
-          ((kSerial *)serialPort)->begin(baud, format);
           argv[0] = SERIAL_STATUS | portId;
           if (serialPort->flag & IS_OPEN)
             argv[1] = SERIAL_IS_OPEN;
