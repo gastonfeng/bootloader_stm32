@@ -10,6 +10,7 @@
 #endif
 
 #include <mem_block.h>
+#include "firmata.pb.h"
 
 #define firmwareVersionString "Firmata"
 static const int FIRMWARE_MAJOR_VERSION = 3;
@@ -181,6 +182,7 @@ enum {
     FM_LFS_LS,
     FM_GET_DATA_BLOCK,
     FM_GET_SERIAL_INFO,
+    FM_PROTOBUF,
     FM_LAST
 };
 enum {
@@ -200,10 +202,13 @@ public:
     void sendAnalog(nStream *pStream, byte i, int i1);
 
     void setPinMode(byte i, int i1);
+
 #ifndef FIRMATA_DISABLE_REPORT
+
     void report(nStream *FirmataStream);
 
 #endif
+
     int decodeByteStream(size_t bytec, const byte *bytev, byte *buf);
 
 private:
@@ -231,8 +236,8 @@ private:
     // 时序数据库操作
 #ifdef USE_KVDB
     struct tsdb_sec_info sector
-    {
-    };
+            {
+            };
     uint32_t traversed_len{};
 #endif
 
@@ -252,6 +257,7 @@ private:
     bool use_sn;
     u32 sn;
     int blocksize;
+
     void marshaller_sendSysex(nStream *FirmataStream, uint8_t command, size_t bytec, uint8_t *bytev);
 
     void encodeByteStream(nStream *FirmataStream, size_t bytec, uint8_t *bytev, size_t max_bytes);
@@ -304,7 +310,11 @@ protected:
 
     int setValue(nStream *FirmataStream, int index, void *valBuf, u8 size);
 
-    void* lock;
+    void *lock;
+
+    static int (*fm_cmd[])(mFirmata *mf, nStream *, pb_cmd);
+
+    static int get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 };
 
 #endif
