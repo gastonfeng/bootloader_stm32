@@ -126,9 +126,26 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
           //   pinMode(pins.rx, INPUT);
           // }
           if (serialPort->flag & IS_OPEN) {
-              // serialPort->end();
+            // serialPort->end();
           } else {
-              ((kSerial *) serialPort)->begin(baud, format);
+            ((kSerial *) serialPort)->begin(baud, format);
+            if (serialIndex + 1 >= SERIAL_NRS) {
+              break;
+            }
+
+            // read all available bytes per iteration of loop()
+            plc_var.info.serialBytesToRead[portId] = 0;
+            byte serialIndexToSkip = 0;
+            for (byte i = 0; i < serialIndex + 1; i++) {
+              if (plc_var.info.reportSerial[i] == portId) {
+                serialIndexToSkip = 1;
+                break;
+              }
+            }
+            if (0 == serialIndexToSkip) {
+              serialIndex++;
+              plc_var.info.reportSerial[serialIndex] = portId;
+            }
           }
           argv[0] = SERIAL_STATUS | portId;
           if (serialPort->flag & IS_OPEN)
@@ -222,37 +239,36 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
         fm->sendSysex(FirmataStream, SERIAL_MESSAGE, 2, argv);
         break;
       }
-      if (argv[1] == SERIAL_READ_CONTINUOUSLY)
-      {
-        if (serialIndex + 1 >= SERIAL_NRS)
-        {
-          break;
-        }
+      if (argv[1] == SERIAL_READ_CONTINUOUSLY) {
+        // if (serialIndex + 1 >= SERIAL_NRS)
+        // {
+        //   break;
+        // }
 
-        if (argc > 2)
-        {
-          // maximum number of bytes to read from argvfer per iteration of loop()
-          plc_var.info.serialBytesToRead[portId] = argv[2];
-        }
-        else
-        {
-          // read all available bytes per iteration of loop()
-          plc_var.info.serialBytesToRead[portId] = 0;
-        }
-        byte serialIndexToSkip = 0;
-        for (byte i = 0; i < serialIndex + 1; i++)
-        {
-          if (plc_var.info.reportSerial[i] == portId)
-          {
-            serialIndexToSkip = 1;
-            break;
-          }
-        }
-        if (0 == serialIndexToSkip)
-        {
-          serialIndex++;
-          plc_var.info.reportSerial[serialIndex] = portId;
-        }
+        // if (argc > 2)
+        // {
+        //   // maximum number of bytes to read from argvfer per iteration of loop()
+        //   plc_var.info.serialBytesToRead[portId] = argv[2];
+        // }
+        // else
+        // {
+        //   // read all available bytes per iteration of loop()
+        //   plc_var.info.serialBytesToRead[portId] = 0;
+        // }
+        // byte serialIndexToSkip = 0;
+        // for (byte i = 0; i < serialIndex + 1; i++)
+        // {
+        //   if (plc_var.info.reportSerial[i] == portId)
+        //   {
+        //     serialIndexToSkip = 1;
+        //     break;
+        //   }
+        // }
+        // if (0 == serialIndexToSkip)
+        // {
+        //   serialIndex++;
+        //   plc_var.info.reportSerial[serialIndex] = portId;
+        // }
       }
       else if (argv[1] == SERIAL_STOP_READING)
       {
