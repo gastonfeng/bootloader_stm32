@@ -1787,5 +1787,6 @@ int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
     pb_encode(&stream, pb_info_fields, &plc_var._info);
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, buffer);
+    free(buffer);
     return 0;
 }
