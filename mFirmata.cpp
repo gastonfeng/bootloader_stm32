@@ -9,6 +9,8 @@
 #include "SerialFirmata.h"
 #include <pb_encode.h>
 #include "firmata.pb.h"
+#include "lib/nanopb/pb.h"
+#include "lib/nanopb/pb_decode.h"
 
 #ifdef USE_FILESYSTEM
 
