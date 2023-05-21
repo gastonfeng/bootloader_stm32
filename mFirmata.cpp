@@ -981,7 +981,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             u32 len = FirmataStream->tx_max_size();
             byte *buffer = (byte *) malloc(len);
             pb_ostream_t ostream = pb_ostream_from_buffer(buffer, len);
-            int ret = pb_encode(&ostream, pb_thread_info_fields, &plc_var._info.thread);
+            int ret = pb_encode_submessage(&ostream, pb_thread_info_fields, &plc_var._info.thread);
             if (!ret) {
                 const char *error = PB_GET_ERROR(&ostream);
                 logger.error("dir_buf pb_encode error: %s", error);
