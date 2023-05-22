@@ -236,8 +236,8 @@ private:
     // 时序数据库操作
 #ifdef USE_KVDB
     struct tsdb_sec_info sector
-            {
-            };
+    {
+    };
     uint32_t traversed_len{};
 #endif
 
@@ -278,7 +278,7 @@ private:
     int sysexBytesRead;
     byte dataBuffer[FIRMATA_BUFFER_SZ];
     byte dataBufferDecode[FIRMATA_BUFFER_SZ];
-
+    byte sendBuffer[FIRMATA_BUFFER_SZ];
     bool bufferDataAtPosition(nStream *stream, const uint8_t data, const size_t pos);
 
     int waitForData;
