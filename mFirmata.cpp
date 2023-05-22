@@ -1748,7 +1748,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         default: {
             short len = -1;
             logger.error("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
-            sendSysex(FirmataStream, command, 2, (byte *) &len);
+            // sendSysex(FirmataStream, command, 2, (byte *) &len);
         }
             break;
     }
