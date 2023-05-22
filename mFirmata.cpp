@@ -1538,7 +1538,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 sendSysex(FirmataStream, FM_WRITE_MEM, len, (byte *) indexv);
             }
             break;
-
+#ifndef THIS_IS_BOOTLOADER
         case FM_READ_VALUE:
             u8 region, typ;
             indexv = 0;
@@ -1657,6 +1657,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                           (byte *) ((uint8_t *) &plc_var) + indexv);
             }
             break;
+#endif
 #ifdef RTE_APP
         case FM_READ_VALUE_REP:
             if (argc > 0) {
