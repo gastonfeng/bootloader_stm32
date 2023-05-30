@@ -279,6 +279,7 @@ private:
     byte dataBuffer[FIRMATA_BUFFER_SZ];
     byte dataBufferDecode[FIRMATA_BUFFER_SZ];
     byte sendBuffer[FIRMATA_BUFFER_SZ];
+
     bool bufferDataAtPosition(nStream *stream, const uint8_t data, const size_t pos);
 
     int waitForData;
@@ -315,6 +316,8 @@ protected:
     static int (*fm_cmd[])(mFirmata *mf, nStream *, pb_cmd);
 
     static int get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int get_rte(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 };
 
 #endif
