@@ -1368,7 +1368,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef USE_MEMBLOCK
             case FM_PUT_DATA_BLOCK:
             {
-                rte.event(PLC_STATUS::APP_FLASH_BEGIN);
+                rte.event(rte_state_APP_FLASH, true);
                 int block = *(int *)&argv[0];
                 if (block == 0)
                 {
@@ -1411,7 +1411,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         else
                         {
                             state = 1;
-                            rte.event(PLC_STATUS::APP_FLASH_END);
+                            rte.event(rte_state_APP_FLASH, false);
                             // logger.info("recv end.");
                             dev = nullptr;
                         }
@@ -1421,7 +1421,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 {
                     if (dev)
                     {
-                        rte.event(PLC_STATUS::APP_FLASHING);
+//                        rte.event(PLC_STATUS::APP_FLASHING);
                         if (dev->Write(&argv[4], argc - 4) < 0)
                         {
                             state = DEVICE_WRITE_ERR;
