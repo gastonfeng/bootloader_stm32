@@ -1894,13 +1894,29 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 
 int (*mFirmata::fm_cmd[])(mFirmata *mf, nStream *, pb_cmd) = {
         mFirmata::get_info,
+        mFirmata::get_rte_info,
 };
 
-int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 #define buffer_size 512
+
+int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+
     uint8_t *buffer = (uint8_t *) malloc(buffer_size);
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
     int ret = pb_encode(&stream, pb_info_fields, &plc_var._info);
+    if (!ret) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("dir_buf pb_encode error: %s", error);
+    }
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, buffer);
+    free(buffer);
+    return 0;
+}
+
+int mFirmata::get_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+    uint8_t *buffer = (uint8_t *) malloc(buffer_size);
+    pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
+    int ret = pb_encode(&stream, pb_rte_info_fields, &rte_info);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf pb_encode error: %s", error);

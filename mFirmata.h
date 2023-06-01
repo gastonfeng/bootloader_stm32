@@ -317,7 +317,8 @@ protected:
 
     static int get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
-    static int get_rte(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+    static int get_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
 };
 
 #endif
