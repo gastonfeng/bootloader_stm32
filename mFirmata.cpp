@@ -1421,7 +1421,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 {
                     if (dev)
                     {
-//                        rte.event(PLC_STATUS::APP_FLASHING);
+                        //                        rte.event(PLC_STATUS::APP_FLASHING);
                         if (dev->Write(&argv[4], argc - 4) < 0)
                         {
                             state = DEVICE_WRITE_ERR;
@@ -1900,7 +1900,11 @@ int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 #define buffer_size 512
     uint8_t *buffer = (uint8_t *) malloc(buffer_size);
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
-    pb_encode(&stream, pb_info_fields, &plc_var._info);
+    int ret = pb_encode(&stream, pb_info_fields, &plc_var._info);
+    if (!ret) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("dir_buf pb_encode error: %s", error);
+    }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, buffer);
     free(buffer);
     return 0;
