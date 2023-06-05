@@ -911,7 +911,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
             case CB_GET_REMAIN_MEM:
-                sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *)&plc_var.info.remain_mem);
+                sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &plc_var._info.remain_mem);
                 break;
 #if defined(RTE_APP) || defined(PLC)
             case CB_PLC_START:
