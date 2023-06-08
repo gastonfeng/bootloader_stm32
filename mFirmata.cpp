@@ -835,7 +835,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->flush();
             break;
         case CB_GET_RTE_VERSION:
-            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(rte_ver_t), (uint8_t *) &plc_var.info.rte_ver);
+            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(pb_rte_info), (uint8_t *) &rte_info);
             break;
 
 #ifndef THIS_IS_BOOTLOADER
