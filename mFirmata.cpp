@@ -1368,7 +1368,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef USE_MEMBLOCK
             case FM_PUT_DATA_BLOCK:
             {
-                rte.event(rte_state_APP_FLASH, true);
+                rte.event(rte_event_APP_FLASH, true);
                 int block = *(int *)&argv[0];
                 if (block == 0)
                 {
@@ -1411,7 +1411,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         else
                         {
                             state = 1;
-                            rte.event(rte_state_APP_FLASH, false);
+                            rte.event(rte_event_APP_FLASH, false);
                             // logger.info("recv end.");
                             dev = nullptr;
                         }
@@ -1803,7 +1803,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 len = argv[0];
             }
             sendSysex(FirmataStream, CB_RESET, 2, (byte *) &len);
-            rte.event(rte_state_REQUEST_RESTART, 1);
+            rte.event(rte_event_REQUEST_RESTART, 1);
         }
             break;
 #ifndef THIS_IS_BOOTLOADER
