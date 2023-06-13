@@ -88,7 +88,6 @@ static const int PIN_MODE_IGNORE = 0x7F;  // pin configured to be ignored by dig
 
 static const int TOTAL_PIN_MODES = 13;
 
-using u8 = unsigned char;
 using u16 = unsigned short;
 using u32 = unsigned int;
 struct i2c_device_info {
