@@ -56,7 +56,7 @@ public:
 
     const char *name() final { return "socketFirmata"; }
 
-    const u32 type() final { return MODULE_TYPE_SKFM; }
+    const u32 type() final { return pb_module_type_SKFM; }
 
     const int data_len() override { return sizeof(data); }
 
