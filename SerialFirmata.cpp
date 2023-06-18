@@ -371,14 +371,14 @@ void SerialFirmata::reset()
 #endif
 
   serialIndex = -1;
-  for (int &i : plc_var.info.serialBytesToRead)
-  {
-    i = 0;
-#if defined(FIRMATA_SERIAL_RX_DELAY)
-    lastBytesAvailable[i] = 0;
-    lastBytesReceived[i] = 0;
-#endif
-  }
+//  for (int &i : plc_var.info.serialBytesToRead)
+//  {
+//    i = 0;
+//#if defined(FIRMATA_SERIAL_RX_DELAY)
+//    lastBytesAvailable[i] = 0;
+//    lastBytesReceived[i] = 0;
+//#endif
+//  }
 }
 
 #if 0
