@@ -13,13 +13,7 @@
 #include "rtos.h"
 #include "logger_rte.h"
 
-#ifdef SYLIXOS
 
-#include "lwip/tcpip.h"
-#include "lwip/sockets.h"
-
-#define closesocket close
-#endif
 #ifdef LINUX
 //#include <termio.h> /* POSIX terminal control definitions */
 #include <sys/socket.h>
@@ -153,6 +147,7 @@ int socketFirmata::receive_from_peer(void *p) {
 
 #undef bind
 /* Start listening socket sock. */
+#ifndef SYLIXOS
 int socketFirmata::start_listen_socket(int *sock) {
     // Obtain a file descriptor for our "listening" socket.
     *sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -203,7 +198,7 @@ int socketFirmata::start_listen_socket(int *sock) {
 #endif
     return 0;
 }
-
+#endif
 void socketFirmata::shutdown_properly(int code) {
 
     closesocket(listen_sock);
