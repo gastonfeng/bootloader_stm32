@@ -318,6 +318,8 @@ protected:
 
     static int get_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
+    static int get_module_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
 };
 
 #endif
