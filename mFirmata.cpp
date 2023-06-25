@@ -132,9 +132,9 @@ void mFirmata::reportAnalogCallback(nStream *stream, byte analogPin, int value) 
 #if defined(RTE_APP) || defined(PLC)
     if (analogPin < (ANALOGVALUE_LENGTH)) {
         if (0 == value) {
-            bitClear(plc_var.info.analogInputsToReport, analogPin);
+            bitClear(plc_var.info.analogInputsToReport,analogPin) ;
         } else {
-            bitSet(plc_var.info.analogInputsToReport, analogPin);
+            bitSet(plc_var.info.analogInputsToReport,analogPin);
             // prevent during system reset or all analog pin values will be reported
             // which may report noise for unconnected analog pins
             if (plc_var.info.state < pb_app_state_FLASH_FORMAT) {
@@ -901,8 +901,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
             case REPORT_PLC_MD5:
                 if (plc_var.info.plc_curr_app)
-                    sendSysex(FirmataStream, REPORT_PLC_MD5, 32,
-                              (byte *) ((plc_app_abi_t *) plc_var.info.plc_curr_app)->id);
+                    sendSysex(FirmataStream, REPORT_PLC_MD5, 32, (byte *) ((plc_app_abi_t*) plc_var.info.plc_curr_app)->id);
                 else
                     sendSysex(FirmataStream, REPORT_PLC_MD5, 0, (byte *) "");
                 break;
@@ -920,12 +919,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 sendSysex(FirmataStream, CB_PLC_REPAIR, 2, (byte *) &len);
                 break;
 #ifdef ARDUINO
-                case FM_FLASH_CLEAR:
-                    len = 0;
-                    sendSysex(FirmataStream, FM_FLASH_CLEAR, 2, (byte *) &len);
-                    board.flashClear();
-                    hwboard::reset();
-                    break;
+            case FM_FLASH_CLEAR:
+                len = 0;
+                sendSysex(FirmataStream, FM_FLASH_CLEAR, 2, (byte *) &len);
+                board.flashClear();
+                hwboard::reset();
+                break;
 #endif
 #endif
 #endif

@@ -52,25 +52,24 @@
 class socketFirmata : public nStream, public smodule {
 
 public:
+    socketFirmata() {
+        data.typ = pb_module_type_SKFM;
+    }
+
     ~socketFirmata() final = default;
 
     const char *name() final { return "socketFirmata"; }
 
-    const pb_module_type type() final { return pb_module_type_SKFM; }
-
-    const int data_len() override { return sizeof(data); }
-
-    int read_data(u8 *data) override {
-        memcpy(data, &this->data, sizeof(data));
-        return sizeof(data);
+    int encode(pb_ostream_t *stream) final {
+        return pb_encode(stream, pb_skfm_info_fields, &data);
     }
 
-    struct {
-    } data;
+    pb_skfm_info data;
 
     int begin(u32 tick) override;
 
     int run(u32 tick) override;
+
 #ifdef __PLATFORMIO_BUILD_DEBUG__
     int dev_test(u32 tick) override;
 #endif
