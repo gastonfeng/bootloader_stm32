@@ -83,6 +83,16 @@ byte portConfigInputs[TOTAL_PORTS];
 #define OUTPUT 1
 #endif
 
+using cb_fm = int (*)(mFirmata *mf, nStream *, pb_cmd);
+cb_fm fm_cmd[] = {
+        &mFirmata::get_info,
+        mFirmata::get_rte_info,
+        mFirmata::get_module_info,
+        mFirmata::get_var_info,
+        mFirmata::get_hold_value,
+        mFirmata::get_thread_info,
+};
+
 #ifdef USE_FIRMATA_WIRE
 void wireWrite(byte data)
 {
@@ -796,13 +806,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         u32 build;
         char name[8];
     } info{};
-    // logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
+    logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
     switch (command) {
         case FM_PROTOBUF: {
             pb_cmd cmd;
             pb_istream_t stream = pb_istream_from_buffer(argv, argc);
             if (pb_decode(&stream, pb_cmd_fields, &cmd)) {
-                if (fm_cmd[cmd.cmd]) {
+                if ((cmd.cmd < (sizeof(fm_cmd) / 4)) && fm_cmd[cmd.cmd]) {
                     fm_cmd[cmd.cmd](this, FirmataStream, cmd);
                 } else {
                     pb_response response;
@@ -1866,98 +1876,82 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     set_flag(command);
 }
 
-int (*mFirmata::fm_cmd[])(mFirmata *mf, nStream *, pb_cmd) = {
-        mFirmata::get_info,
-        mFirmata::get_rte_info,
-        mFirmata::get_module_info,
-        mFirmata::get_var_info,
-        mFirmata::get_hold_value,
-};
-
-#define buffer_size 512
-
 int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-
-    uint8_t *buffer = (uint8_t *) malloc(buffer_size);
-    pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
-    auto *msg = new pb_msg();
-    msg->msg.info = plc_var.info;
-    msg->which_msg = pb_msg_info_tag;
-    int ret = pb_encode(&stream, pb_msg_fields, msg);
+    logger.info("get_info: %d\n", cmd.cmd);
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    mf->msg.msg.info = plc_var.info;
+    mf->msg.which_msg = pb_msg_info_tag;
+    int ret = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
     }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, buffer);
-    free(msg);
-    free(buffer);
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    logger.info("get_info: %d\n", mf->msg.which_msg);
     return 0;
 }
 
 int mFirmata::get_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    uint8_t *buffer = (uint8_t *) malloc(buffer_size);
-    pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
-    auto *msg = new pb_msg();
-    msg->msg.rte_info = rte_info;
-    msg->which_msg = pb_msg_rte_info_tag;
-    int ret = pb_encode(&stream, pb_msg_fields, msg);
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    mf->msg.msg.rte_info = rte_info;
+    mf->msg.which_msg = pb_msg_rte_info_tag;
+    int ret = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
     }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, buffer);
-    free(msg);
-    free(buffer);
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
 }
 
 int mFirmata::get_module_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    uint8_t *buffer = (uint8_t *) malloc(buffer_size);
-    pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
     if (index < plc_var.info.max_level) {
-        auto *msg = new pb_msg();
         smodule *module = smodule::modules[index];
-        int ret = module->encode(msg, &stream);
+        int ret = module->encode(&mf->msg, &stream);
         if (!ret) {
             const char *error = PB_GET_ERROR(&stream);
             logger.error("dir_buf encode error: %s", error);
         }
-        mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, buffer);
-        free(msg);
+        mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     } else {
         logger.error("get_module_info: index=%d", index);
     }
-    free(buffer);
     return 0;
 }
 
 int mFirmata::get_var_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    uint8_t *buffer = (uint8_t *) malloc(buffer_size);
-    pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
-    auto *msg = new pb_msg();
-    int ret = board.encode_var(msg, &stream);
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    int ret = board.encode_var(&mf->msg, &stream);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
     }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, buffer);
-    free(msg);
-    free(buffer);
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
 }
 
 int mFirmata::get_hold_value(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    uint8_t *buffer = (uint8_t *) malloc(buffer_size);
-    pb_ostream_t stream = pb_ostream_from_buffer(buffer, buffer_size);
-    auto *msg = new pb_msg();
-    int ret = board.encode_hold(msg, &stream);
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    int ret = board.encode_hold(&mf->msg, &stream);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
     }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, buffer);
-    free(msg);
-    free(buffer);
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    return 0;
+}
+
+int mFirmata::get_thread_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    mf->msg.msg.thread_list = plc_var.thread;
+    mf->msg.which_msg = pb_msg_thread_list_tag;
+    int ret = pb_encode(&stream, pb_msg_fields, &mf->msg);
+    if (!ret) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("dir_buf encode error: %s", error);
+    }
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
 }

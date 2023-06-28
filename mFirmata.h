@@ -210,6 +210,8 @@ public:
 
     int decodeByteStream(size_t bytec, const byte *bytev, byte *buf);
 
+    pb_msg msg;
+
 private:
     int getPinState(byte pin);
 
@@ -312,8 +314,7 @@ protected:
 
     void *lock;
 
-    static int (*fm_cmd[])(mFirmata *mf, nStream *, pb_cmd);
-
+public:
     static int get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
     static int get_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
@@ -324,6 +325,7 @@ protected:
 
     static int get_hold_value(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
+    static int get_thread_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 };
 
 #endif
