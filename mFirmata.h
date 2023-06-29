@@ -326,6 +326,8 @@ public:
     static int get_hold_value(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
     static int get_thread_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 };
 
 #endif
