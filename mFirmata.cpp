@@ -806,7 +806,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         u32 build;
         char name[8];
     } info{};
-    logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
+    // logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
     switch (command) {
         case FM_PROTOBUF: {
             pb_cmd cmd;
@@ -1877,7 +1877,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 }
 
 int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    logger.info("get_info: %d\n", cmd.cmd);
+    // logger.info("get_info: %d\n", cmd.cmd);
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     mf->msg.msg.info = plc_var.info;
     mf->msg.which_msg = pb_msg_info_tag;
@@ -1887,7 +1887,7 @@ int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         logger.error("dir_buf encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
-    logger.info("get_info: %d\n", mf->msg.which_msg);
+    // logger.info("get_info: %d\n", mf->msg.which_msg);
     return 0;
 }
 
