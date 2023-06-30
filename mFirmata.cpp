@@ -816,7 +816,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 response.cmd = cmd.cmd;
                 response.result = -1;
                 response.msg = "parse protobuf error";
-                logger.error("parse protobuf error");
+                const char *error = PB_GET_ERROR(&stream);
+                logger.error("parse protobuf error:%s", error);
             }
         }
             break;
@@ -1781,29 +1782,40 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     set_flag(command);
 }
 
-
 int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
     switch (index) {
         case 0:
-            res = pb_encode(&stream, pb_rte_info_fields, &rte_info);
+            mf->msg.msg.rte_info = rte_info;
+            mf->msg.which_msg = pb_msg_rte_info_tag;
+            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
         case 1:
-            res = pb_encode(&stream, pb_info_fields, &plc_var.info);
+            mf->msg.msg.info = plc_var.info;
+            mf->msg.which_msg = pb_msg_info_tag;
+            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
         case 2:
-            res = pb_encode(&stream, pb_config_fields, &plc_var._config);
+            mf->msg.msg.config = plc_var._config;
+            mf->msg.which_msg = pb_msg_config_tag;
+            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
         case 3:
-            res = pb_encode(&stream, pb_thread_list_fields, &plc_var.thread);
+            mf->msg.msg.thread_list = plc_var.thread;
+            mf->msg.which_msg = pb_msg_thread_list_tag;
+            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
         case 4:
-            res = pb_encode(&stream, pb_board_kb1288_fields, &plc_var.analogValue.data);
+            mf->msg.msg.kb1288 = plc_var.analogValue.data;
+            mf->msg.which_msg = pb_msg_kb1288_tag;
+            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
         case 5:
-            res = pb_encode(&stream, pb_board_kb1288_holder_fields, &plc_var.holdValue.data);
+            mf->msg.msg.kb1288_holder = plc_var.holdValue.data;
+            mf->msg.which_msg = pb_msg_kb1288_holder_tag;
+            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
         default:
             if (index < (plc_var.info.max_level + 6)) {
@@ -1832,34 +1844,40 @@ int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             mf->msg.which_msg = pb_msg_rte_info_tag;
             break;
         case 1:
-            if (pb_field_iter_begin(&iter, pb_info_fields, &plc_var.info))ok = true;
+            if (pb_field_iter_begin(&iter, pb_info_fields, &plc_var.info))
+                ok = true;
             mf->msg.msg.info = plc_var.info;
             mf->msg.which_msg = pb_msg_info_tag;
             break;
         case 2:
-            if (pb_field_iter_begin(&iter, pb_config_fields, &plc_var._config))ok = true;
+            if (pb_field_iter_begin(&iter, pb_config_fields, &plc_var._config))
+                ok = true;
             mf->msg.msg.config = plc_var._config;
             mf->msg.which_msg = pb_msg_config_tag;
             break;
         case 3:
-            if (pb_field_iter_begin(&iter, pb_thread_list_fields, &plc_var.thread))ok = true;
+            if (pb_field_iter_begin(&iter, pb_thread_list_fields, &plc_var.thread))
+                ok = true;
             mf->msg.msg.thread_list = plc_var.thread;
             mf->msg.which_msg = pb_msg_thread_list_tag;
             break;
         case 5:
-            if (pb_field_iter_begin(&iter, pb_board_kb1288_holder_fields, &plc_var.holdValue.data))ok = true;
+            if (pb_field_iter_begin(&iter, pb_board_kb1288_holder_fields, &plc_var.holdValue.data))
+                ok = true;
             mf->msg.msg.kb1288_holder = plc_var.holdValue.data;
             mf->msg.which_msg = pb_msg_kb1288_holder_tag;
             break;
         case 4:
-            if (pb_field_iter_begin(&iter, pb_board_kb1288_fields, &plc_var.analogValue.data))ok = true;
+            if (pb_field_iter_begin(&iter, pb_board_kb1288_fields, &plc_var.analogValue.data))
+                ok = true;
             mf->msg.msg.kb1288 = plc_var.analogValue.data;
-            mf->msg.which_msg = pb_msg_thread_list_tag;
+            mf->msg.which_msg = pb_msg_kb1288_tag;
             break;
         default:
             if (cmd.param < (plc_var.info.max_level + 2)) {
                 smodule *module = smodule::modules[cmd.param - 2];
-                if (module->iter(&iter))ok = true;
+                if (module->iter(&iter))
+                    ok = true;
                 int ret = module->encode(&mf->msg, &stream);
                 if (!ret) {
                     const char *error = PB_GET_ERROR(&stream);
@@ -1873,17 +1891,13 @@ int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     }
     if (pb_field_iter_find(&iter, cmd.tag)) {
         if (PB_ATYPE(iter.type) == PB_ATYPE_STATIC) {
-            pb_bytes_array_t *bytes = (pb_bytes_array_t *) cmd.data;
-            memcpy(iter.pData, bytes->bytes, bytes->size);
+            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
         } else if (PB_ATYPE(iter.type) == PB_ATYPE_POINTER) {
-            pb_bytes_array_t *bytes = (pb_bytes_array_t *) cmd.data;
-            memcpy(iter.pData, bytes->bytes, bytes->size);
+            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
         } else {
             logger.error("set_var: %d", cmd.param);
         }
     }
-    mf->msg.msg.thread_list = plc_var.thread;
-    mf->msg.which_msg = pb_msg_thread_list_tag;
     int ret = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
