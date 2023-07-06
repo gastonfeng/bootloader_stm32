@@ -1864,13 +1864,13 @@ int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             mf->msg.which_msg = pb_msg_thread_list_tag;
             break;
         case 5:
-            if (pb_field_iter_begin(&iter, pb_board_kb1288_holder_fields, &plc_var.holdValue.data))
+            if (pb_field_iter_begin(&iter, pb_holder_fields, &plc_var.holdValue.data))
                 ok = true;
             mf->msg.msg.holder = plc_var.holdValue.data;
             mf->msg.which_msg = pb_msg_holder_tag;
             break;
         case 4:
-            if (pb_field_iter_begin(&iter, pb_board_kb1288_fields, &plc_var.analogValue.data))
+            if (pb_field_iter_begin(&iter, pb_var_fields, &plc_var.analogValue.data))
                 ok = true;
             mf->msg.msg.var = plc_var.analogValue.data;
             mf->msg.which_msg = pb_msg_var_tag;
