@@ -153,7 +153,7 @@ void mFirmata::reportAnalogCallback(nStream *stream, byte analogPin, int value) 
             bitSet(plc_var.info.analogInputsToReport, analogPin);
             // prevent during system reset or all analog pin values will be reported
             // which may report noise for unconnected analog pins
-            if (plc_var.info.state < pb_app_state_FLASH_FORMAT)
+            if (plc_var.info.state < pb_state_FLASH_FORMAT)
             {
                 // Send pin value immediately. This is helpful when connected via
                 // ethernet, wi-fi or bluetooth so pin states can be known upon
@@ -1757,13 +1757,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             if (argc > 0) {
 #ifdef USE_IAP
                 if (argv[0] == 1)
-                    ctrl->iap = CTRL_ACTION_RUN;
+                    ctrl->iap = pb_state_iap;
                 else
 #endif
                 if (argv[0] == 2) {
 #ifdef USE_FLASH_LFS_MV
-                    ctrl->rte_action = CTRL_ACTION_RUN;
-                    ctrl->plc_action = CTRL_ACTION_RUN;
+                    ctrl->rte_action = pb_state_flash_rte;
+                    ctrl->plc_action = pb_state_flash_app;
 #endif
                 }
                 len = argv[0];
@@ -1875,8 +1875,8 @@ int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
         default:
-            if (index < (plc_var.info.max_level + 6)) {
-                smodule *module = smodule::modules[index - 6];
+            if (index < (plc_var.info.max_level + 4)) {
+                smodule *module = smodule::modules[index - 4];
                 res = module->encode(&mf->msg, &stream);
             }
             break;
@@ -1919,8 +1919,8 @@ int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             mf->msg.which_msg = pb_msg_thread_list_tag;
             break;
         default:
-            if (cmd.param < (plc_var.info.max_level + 2)) {
-                smodule *module = smodule::modules[cmd.param - 2];
+            if (cmd.param < (plc_var.info.max_level + 4)) {
+                smodule *module = smodule::modules[cmd.param - 4];
                 if (module->iter(&iter))
                     ok = true;
                 int ret = module->encode(&mf->msg, &stream);
