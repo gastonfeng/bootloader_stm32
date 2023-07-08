@@ -328,6 +328,16 @@ public:
     static int get_thread_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
     static int set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int get_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+
+    static int get_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int set_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+
+    static int set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 };
 
 #endif
