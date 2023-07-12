@@ -2,7 +2,6 @@
 #include "mFirmata.h"
 
 #include <plc_rte.h>
-#include <cassert>
 #include "hwboard.h"
 #include "SerialFirmata.h"
 #include <pb_encode.h>
@@ -26,7 +25,6 @@
 #if defined(USE_RTC) || defined(USE_PCF8563)
 
 #include "rte_rtc.h"
-#include "pb_decode.h"
 
 #endif
 
@@ -41,6 +39,7 @@
 
 #include <kvdb.h>
 #include <pb_common.h>
+#include <inline_ctrl.h>
 
 #endif
 #ifdef USE_WIFI
@@ -75,9 +74,6 @@ byte detachedServoCount = 0;
 byte servoCount = 0;
 #endif
 
-/* pins configuration */
-byte portConfigInputs[TOTAL_PORTS];
-// each bit: 1 = pin in INPUT, 0 = anything else
 #ifndef ARDUINO
 // from arduino
 #define INPUT 0
@@ -1757,7 +1753,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             if (argc > 0) {
 #ifdef USE_IAP
                 if (argv[0] == 1)
-                    ctrl->iap = pb_state_iap;
+                    inlineCtrl.data->iap = pb_state_EXEC_IAP;
                 else
 #endif
                 if (argv[0] == 2) {
@@ -1954,7 +1950,7 @@ int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
 int mFirmata::get_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    int res = pb_encode(&stream, pb_board_kb1288_fields, &data);
+    int res = pb_encode(&stream, pb_board_kb1288_fields, &plc_var.analogValue.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
@@ -1965,7 +1961,7 @@ int mFirmata::get_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
 int mFirmata::get_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    int res = pb_encode(&stream, pb_board_kb1288_holder_fields, &holder);
+    int res = pb_encode(&stream, pb_board_kb1288_holder_fields, &plc_var.holdValue.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
@@ -1978,7 +1974,7 @@ int mFirmata::set_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (pb_field_iter_begin(&iter, pb_board_kb1288_fields, &data))
+    if (pb_field_iter_begin(&iter, pb_board_kb1288_fields, &plc_var.analogValue.data))
         ok = true;
     if (!ok) {
         logger.error("set_board_data: %d", cmd.param);
@@ -1993,7 +1989,7 @@ int mFirmata::set_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             logger.error("set_board_data: %d", cmd.param);
         }
     }
-    int res = pb_encode(&stream, pb_board_kb1288_fields, &data);
+    int res = pb_encode(&stream, pb_board_kb1288_fields, &plc_var.analogValue.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
@@ -2006,7 +2002,7 @@ int mFirmata::set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (pb_field_iter_begin(&iter, pb_board_kb1288_holder_fields, &holder))
+    if (pb_field_iter_begin(&iter, pb_board_kb1288_holder_fields, &plc_var.holdValue.data))
         ok = true;
     if (!ok) {
         logger.error("set_holder: %d", cmd.param);
@@ -2021,7 +2017,7 @@ int mFirmata::set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             logger.error("set_holder: %d", cmd.param);
         }
     }
-    int res = pb_encode(&stream, pb_board_kb1288_holder_fields, &holder);
+    int res = pb_encode(&stream, pb_board_kb1288_holder_fields, &plc_var.holdValue.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
