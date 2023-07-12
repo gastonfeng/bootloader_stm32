@@ -34,7 +34,9 @@
 #endif
 
 #ifdef ARDUINO_ARCH_STM32
+
 #include <stm32_def.h>
+
 #endif
 
 #ifndef ETH_MAX_PAYLOAD
@@ -52,17 +54,20 @@
 class socketFirmata : public nStream, public smodule {
 
 public:
-    socketFirmata() {
-        data.typ = pb_module_type_SKFM;
-    }
-
-    ~socketFirmata() final = default;
 
     const char *name() final { return "socketFirmata"; }
 
-    int encode(pb_ostream_t *stream) final {
-        return pb_encode(stream, pb_skfm_info_fields, &data);
+    int encode(pb_msg *msg, pb_ostream_t *stream) override {
+        msg->msg.skfm = data;
+        msg->which_msg = pb_msg_skfm_tag;
+        return pb_encode(stream, pb_msg_fields, msg);
     }
+
+    int iter(pb_field_iter_t *pS) override {
+        return pb_field_iter_begin(pS, pb_skfm_info_fields, &data);
+    }
+
+    int type() override { return pb_msg_skfm_tag; }
 
     pb_skfm_info data;
 
@@ -73,6 +78,7 @@ public:
 #ifdef __PLATFORMIO_BUILD_DEBUG__
     int dev_test(u32 tick) override;
 #endif
+
     int diag(u32 tick) override;
 
 
@@ -118,7 +124,7 @@ public:
     }
 
 private:
-    std::vector <u8> txbuf;
+    std::vector<u8> txbuf;
     mFirmata firm;
 
     void check_socket();

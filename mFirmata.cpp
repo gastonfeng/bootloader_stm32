@@ -13,6 +13,7 @@
 #ifdef USE_FILESYSTEM
 
 #include "kFs.h"
+#include "inline_ctrl.h"
 
 #endif
 
@@ -1758,8 +1759,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
                 if (argv[0] == 2) {
 #ifdef USE_FLASH_LFS_MV
-                    ctrl->rte_action = pb_state_flash_rte;
-                    ctrl->plc_action = pb_state_flash_app;
+                    inlineCtrl.data->rte_action = pb_state_flash_rte;
+                    inlineCtrl.data->plc_action = pb_state_flash_app;
 #endif
                 }
                 len = argv[0];
@@ -1941,84 +1942,6 @@ int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     }
     int ret = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!ret) {
-        const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
-    }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
-    return 0;
-}
-
-int mFirmata::get_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    int res = pb_encode(&stream, pb_board_kb1288_fields, &plc_var.analogValue.data);
-    if (!res) {
-        const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
-    }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
-    return 0;
-}
-
-int mFirmata::get_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    int res = pb_encode(&stream, pb_board_kb1288_holder_fields, &plc_var.holdValue.data);
-    if (!res) {
-        const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
-    }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
-    return 0;
-}
-
-int mFirmata::set_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    pb_field_iter_t iter;
-    bool ok = false;
-    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (pb_field_iter_begin(&iter, pb_board_kb1288_fields, &plc_var.analogValue.data))
-        ok = true;
-    if (!ok) {
-        logger.error("set_board_data: %d", cmd.param);
-        return -1;
-    }
-    if (pb_field_iter_find(&iter, cmd.tag)) {
-        if (PB_ATYPE(iter.type) == PB_ATYPE_STATIC) {
-            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
-        } else if (PB_ATYPE(iter.type) == PB_ATYPE_POINTER) {
-            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
-        } else {
-            logger.error("set_board_data: %d", cmd.param);
-        }
-    }
-    int res = pb_encode(&stream, pb_board_kb1288_fields, &plc_var.analogValue.data);
-    if (!res) {
-        const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
-    }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
-    return 0;
-}
-
-int mFirmata::set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    pb_field_iter_t iter;
-    bool ok = false;
-    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (pb_field_iter_begin(&iter, pb_board_kb1288_holder_fields, &plc_var.holdValue.data))
-        ok = true;
-    if (!ok) {
-        logger.error("set_holder: %d", cmd.param);
-        return -1;
-    }
-    if (pb_field_iter_find(&iter, cmd.tag)) {
-        if (PB_ATYPE(iter.type) == PB_ATYPE_STATIC) {
-            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
-        } else if (PB_ATYPE(iter.type) == PB_ATYPE_POINTER) {
-            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
-        } else {
-            logger.error("set_holder: %d", cmd.param);
-        }
-    }
-    int res = pb_encode(&stream, pb_board_kb1288_holder_fields, &plc_var.holdValue.data);
-    if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
     }
