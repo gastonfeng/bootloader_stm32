@@ -30,6 +30,7 @@
 #endif
 
 #include <plc_var_class.h>
+#include <cassert>
 
 #ifdef USE_TSDB
 
