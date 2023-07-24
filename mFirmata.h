@@ -338,6 +338,13 @@ public:
 
 
     static int set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int goto_iap(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int reboot(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
 };
 
 #endif
