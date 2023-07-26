@@ -8,7 +8,6 @@
 #include "firmata.pb.h"
 #include "lib/nanopb/pb.h"
 #include "lib/nanopb/pb_decode.h"
-#include "../../src/hwboard.h"
 
 #ifdef USE_FILESYSTEM
 
@@ -30,7 +29,6 @@
 #endif
 
 #include <plc_var_class.h>
-#include <cassert>
 
 #ifdef USE_TSDB
 
@@ -1896,10 +1894,10 @@ int mFirmata::goto_iap(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_response response;
     response.result = 0;
     response.cmd = cmd.cmd;
-
+#ifdef USE_IAP
     inlineCtrl.data->iap = pb_state_EXEC_IAP;
     rte.event(pb_event_REQUEST_RESTART, 1);
-
+#endif
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int ret = pb_encode(&stream, pb_response_fields, &response);
     if (!ret) {
@@ -1931,10 +1929,10 @@ int mFirmata::goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_response response;
     response.result = 0;
     response.cmd = cmd.cmd;
-
+#ifdef USE_IAP
     inlineCtrl.data->enter_boot = pb_state_EXEC_BOOT;
     rte.event(pb_event_REQUEST_RESTART, 1);
-
+#endif
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int ret = pb_encode(&stream, pb_response_fields, &response);
     if (!ret) {
