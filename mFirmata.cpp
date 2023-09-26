@@ -29,6 +29,7 @@
 #endif
 
 #include <plc_var_class.h>
+#include <assert.h>
 
 #ifdef USE_TSDB
 
