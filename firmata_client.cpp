@@ -56,7 +56,7 @@ void firmata_client::thd_loop(void *arg) {
     auto *fm = (nStream *) arg;
     while (true) {
         fm_client.loop(fm);
-        rtos::Delay(1);
+        Rtos::Delay(1);
     }
 }
 
@@ -79,7 +79,7 @@ int firmata_client::set_plc_var(int index, byte *varp, int len) {
 int firmata_client::begin(nStream *s) {
     stream = s;
 #ifdef USE_FREERTOS
-    rtos::create_thread_run("fc", 512, PriorityNormal, (void *) &thd_loop, s);
+    Rtos::create_thread_run("fc", 512, PriorityNormal, (void *) &thd_loop, s);
 #endif
     return 0;
 }

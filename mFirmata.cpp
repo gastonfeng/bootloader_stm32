@@ -8,6 +8,7 @@
 #include "firmata.pb.h"
 #include "lib/nanopb/pb.h"
 #include "lib/nanopb/pb_decode.h"
+#include "Holder.h"
 
 #ifdef USE_FILESYSTEM
 
@@ -19,6 +20,7 @@
 #if defined(RTE_APP) || defined(PLC)
 
 #include <iec_types.h>
+#include <cassert>
 
 #endif
 
@@ -242,15 +244,15 @@ int mFirmata::loop(nStream *FirmataStream) {
 #ifndef FIRMATA_DISABLE_REPORT
 
 void mFirmata::report(nStream *FirmataStream) {
-    u32 currentMillis = rtos::ticks();
+    u32 currentMillis = Rtos::ticks();
 
     if (currentMillis - previousMillis > holder.data.reportInterval) {
         previousMillis += holder.data.reportInterval;
         /* ANALOGREAD - do all analogReads() at the configured sampling interval */
-        board.readAnalogValue(this, FirmataStream, board.data.analogInputsToReport,
-                              sizeof(board.data.analogInputsToReport));
+        board.readAnalogValue(this, FirmataStream, board.data.firmata.analogInputsToReport,
+                              sizeof(board.data.firmata.analogInputsToReport));
         for (byte pin = 0; pin < IO_XI_NRS + IO_YO_NRS; pin++) {
-            if (bitRead(board.data.reportPINs, pin)) {
+            if (bitRead(board.data.firmata.reportPINs, pin)) {
                 outputPort(FirmataStream, pin, getPinState(pin), true);
             }
         }
@@ -486,8 +488,8 @@ void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, b
     if (FirmataStream->lock)
         Rtos::mutex_lock(FirmataStream->lock);
     //    if (s != 0)
-    //        logger.error("sendSysex:%p c=%p", s, rtos::pthread_self());
-    //    s = rtos::pthread_self();
+    //        logger.error("sendSysex:%p c=%p", s, Rtos::pthread_self());
+    //    s = Rtos::pthread_self();
     if (use_sn) {
         auto *c = (byte *) malloc(bytec + 4);
         *(uint32_t *) c = sn;
@@ -529,7 +531,7 @@ void mFirmata::parse(nStream *stream, uint8_t inputData) {
     if (stream->flag & FLAG_FORWARD)
     {
         stream->forward(inputData);
-        if (inputData == END_SYSEX || rtos::ticks() > stream->tick_forward)
+        if (inputData == END_SYSEX || Rtos::ticks() > stream->tick_forward)
         {
             stream->closeForward();
         }
