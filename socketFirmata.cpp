@@ -168,7 +168,7 @@ int socketFirmata::start_listen_socket(int *sock) {
     my_addr.sin_family = AF_INET;
     my_addr.sin_addr.s_addr = INADDR_ANY;
 #ifdef RTE_APP
-    my_addr.sin_port = plc_var.info.debug_port;
+    my_addr.sin_port = board.data.debug_port;
 #else
     my_addr.sin_port = 0;
 #endif
@@ -186,7 +186,7 @@ int socketFirmata::start_listen_socket(int *sock) {
         return -2;
     }
 #ifdef RTE_APP
-    plc_var.info.debug_port = ntohs(my_addr.sin_port);
+    board.data.debug_port = ntohs(my_addr.sin_port);
 #endif
     // start accept client connections
     if (listen(*sock, 10) != 0) {
@@ -194,7 +194,7 @@ int socketFirmata::start_listen_socket(int *sock) {
         return -1;
     }
 #ifdef RTE_APP
-    logger.info("Accepting connections on port %d.\n", (int) plc_var.info.debug_port);
+    logger.info("Accepting connections on port %d.\n", (int) board.data.debug_port);
 #endif
     return 0;
 }

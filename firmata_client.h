@@ -3,7 +3,7 @@
 
 
 #include "mFirmata.h"
-#include "rtos.h"
+#include "Rtos.h"
 
 using u8 = unsigned char;
 

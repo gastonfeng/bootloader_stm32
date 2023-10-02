@@ -10,7 +10,7 @@
 #include "smodule.h"
 #include "logger_rte.h"
 #include "plc_rte.h"
-#include "rtos.h"
+#include "Rtos.h"
 
 #endif
 
