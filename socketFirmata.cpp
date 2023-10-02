@@ -10,7 +10,6 @@
 #endif
 
 #include "socketFirmata.h"
-#include "rtos.h"
 #include "logger_rte.h"
 
 
@@ -121,7 +120,7 @@ int socketFirmata::receive_from_peer(void *p) {
     int len_to_receive;
     int received_count;
     int received_total = 0;
-    peer->last_tick = rtos::ticks();
+    peer->last_tick = Rtos::ticks();
     len_to_receive = sizeof(peer->receiving_buffer) - peer->current_receiving_byte;
 
     // logger.error("Let's try to recv() %zd bytes... ", len_to_receive);
@@ -260,7 +259,7 @@ int socketFirmata::handle_new_connection() {
             i.socket = new_client_sock;
             i.addres = client_addr;
             i.current_receiving_byte = 0;
-            i.last_tick = rtos::ticks();
+            i.last_tick = Rtos::ticks();
             return 0;
         }
     }
@@ -383,7 +382,7 @@ void socketFirmata::report() {
 #endif
 
 int socketFirmata::begin(u32 tick) {
-    rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
+    Rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
     return 0;
 
 }
@@ -413,7 +412,7 @@ int socketFirmata::read_wait(int timeout) {
 
 void socketFirmata::check_socket() {
     for (auto &i: connection_list) {
-        if ((i.socket != -1) && ((rtos::ticks() - i.last_tick) > 10000)) {
+        if ((i.socket != -1) && ((Rtos::ticks() - i.last_tick) > 10000)) {
             close_client_connection(&i);
         }
     }

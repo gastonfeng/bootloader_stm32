@@ -945,7 +945,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
             case CB_GET_RTC:
-                sendSysex(FirmataStream, CB_GET_RTC, sizeof(rtc_t), (byte *) &board.data.rtc);
+                sendSysex(FirmataStream, CB_GET_RTC, sizeof(pb_rtc_info), (byte *) &rtc.data);
                 break;
             case CB_SET_RTC: {
                 tm new_time{};
