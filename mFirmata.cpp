@@ -19,7 +19,6 @@
 #if defined(RTE_APP) || defined(PLC)
 
 #include <iec_types.h>
-#include <cassert>
 
 #endif
 
@@ -27,7 +26,6 @@
 
 #include "rte_rtc.h"
 #include "inline_ctrl.h"
-
 #endif
 
 
@@ -1428,8 +1426,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             u32 l_index;
             if (argc == 4) {
                 l_index = *(u32 *) &argv[0];
-                if (app.data.plc_curr_app && l_index < ((plc_app_abi_t *) board.data.plc_curr_app)->l_sz) {
-                    plc_loc_tbl_t loc = ((plc_app_abi_t *) board.data.plc_curr_app)->l_tab[l_index];
+                if (app.data.plc_curr_app && l_index < ((plc_app_abi_t *) app.data.plc_curr_app)->l_sz) {
+                    plc_loc_tbl_t loc = ((plc_app_abi_t *) app.data.plc_curr_app)->l_tab[l_index];
                     len = (int) sizeof(plc_loc_dsc_t) + loc->a_size + loc->v_size;
                     byte *buffer = (byte *) malloc(len);
                     buffer[0] = loc->v_type;
@@ -1443,25 +1441,25 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     break;
                 }
             }
-            sendSysex(FirmataStream, FM_GET_LOC_TAB, 0, (byte *) &((plc_app_abi_t *) board.data.plc_curr_app)->l_sz);
+            sendSysex(FirmataStream, FM_GET_LOC_TAB, 0, (byte *) &((plc_app_abi_t *) app.data.plc_curr_app)->l_sz);
             break;
         case FM_SET_LOC_TAB:
             if (argc == 5) {
                 l_index = *(u32 *) &argv[0];
-                if (board.data.plc_curr_app && l_index < ((plc_app_abi_t *) board.data.plc_curr_app)->l_sz) {
+                if (app.data.plc_curr_app && l_index < ((plc_app_abi_t *) app.data.plc_curr_app)->l_sz) {
                     sendSysex(FirmataStream, FM_SET_LOC_TAB, sizeof(plc_loc_tbl_t),
-                              (byte *) &((plc_app_abi_t *) board.data.plc_curr_app)->l_tab[l_index]);
+                              (byte *) &((plc_app_abi_t *) app.data.plc_curr_app)->l_tab[l_index]);
                     break;
                 }
             }
-            sendSysex(FirmataStream, FM_SET_LOC_TAB, 0, (byte *) &((plc_app_abi_t *) board.data.plc_curr_app)->l_sz);
+            sendSysex(FirmataStream, FM_SET_LOC_TAB, 0, (byte *) &((plc_app_abi_t *) app.data.plc_curr_app)->l_sz);
             break;
 #endif
 #ifdef ONLINE_DEBUG
         case FM_GET_DBG_SIZE:
-            if (board.data.plc_curr_app) {
+            if (app.data.plc_curr_app) {
                 sendSysex(FirmataStream, FM_GET_DBG_SIZE, 4,
-                          (byte *) &((plc_app_abi_t *) board.data.plc_curr_app)->data->size_dbgvardsc);
+                          (byte *) &((plc_app_abi_t *) app.data.plc_curr_app)->data->size_dbgvardsc);
             } else {
                 sendSysex(FirmataStream, FM_GET_DBG_SIZE, 0, nullptr);
             }
@@ -1470,9 +1468,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             len = 0;
             if (argc == 4) {
                 l_index = *(u32 *) &argv[0];
-                if (board.data.plc_curr_app &&
-                    l_index < ((plc_app_abi_t *) board.data.plc_curr_app)->data->size_dbgvardsc) {
-                    len = (int) fill_dbg(((plc_app_abi_t *) board.data.plc_curr_app)->data->dbgvardsc, (int) l_index,
+                if (app.data.plc_curr_app &&
+                    l_index < ((plc_app_abi_t *) app.data.plc_curr_app)->data->size_dbgvardsc) {
+                    len = (int) fill_dbg(((plc_app_abi_t *) app.data.plc_curr_app)->data->dbgvardsc, (int) l_index,
                                          argv);
                 }
             }
@@ -1482,11 +1480,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             len = 0;
             if (argc > 5) {
                 l_index = *(u32 *) argv;
-                if (board.data.plc_curr_app &&
-                    l_index < ((plc_app_abi_t *) board.data.plc_curr_app)->data->size_dbgvardsc) {
-                    set_dbg(((plc_app_abi_t *) board.data.plc_curr_app)->data->dbgvardsc, l_index, &argv[4],
+                if (app.data.plc_curr_app &&
+                    l_index < ((plc_app_abi_t *) app.data.plc_curr_app)->data->size_dbgvardsc) {
+                    set_dbg(((plc_app_abi_t *) app.data.plc_curr_app)->data->dbgvardsc, l_index, &argv[4],
                             argc - 4);
-                    len = (int) fill_dbg(((plc_app_abi_t *) board.data.plc_curr_app)->data->dbgvardsc, (int) l_index,
+                    len = (int) fill_dbg(((plc_app_abi_t *) app.data.plc_curr_app)->data->dbgvardsc, (int) l_index,
                                          argv);
                 }
             }
