@@ -5,11 +5,11 @@
 #include "hwboard.h"
 #include "SerialFirmata.h"
 #include <pb_encode.h>
+#include <cassert>
 #include "firmata.pb.h"
 #include "lib/nanopb/pb.h"
 #include "lib/nanopb/pb_decode.h"
 #include "Holder.h"
-
 #ifdef USE_FILESYSTEM
 
 #include "kFs.h"
