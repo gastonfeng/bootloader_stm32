@@ -26,6 +26,7 @@
 #if defined(USE_RTC) || defined(USE_PCF8563)
 
 #include "rte_rtc.h"
+#include "inline_ctrl.h"
 
 #endif
 
@@ -833,7 +834,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->flush();
             break;
         case CB_GET_RTE_VERSION:
-            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(pb_rte_info), (uint8_t *) &rte_info);
+            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(pb_rte_info), (uint8_t *) &rteConst);
             break;
 
 #ifndef THIS_IS_BOOTLOADER
@@ -1784,24 +1785,29 @@ int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
     switch (index) {
-        case 0:
-            mf->msg.msg.rte_const = rte_info;
+        case pb_data_region_rte_const:
+            mf->msg.msg.rte_const = rteConst;
             mf->msg.which_msg = pb_msg_rte_const_tag;
             res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
-        case 1:
+        case pb_data_region_rte_info:
+            mf->msg.msg.rte_info = rte.data;
+            mf->msg.which_msg = pb_msg_rte_info_tag;
+            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
+            break;
+        case pb_data_region_rte_data:
             mf->msg.msg.board_info = board.data;
             mf->msg.which_msg = pb_msg_board_info_tag;
             res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
-        case 2:
+        case pb_data_region_rte_holder:
             mf->msg.msg.config = holder.data;
             mf->msg.which_msg = pb_msg_config_tag;
             res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
-        case 3:
-            mf->msg.msg.thread_list = rte_thread;
-            mf->msg.which_msg = pb_msg_thread_list_tag;
+        case pb_data_region_rte_ctrl:
+            mf->msg.msg.ctrl = *inlineCtrl.data;
+            mf->msg.which_msg = pb_msg_ctrl_tag;
             res = pb_encode(&stream, pb_msg_fields, &mf->msg);
             break;
         default:
@@ -1825,28 +1831,28 @@ int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     switch (cmd.param) {
-        case 0:
+        case pb_data_region_rte_info:
             ok = false;
             mf->msg.msg.rte_info = rte.data;
             mf->msg.which_msg = pb_msg_rte_info_tag;
             break;
-        case 1:
+        case pb_data_region_rte_data:
             if (pb_field_iter_begin(&iter, pb_board_info_fields, &board.data))
                 ok = true;
             mf->msg.msg.board_info = board.data;
             mf->msg.which_msg = pb_msg_board_info_tag;
             break;
-        case 2:
+        case pb_data_region_rte_holder:
             if (pb_field_iter_begin(&iter, pb_board_holder_fields, &holder.data))
                 ok = true;
             mf->msg.msg.config = holder.data;
             mf->msg.which_msg = pb_msg_config_tag;
             break;
-        case 3:
-            if (pb_field_iter_begin(&iter, pb_thread_list_fields, &rte_thread))
+        case pb_data_region_rte_ctrl:
+            if (pb_field_iter_begin(&iter, pb_ctrl_fields, inlineCtrl.data))
                 ok = true;
-            mf->msg.msg.thread_list = rte_thread;
-            mf->msg.which_msg = pb_msg_thread_list_tag;
+            mf->msg.msg.ctrl = *inlineCtrl.data;
+            mf->msg.which_msg = pb_msg_ctrl_tag;
             break;
         default:
             if (cmd.param < (rte.data.max_level + 4)) {
