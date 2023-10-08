@@ -315,29 +315,32 @@ protected:
     void *lock;
 
 public:
-    static int get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+    static int read_rte_const(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
-    static int get_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+    static int read_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
-    static int get_module_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+    static int write_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
-    static int get_var_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+    static int read_module(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
-    static int get_hold_value(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int write_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
     static int get_thread_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
-    static int set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+    static int write_module(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
-    static int get_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd);
-
-
-    static int get_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd);
-
-    static int set_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+    static int read_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
 
-    static int set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+    static int read_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int write_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+
+    static int write_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
     static int goto_iap(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 

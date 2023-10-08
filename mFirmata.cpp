@@ -82,12 +82,17 @@ byte servoCount = 0;
 
 using cb_fm = int (*)(mFirmata *mf, nStream *, pb_cmd);
 cb_fm fm_cmd[] = {
-        &mFirmata::get_info,
-        mFirmata::set_var,
-        mFirmata::get_board_data,
-        mFirmata::get_holder,
-        mFirmata::set_board_data,
-        mFirmata::set_holder,
+        &mFirmata::read_rte_const,
+        &mFirmata::read_rte_info,
+        &mFirmata::write_rte_info,
+        &mFirmata::read_rte_data,
+        &mFirmata::write_rte_data,
+        &mFirmata::read_rte_holder,
+        &mFirmata::write_rte_holder,
+        &mFirmata::read_rte_ctrl,
+        &mFirmata::write_rte_ctrl,
+        mFirmata::read_module,
+        mFirmata::write_module,
         mFirmata::goto_iap,
         mFirmata::reboot,
         mFirmata::goto_boot,
@@ -1780,44 +1785,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
     set_flag(command);
 }
 
-int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+int mFirmata::read_rte_const(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
-    switch (index) {
-        case pb_data_region_rte_const:
-            mf->msg.msg.rte_const = rteConst;
-            mf->msg.which_msg = pb_msg_rte_const_tag;
-            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
-            break;
-        case pb_data_region_rte_info:
-            mf->msg.msg.rte_info = rte.data;
-            mf->msg.which_msg = pb_msg_rte_info_tag;
-            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
-            break;
-        case pb_data_region_rte_data:
-            mf->msg.msg.board_info = board.data;
-            mf->msg.which_msg = pb_msg_board_info_tag;
-            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
-            break;
-        case pb_data_region_rte_holder:
-            mf->msg.msg.config = holder.data;
-            mf->msg.which_msg = pb_msg_config_tag;
-            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
-            break;
-        case pb_data_region_rte_ctrl:
-            mf->msg.msg.ctrl = *inlineCtrl.data;
-            mf->msg.which_msg = pb_msg_ctrl_tag;
-            res = pb_encode(&stream, pb_msg_fields, &mf->msg);
-            break;
-        default:
-            if (index < (rte.data.max_level + 4)) {
-                smodule *module = smodule::modules[index - 4];
-                res = module->encode(&mf->msg, &stream);
-            }
-            break;
-    }
-
+    mf->msg.msg.rte_const = rteConst;
+    mf->msg.which_msg = pb_msg_rte_const_tag;
+    res = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
@@ -1826,48 +1800,22 @@ int mFirmata::get_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     return 0;
 }
 
-int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+int mFirmata::write_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    switch (cmd.param) {
-        case pb_data_region_rte_info:
-            ok = false;
-            mf->msg.msg.rte_info = rte.data;
-            mf->msg.which_msg = pb_msg_rte_info_tag;
-            break;
-        case pb_data_region_rte_data:
-            if (pb_field_iter_begin(&iter, pb_board_info_fields, &board.data))
-                ok = true;
-            mf->msg.msg.board_info = board.data;
-            mf->msg.which_msg = pb_msg_board_info_tag;
-            break;
-        case pb_data_region_rte_holder:
-            if (pb_field_iter_begin(&iter, pb_board_holder_fields, &holder.data))
-                ok = true;
-            mf->msg.msg.config = holder.data;
-            mf->msg.which_msg = pb_msg_config_tag;
-            break;
-        case pb_data_region_rte_ctrl:
-            if (pb_field_iter_begin(&iter, pb_ctrl_fields, inlineCtrl.data))
-                ok = true;
-            mf->msg.msg.ctrl = *inlineCtrl.data;
-            mf->msg.which_msg = pb_msg_ctrl_tag;
-            break;
-        default:
-            if (cmd.param < (rte.data.max_level + 4)) {
-                smodule *module = smodule::modules[cmd.param - 4];
-                if (module->iter(&iter))
-                    ok = true;
-                int ret = module->encode(&mf->msg, &stream);
-                if (!ret) {
-                    const char *error = PB_GET_ERROR(&stream);
-                    logger.error("dir_buf encode error: %s", error);
-                }
-            }
+    if (cmd.param < (rte.data.max_level)) {
+        smodule *module = smodule::modules[cmd.param];
+        if (module->iter(&iter))
+            ok = true;
+        int ret = module->encode(&mf->msg, &stream);
+        if (!ret) {
+            const char *error = PB_GET_ERROR(&stream);
+            logger.error("dir_buf encode error: %s", error);
+        }
     }
     if (!ok) {
-        logger.error("set_var: %d", cmd.param);
+        logger.error("write_module: %d", cmd.param);
         return -1;
     }
     if (pb_field_iter_find(&iter, cmd.tag)) {
@@ -1876,7 +1824,7 @@ int mFirmata::set_var(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         } else if (PB_ATYPE(iter.type) == PB_ATYPE_POINTER) {
             memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
         } else {
-            logger.error("set_var: %d", cmd.param);
+            logger.error("write_module: %d", cmd.param);
         }
     }
     int ret = pb_encode(&stream, pb_msg_fields, &mf->msg);
@@ -1941,7 +1889,7 @@ int mFirmata::goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     return 0;
 }
 
-int mFirmata::get_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+int mFirmata::read_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int res = pb_encode(&stream, pb_board_info_fields, &board.data);
     if (!res) {
@@ -1952,7 +1900,7 @@ int mFirmata::get_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     return 0;
 }
 
-int mFirmata::get_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+int mFirmata::read_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int res = pb_encode(&stream, pb_board_holder_fields, &holder.data);
     if (!res) {
@@ -1963,14 +1911,14 @@ int mFirmata::get_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     return 0;
 }
 
-int mFirmata::set_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+int mFirmata::write_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     if (pb_field_iter_begin(&iter, pb_board_info_fields, &board.data))
         ok = true;
     if (!ok) {
-        logger.error("set_board_data: %d", cmd.param);
+        logger.error("write_rte_data: %d", cmd.param);
         return -1;
     }
     if (pb_field_iter_find(&iter, cmd.tag)) {
@@ -1979,7 +1927,7 @@ int mFirmata::set_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         } else if (PB_ATYPE(iter.type) == PB_ATYPE_POINTER) {
             memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
         } else {
-            logger.error("set_board_data: %d", cmd.param);
+            logger.error("write_rte_data: %d", cmd.param);
         }
     }
     int res = pb_encode(&stream, pb_board_info_fields, &board.data);
@@ -1991,14 +1939,14 @@ int mFirmata::set_board_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     return 0;
 }
 
-int mFirmata::set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+int mFirmata::write_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     if (pb_field_iter_begin(&iter, pb_board_holder_fields, &holder.data))
         ok = true;
     if (!ok) {
-        logger.error("set_holder: %d", cmd.param);
+        logger.error("write_rte_holder: %d", cmd.param);
         return -1;
     }
     if (pb_field_iter_find(&iter, cmd.tag)) {
@@ -2007,7 +1955,7 @@ int mFirmata::set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         } else if (PB_ATYPE(iter.type) == PB_ATYPE_POINTER) {
             memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
         } else {
-            logger.error("set_holder: %d", cmd.param);
+            logger.error("write_rte_holder: %d", cmd.param);
         }
     }
     int res = pb_encode(&stream, pb_board_holder_fields, &holder.data);
@@ -2016,5 +1964,61 @@ int mFirmata::set_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         logger.error("dir_buf encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    return 0;
+}
+
+int mFirmata::read_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+    int res = 0;
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    int index = cmd.param;
+    mf->msg.msg.rte_info = rte.data;
+    mf->msg.which_msg = pb_msg_rte_info_tag;
+    res = pb_encode(&stream, pb_msg_fields, &mf->msg);
+
+    if (!res) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("dir_buf encode error: %s", error);
+    }
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    return 0;
+}
+
+int mFirmata::write_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+    return 0;
+}
+
+int mFirmata::read_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+    int res = 0;
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    int index = cmd.param;
+    if (index < (rte.data.max_level)) {
+        smodule *module = smodule::modules[index];
+        res = module->encode(&mf->msg, &stream);
+    }
+    if (!res) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("dir_buf encode error: %s", error);
+    }
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    return 0;
+}
+
+int mFirmata::read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+    int res = 0;
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    int index = cmd.param;
+    mf->msg.msg.ctrl = *inlineCtrl.data;
+    mf->msg.which_msg = pb_msg_ctrl_tag;
+    res = pb_encode(&stream, pb_msg_fields, &mf->msg);
+
+    if (!res) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("dir_buf encode error: %s", error);
+    }
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    return 0;
+}
+
+int mFirmata::write_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     return 0;
 }
