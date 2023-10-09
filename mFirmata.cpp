@@ -1874,11 +1874,8 @@ int mFirmata::reboot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 int mFirmata::goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_response response;
     response.result = 0;
+    response.msg = "OK";
     response.cmd = cmd.cmd;
-#ifdef USE_IAP
-    inlineCtrl.data->enter_boot = pb_state_EXEC_BOOT;
-    rte.event(pb_event_REQUEST_RESTART, 1);
-#endif
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int ret = pb_encode(&stream, pb_response_fields, &response);
     if (!ret) {
@@ -1886,6 +1883,7 @@ int mFirmata::goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         logger.error("dir_buf encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    rte.event(pb_event_REQUEST_RESTART, 1);
     return 0;
 }
 
@@ -1995,6 +1993,7 @@ int mFirmata::read_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         smodule *module = smodule::modules[index];
         res = module->encode(&mf->msg, &stream);
     }
+    res = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("dir_buf encode error: %s", error);
