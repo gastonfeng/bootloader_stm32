@@ -1005,7 +1005,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 int ret = pb_encode(&ostream, pb_thread_list_fields, &rte_thread);
                 if (!ret) {
                     const char *error = PB_GET_ERROR(&ostream);
-                    logger.error("dir_buf pb_encode error: %s", error);
+                    logger.error("CB_THREAD_INFO pb_encode error: %s", error);
                 }
 
                 sendSysex(FirmataStream, CB_THREAD_INFO, ostream.bytes_written, buffer);
@@ -1794,7 +1794,7 @@ int mFirmata::read_rte_const(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     res = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("read_rte_const encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1811,7 +1811,7 @@ int mFirmata::write_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         int ret = module->encode(&mf->msg, &stream);
         if (!ret) {
             const char *error = PB_GET_ERROR(&stream);
-            logger.error("dir_buf encode error: %s", error);
+            logger.error("write_module %d encode error: %s",cmd.param, error);
         }
     }
     if (!ok) {
@@ -1830,7 +1830,7 @@ int mFirmata::write_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int ret = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("write_module encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1840,6 +1840,7 @@ int mFirmata::goto_iap(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_response response;
     response.result = 0;
     response.cmd = cmd.cmd;
+    response.msg = "OK";
 #ifdef USE_IAP
     inlineCtrl.data->iap = pb_state_EXEC_IAP;
     rte.event(pb_event_REQUEST_RESTART, 1);
@@ -1848,7 +1849,7 @@ int mFirmata::goto_iap(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int ret = pb_encode(&stream, pb_response_fields, &response);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("goto_iap encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1865,7 +1866,7 @@ int mFirmata::reboot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int ret = pb_encode(&stream, pb_response_fields, &response);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("reboot encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1880,7 +1881,7 @@ int mFirmata::goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int ret = pb_encode(&stream, pb_response_fields, &response);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("goto_boot encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     rte.event(pb_event_REQUEST_RESTART, 1);
@@ -1892,7 +1893,7 @@ int mFirmata::read_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = pb_encode(&stream, pb_board_info_fields, &board.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("read_rte_data encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1903,7 +1904,7 @@ int mFirmata::read_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = pb_encode(&stream, pb_board_holder_fields, &holder.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("read_rte_holder encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1931,7 +1932,7 @@ int mFirmata::write_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = pb_encode(&stream, pb_board_info_fields, &board.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("write_rte_data encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1959,7 +1960,7 @@ int mFirmata::write_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = pb_encode(&stream, pb_board_holder_fields, &holder.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("write_rte_holder encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1975,7 +1976,7 @@ int mFirmata::read_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("read_rte_info encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -1996,7 +1997,7 @@ int mFirmata::read_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     res = pb_encode(&stream, pb_msg_fields, &mf->msg);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("read_module %d encode error: %s",index, error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
@@ -2012,7 +2013,7 @@ int mFirmata::read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
-        logger.error("dir_buf encode error: %s", error);
+        logger.error("read_rte_ctrl encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
