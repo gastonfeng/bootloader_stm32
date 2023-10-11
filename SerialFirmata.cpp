@@ -22,6 +22,7 @@
 #include <rte_data.h>
 #include "SerialFirmata.h"
 #include "hwboard.h"
+#include "plc_rte.h"
 
 // The RX and TX hardware FIFOs of the ESP8266 hold 128 bytes that can be
 // extended using interrupt handlers. The Arduino constants are not available
@@ -120,17 +121,17 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                             }
 
                             // read all available bytes per iteration of loop()
-                            board.data.firmata.serialBytesToRead[portId] = 0;
+                            rte_data.firmata.serialBytesToRead[portId] = 0;
                             byte serialIndexToSkip = 0;
                             for (byte i = 0; i < serialIndex + 1; i++) {
-                                if (board.data.firmata.reportSerial[i] == portId) {
+                                if (rte_data.firmata.reportSerial[i] == portId) {
                                     serialIndexToSkip = 1;
                                     break;
                                 }
                             }
                             if (0 == serialIndexToSkip) {
                                 serialIndex++;
-                                board.data.firmata.reportSerial[serialIndex] = portId;
+                                rte_data.firmata.reportSerial[serialIndex] = portId;
                             }
                         }
                         argv[0] = SERIAL_STATUS | portId;
@@ -226,17 +227,17 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                     // if (argc > 2)
                     // {
                     //   // maximum number of bytes to read from argvfer per iteration of loop()
-                    //   board.data.serialBytesToRead[portId] = argv[2];
+                    //   rte_data.serialBytesToRead[portId] = argv[2];
                     // }
                     // else
                     // {
                     //   // read all available bytes per iteration of loop()
-                    //   board.data.serialBytesToRead[portId] = 0;
+                    //   rte_data.serialBytesToRead[portId] = 0;
                     // }
                     // byte serialIndexToSkip = 0;
                     // for (byte i = 0; i < serialIndex + 1; i++)
                     // {
-                    //   if (board.data.reportSerial[i] == portId)
+                    //   if (rte_data.reportSerial[i] == portId)
                     //   {
                     //     serialIndexToSkip = 1;
                     //     break;
@@ -245,7 +246,7 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                     // if (0 == serialIndexToSkip)
                     // {
                     //   serialIndex++;
-                    //   board.data.reportSerial[serialIndex] = portId;
+                    //   rte_data.reportSerial[serialIndex] = portId;
                     // }
                 } else if (argv[1] == SERIAL_STOP_READING) {
                     byte serialIndexToSkip = 0;
@@ -253,7 +254,7 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                         serialIndex = -1;
                     } else {
                         for (byte i = 0; i < min(serialIndex + 1, SERIAL_NRS); i++) {
-                            if (board.data.firmata.reportSerial[i] == portId) {
+                            if (rte_data.firmata.reportSerial[i] == portId) {
                                 serialIndexToSkip = i;
                                 break;
                             }
@@ -261,7 +262,7 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                         // shift elements over to fill space left by removed element
                         for (byte i = serialIndexToSkip; i < min(serialIndex + 1, SERIAL_NRS); i++) {
                             if (i < (SERIAL_NRS - 1)) {
-                                board.data.firmata.reportSerial[i] = board.data.firmata.reportSerial[i + 1];
+                                rte_data.firmata.reportSerial[i] = rte_data.firmata.reportSerial[i + 1];
                             }
                         }
                         serialIndex--;
@@ -333,8 +334,8 @@ void SerialFirmata::reset() {
 #endif
 
     serialIndex = -1;
-    for (int i = 0; i < board.data.firmata.serialBytesToRead_count; i++) {
-        board.data.firmata.serialBytesToRead[i] = 0;
+    for (int i = 0; i < rte_data.firmata.serialBytesToRead_count; i++) {
+        rte_data.firmata.serialBytesToRead[i] = 0;
 #if defined(FIRMATA_SERIAL_RX_DELAY)
         lastBytesAvailable[i] = 0;
         lastBytesReceived[i] = 0;
@@ -421,8 +422,8 @@ void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream) {
 
         // loop through all reporting (READ_CONTINUOUS) serial ports
         for (byte i = 0; i < min(serialIndex + 1, SERIAL_NRS); i++) {
-            portId = board.data.firmata.reportSerial[i];
-            bytesToRead = board.data.firmata.serialBytesToRead[portId];
+            portId = rte_data.firmata.reportSerial[i];
+            bytesToRead = rte_data.firmata.serialBytesToRead[portId];
             serialPort = getPortFromId(portId);
             if (serialPort == nullptr) {
                 continue;

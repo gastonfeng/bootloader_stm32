@@ -148,16 +148,16 @@ void mFirmata::reportAnalogCallback(nStream *stream, byte analogPin, int value) 
 #if defined(RTE_APP) || defined(PLC)
     if (analogPin < (ANALOGVALUE_LENGTH)) {
         if (0 == value) {
-            bitClear(board.data.firmata.analogInputsToReport, analogPin);
+            bitClear(rte_data.firmata.analogInputsToReport, analogPin);
         } else {
-            bitSet(board.data.firmata.analogInputsToReport, analogPin);
+            bitSet(rte_data.firmata.analogInputsToReport, analogPin);
             // prevent during system reset or all analog pin values will be reported
             // which may report noise for unconnected analog pins
             if (rte.data.state < pb_state_FLASH_FORMAT) {
                 // Send pin value immediately. This is helpful when connected via
                 // ethernet, wi-fi or bluetooth so pin states can be known upon
                 // reconnecting.
-                sendAnalog(stream, analogPin, board.data.XA[analogPin]);
+                sendAnalog(stream, analogPin, rte_data.XA[analogPin]);
             }
         }
     }
@@ -221,7 +221,7 @@ void detachServo(byte pin)
 void mFirmata::analogWriteCallback(nStream *, byte i, int val) {
 #if defined(RTE_APP) || defined(PLC)
     auto v = (u16) val;
-    board.data.XA[i] = v;
+    rte_data.XA[i] = v;
 #endif
 }
 
@@ -251,13 +251,13 @@ int mFirmata::loop(nStream *FirmataStream) {
 void mFirmata::report(nStream *FirmataStream) {
     u32 currentMillis = Rtos::ticks();
 
-    if (currentMillis - previousMillis > holder.data.reportInterval) {
-        previousMillis += holder.data.reportInterval;
+    if (currentMillis - previousMillis > rte_config.reportInterval) {
+        previousMillis += rte_config.reportInterval;
         /* ANALOGREAD - do all analogReads() at the configured sampling interval */
-        board.readAnalogValue(this, FirmataStream, board.data.firmata.analogInputsToReport,
-                              sizeof(board.data.firmata.analogInputsToReport));
+        board.readAnalogValue(this, FirmataStream, rte_data.firmata.analogInputsToReport,
+                              sizeof(rte_data.firmata.analogInputsToReport));
         for (byte pin = 0; pin < IO_XI_NRS + IO_YO_NRS; pin++) {
-            if (bitRead(board.data.firmata.reportPINs, pin)) {
+            if (bitRead(rte_data.firmata.reportPINs, pin)) {
                 outputPort(FirmataStream, pin, getPinState(pin), true);
             }
         }
@@ -279,13 +279,13 @@ void mFirmata::outputPort(nStream *FirmataStream, byte portNumber, byte portValu
     //    portValue = portValue & portConfigInputs[portNumber];
     // only send if the value is different than previously sent
     if (portNumber < (IO_XI_NRS + IO_YO_NRS) &&
-        (forceSend || bitRead(board.data.firmata.previousPINs, portNumber) != portValue)) {
+        (forceSend || bitRead(rte_data.firmata.previousPINs, portNumber) != portValue)) {
         sendDigitalPort(FirmataStream, portNumber, portValue);
         FirmataStream->flush();
         if (portValue == 0) {
-            bitClear(board.data.firmata.previousPINs, portNumber);
+            bitClear(rte_data.firmata.previousPINs, portNumber);
         } else {
-            bitSet(board.data.firmata.previousPINs, portNumber);
+            bitSet(rte_data.firmata.previousPINs, portNumber);
         }
     }
 }
@@ -396,11 +396,11 @@ int mFirmata::getBit(nStream *pStream, int index, u8 *value_buf, u16 len) {
 }
 
 int mFirmata::getPinState(byte pin) {
-    return board.data.X[pin];
+    return rte_data.X[pin];
 }
 
 void mFirmata::setPinState(byte pin, int state) {
-    board.data.X[pin] = state;
+    rte_data.X[pin] = state;
 }
 
 void mFirmata::encodeByteStream(nStream *FirmataStream, size_t bytec, uint8_t *bytev, size_t max_bytes) {
@@ -845,9 +845,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifndef THIS_IS_BOOTLOADER
             case SAMPLING_INTERVAL:
                 if (argc > 1) {
-                    board.data.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
-                    if (board.data.samplingInterval < holder.data.MINIMUM_SAMPLING_INTERVAL) {
-                        board.data.samplingInterval = holder.data.MINIMUM_SAMPLING_INTERVAL;
+                    rte_data.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
+                    if (rte_data.samplingInterval < rte_config.MINIMUM_SAMPLING_INTERVAL) {
+                        rte_data.samplingInterval = rte_config.MINIMUM_SAMPLING_INTERVAL;
                     }
                 } else {
                     // sendString("Not enough data");
@@ -907,7 +907,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     break;
 #endif
             case CB_GET_REMAIN_MEM:
-                sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &board.data.remain_mem);
+                sendSysex(FirmataStream, CB_GET_REMAIN_MEM, 2, (byte *) &rte_data.remain_mem);
                 break;
 #if defined(RTE_APP) || defined(PLC)
                 case CB_PLC_START:
@@ -974,13 +974,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
             case CB_SET_IP:
-                holder.data.lwip.ip = *(uint32_t *) argv;
+                rte_config.lwip.ip = *(uint32_t *) argv;
                 ETH_LWIP::set_ip();
-                sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&holder.data.lwip.ip));
+                sendSysex(FirmataStream, CB_SET_IP, 4, (byte *) (&rte_config.lwip.ip));
                 break;
 #endif
             case CB_GET_IP:
-                sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&holder.data.lwip.ip));
+                sendSysex(FirmataStream, CB_GET_IP, 4, (byte *) (&rte_config.lwip.ip));
                 break;
             case FM_GET_NET_BUF_STAT: {
                 buffer = (byte *) malloc(13 * MEMP_MAX);
@@ -1313,7 +1313,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #ifdef USE_WIFI
             case CB_WIFI_LIST:
-                sendSysex(FirmataStream, CB_WIFI_LIST, board.data.wifi_size, (byte *)&board.data.wifi_list);
+                sendSysex(FirmataStream, CB_WIFI_LIST, rte_data.wifi_size, (byte *)&rte_data.wifi_list);
                 break;
             case CB_WIFI_SET_PASS:
                 int plen;
@@ -1500,13 +1500,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #if defined(RTE_APP) || defined(PLC)
             case FM_LOG_SET_LEVEL:
-                holder.data.log_level = argv[0];
+                rte_config.log_level = argv[0];
                 sendSysex(FirmataStream, FM_LOG_SET_LEVEL, 1, &argv[0]);
                 break;
 #endif
 #ifdef ARDUINO_ARCH_STM32
         case FM_GET_CPU_SN:
-            sendSysex(FirmataStream, FM_GET_CPU_SN, 12, (byte *) board.data.sn);
+            sendSysex(FirmataStream, FM_GET_CPU_SN, 12, (byte *) rte_data.sn);
             break;
 #endif
         case FM_READ_MEM:
@@ -1548,14 +1548,14 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             p = (const char *) nullptr;
                             break;
                         case REGION_XI: // byte from 0
-                            p = (const char *) board.data.X;
+                            p = (const char *) rte_data.X;
                             len = (len + 7) / 8;
                             break;
                         case REGION_16: // analogValue
-                            p = (const char *) board.data.XA;
+                            p = (const char *) rte_data.XA;
                             break;
                         case REGION_32: // analogValue32
-                            p = (const char *) board.data.xa32;
+                            p = (const char *) rte_data.xa32;
                             break;
                         case REGION_HOLDER: // holdValue
                             p = (const char *) &holder.data;
@@ -1587,7 +1587,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             break;
                         case REGION_XI: // byte from 0
                             u8 v;
-                            v = ((char *) &board.data.X)[indexv / 8];
+                            v = ((char *) &rte_data.X)[indexv / 8];
                             if (argv[7] == 1) {
                                 argv[7] = v | (1 << (indexv % 8));
                             } else {
@@ -1595,13 +1595,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             }
                             indexv = indexv / 8;
                             len = (len + 7) / 8;
-                            p = ((char *) &board.data.X);
+                            p = ((char *) &rte_data.X);
                             break;
                         case REGION_16: // analogValue
-                            p = (char *) &board.data.XA;
+                            p = (char *) &rte_data.XA;
                             break;
                         case REGION_32: // analogValue32
-                            p = (char *) &board.data.xa32;
+                            p = (char *) &rte_data.xa32;
                             break;
                         case REGION_HOLDER: // holdValue
                             p = (char *) &holder.data;
@@ -1629,7 +1629,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     *(u32 *) argv = indexv;
                     buffer[4] = len;
                     for (int i = 0; i < len; i++) {
-                        u8 b = board.data.X[indexv + i];
+                        u8 b = rte_data.X[indexv + i];
                         buffer[i / 8 + 5] |= b << (i % 8);
                     }
                     sendSysex(FirmataStream, FM_READ_BIT_REP, len / 8 + 6, (byte *) buffer);
@@ -1642,11 +1642,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     len = *(u16 *) &argv[4];
                     if (len < (argc - 6)) {
                         for (int i = 0; i < len; i++) {
-                            *(((uint8_t *) board.data.X) + indexv + i) = argv[6 + i];
+                            *(((uint8_t *) rte_data.X) + indexv + i) = argv[6 + i];
                         }
                     }
                     sendSysex(FirmataStream, FM_WRITE_BIT_REP, len,
-                              (byte *) ((uint8_t *) board.data.X) + indexv);
+                              (byte *) ((uint8_t *) rte_data.X) + indexv);
                 }
                 break;
 #endif
@@ -1901,7 +1901,7 @@ int mFirmata::read_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
 int mFirmata::read_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    int res = pb_encode(&stream, pb_board_holder_fields, &holder.data);
+    int res = pb_encode(&stream, pb_rte_holder_fields, &rte_config);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_holder encode error: %s", error);
@@ -1914,7 +1914,7 @@ int mFirmata::write_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (pb_field_iter_begin(&iter, pb_board_info_fields, &board.data))
+    if (pb_field_iter_begin(&iter, pb_board_info_fields, &rte_data))
         ok = true;
     if (!ok) {
         logger.error("write_rte_data: %d", cmd.param);
@@ -1942,7 +1942,7 @@ int mFirmata::write_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (pb_field_iter_begin(&iter, pb_board_holder_fields, &holder.data))
+    if (pb_field_iter_begin(&iter, pb_rte_holder_fields, &rte_config))
         ok = true;
     if (!ok) {
         logger.error("write_rte_holder: %d", cmd.param);
@@ -1957,7 +1957,7 @@ int mFirmata::write_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             logger.error("write_rte_holder: %d", cmd.param);
         }
     }
-    int res = pb_encode(&stream, pb_board_holder_fields, &holder.data);
+    int res = pb_encode(&stream, pb_rte_holder_fields, &rte_config);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("write_rte_holder encode error: %s", error);
