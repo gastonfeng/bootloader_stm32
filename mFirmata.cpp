@@ -1558,13 +1558,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             p = (const char *) rte_data.xa32;
                             break;
                         case REGION_HOLDER: // holdValue
-                            p = (const char *) &holder.data;
+                            p = (const char *) &rte_config;
                             break;
                         case REGION_INFO:
-                            p = (const char *) &board.data;
+                            p = (const char *) &rte_data;
                             break;
                         case REGION_CONFIG:
-                            p = (const char *) &holder.data;
+                            p = (const char *) &rte_config;
                             break;
                     }
                     memcpy(&sendBuffer[6], &p[indexv], len);
@@ -1604,13 +1604,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             p = (char *) &rte_data.xa32;
                             break;
                         case REGION_HOLDER: // holdValue
-                            p = (char *) &holder.data;
+                            p = (char *) &rte_config;
                             break;
                         case REGION_INFO:
-                            p = (char *) &board.data;
+                            p = (char *) &rte_data;
                             break;
                         case REGION_CONFIG:
-                            p = (char *) &holder.data;
+                            p = (char *) &rte_config;
                             break;
                     }
                     memcpy(p + indexv, &argv[7], len);
@@ -1890,7 +1890,7 @@ int mFirmata::goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
 int mFirmata::read_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    int res = pb_encode(&stream, pb_board_info_fields, &board.data);
+    int res = pb_encode(&stream, pb_board_info_fields, &rte_data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_data encode error: %s", error);
@@ -1929,7 +1929,7 @@ int mFirmata::write_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             logger.error("write_rte_data: %d", cmd.param);
         }
     }
-    int res = pb_encode(&stream, pb_board_info_fields, &board.data);
+    int res = pb_encode(&stream, pb_board_info_fields, &rte_data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("write_rte_data encode error: %s", error);
