@@ -5,7 +5,6 @@
 #include "hwboard.h"
 #include "SerialFirmata.h"
 #include <pb_encode.h>
-#include <cassert>
 #include "firmata.pb.h"
 #include "lib/nanopb/pb.h"
 #include "lib/nanopb/pb_decode.h"
@@ -1984,9 +1983,6 @@ int mFirmata::read_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     return 0;
 }
 
-int mFirmata::write_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    return 0;
-}
 
 int mFirmata::read_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
@@ -2021,27 +2017,75 @@ int mFirmata::read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     return 0;
 }
 
+int mFirmata::write_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+    pb_field_iter_t iter;
+    bool ok = false;
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    if (pb_field_iter_begin(&iter, pb_ctrl_fields, inlineCtrl.data))
+        ok = true;
+    if (!ok) {
+        logger.error("write_rte_info: %d", cmd.param);
+        return -1;
+    }
+    if (pb_field_iter_find(&iter, cmd.tag)) {
+        if (PB_ATYPE(iter.type) == PB_ATYPE_STATIC) {
+            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
+        } else if (PB_ATYPE(iter.type) == PB_ATYPE_POINTER) {
+            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
+        } else {
+            logger.error("write_rte_info: %d", cmd.param);
+        }
+    }
+    int res = pb_encode(&stream, pb_ctrl_fields, inlineCtrl.data);
+    if (!res) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("write_rte_info encode error: %s", error);
+    }
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    return 0;
+}
+
 int mFirmata::write_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+    pb_field_iter_t iter;
+    bool ok = false;
+    pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
+    if (pb_field_iter_begin(&iter, pb_rte_info_fields, &rte.data))
+        ok = true;
+    if (!ok) {
+        logger.error("write_rte_info: %d", cmd.param);
+        return -1;
+    }
+    if (pb_field_iter_find(&iter, cmd.tag)) {
+        if (PB_ATYPE(iter.type) == PB_ATYPE_STATIC) {
+            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
+        } else if (PB_ATYPE(iter.type) == PB_ATYPE_POINTER) {
+            memcpy(iter.pData, cmd.data->bytes, cmd.data->size);
+        } else {
+            logger.error("write_rte_info: %d", cmd.param);
+        }
+    }
+    int res = pb_encode(&stream, pb_rte_info_fields, &rte.data);
+    if (!res) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("write_rte_info encode error: %s", error);
+    }
+    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
 }
 
 int mFirmata::get_tsdb_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
-    TSDB *db = TSDB::db(cmd.param);
+    pb_tsdb_infos infos;
+    pb_tsdb_info *info = (pb_tsdb_info *) malloc(sizeof(pb_tsdb_info) * rteConst.tsdb_nrs);
+    for (int i = 0; i < rteConst.tsdb_nrs; i++) {
+        TSDB *db = TSDB::db(cmd.param);
+        info[i] = db->data;
+    }
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (nullptr == db) {
-        logger.error("get_tsdb_info: %d", cmd.param);
-        pb_response response;
-        response.result = 0;
-        response.msg = "OK";
-        response.cmd = cmd.cmd;
-        res = pb_encode(&stream, pb_response_fields, &response);
-    } else {
-        res = pb_encode(&stream, pb_tsdb_info_fields, &db->data);
-        if (!res) {
-            const char *error = PB_GET_ERROR(&stream);
-            logger.error("get_tsdb_info encode error: %s", error);
-        }
+    res = pb_encode(&stream, pb_tsdb_infos_fields, &infos);
+    if (!res) {
+        const char *error = PB_GET_ERROR(&stream);
+        logger.error("get_tsdb_info encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
     return 0;
