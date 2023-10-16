@@ -348,6 +348,10 @@ public:
 
     static int goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd);
 
+    static int get_tsdb_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
+    static int get_module_info(mFirmata *mf, nStream *pStream, pb_cmd cmd);
+
 };
 
 #endif
