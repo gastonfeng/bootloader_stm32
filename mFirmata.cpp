@@ -2078,9 +2078,11 @@ int mFirmata::get_tsdb_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_tsdb_infos infos;
     pb_tsdb_info *info = (pb_tsdb_info *) malloc(sizeof(pb_tsdb_info) * rteConst.tsdb_nrs);
     for (int i = 0; i < rteConst.tsdb_nrs; i++) {
-        TSDB *db = TSDB::db(cmd.param);
+        TSDB *db = TSDB::db(i);
         info[i] = db->data;
     }
+    infos.tsdb = info;
+    infos.tsdb_count = rteConst.tsdb_nrs;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     res = pb_encode(&stream, pb_tsdb_infos_fields, &infos);
     if (!res) {
