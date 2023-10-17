@@ -5,6 +5,7 @@
 #include "hwboard.h"
 #include "SerialFirmata.h"
 #include <pb_encode.h>
+#include <cassert>
 #include "firmata.pb.h"
 #include "lib/nanopb/pb.h"
 #include "lib/nanopb/pb_decode.h"
@@ -942,8 +943,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 sendSysex(FirmataStream, CB_PLC_REPAIR, 2, (byte *) &len);
                 break;
 #endif
-#endif
-#ifdef ARDUINO
+
         case FM_FLASH_CLEAR:
             len = 0;
             sendSysex(FirmataStream, FM_FLASH_CLEAR, 2, (byte *) &len);
@@ -2074,6 +2074,7 @@ int mFirmata::write_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 }
 
 int mFirmata::get_tsdb_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+#if defined(USE_TSDB_DATA) || defined(USE_TSDB_LOG)
     int res = 0;
     pb_tsdb_infos infos;
     pb_tsdb_info *info = (pb_tsdb_info *) malloc(sizeof(pb_tsdb_info) * rteConst.tsdb_nrs);
@@ -2090,11 +2091,13 @@ int mFirmata::get_tsdb_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         logger.error("get_tsdb_info encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+#endif
     return 0;
 }
 
 int mFirmata::get_module_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
+#ifndef THIS_IS_BOOTLOADER
     pb_module_info *info = (pb_module_info *) malloc(sizeof(pb_module_info) * rteConst.module_nrs);
     for (int i = 0; i < rteConst.module_nrs; i++) {
         info[i].id = i;
@@ -2112,5 +2115,6 @@ int mFirmata::get_module_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         logger.error("get_tsdb_info encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+#endif
     return 0;
 }
