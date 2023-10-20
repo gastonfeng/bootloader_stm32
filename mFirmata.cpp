@@ -2073,6 +2073,7 @@ int mFirmata::read_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
 int mFirmata::read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
+#ifdef USE_BKP_SRAM
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
     mf->msg.msg.ctrl = *inlineCtrl.data;
@@ -2084,10 +2085,12 @@ int mFirmata::read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         logger.error("read_rte_ctrl encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+#endif
     return 0;
 }
 
 int mFirmata::write_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
+#ifdef USE_BKP_SRAM
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
@@ -2112,6 +2115,7 @@ int mFirmata::write_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         logger.error("write_rte_info encode error: %s", error);
     }
     mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+#endif
     return 0;
 }
 
