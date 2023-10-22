@@ -30,6 +30,7 @@
 #endif
 
 #include "inline_ctrl.h"
+#include "rte_soem.h"
 
 #ifdef USE_TSDB
 
@@ -144,7 +145,6 @@ void disableI2CPins()
 }
 #endif
 
-int soem_scan(mFirmata *fm, nStream *fs);
 
 void mFirmata::reportAnalogCallback(nStream *stream, byte analogPin, int value) {
 #if defined(RTE_APP) || defined(PLC)
@@ -1338,11 +1338,6 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     state = tsdb->clear();
                 }
             }
-            break;
-#endif
-#ifdef USE_SOEM
-        case FM_SOEM_SCAN:
-            soem_scan(this, FirmataStream);
             break;
 #endif
         case CB_CPU_USAGE:
