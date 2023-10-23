@@ -1,4 +1,7 @@
 {
   "name": "firmata_extend",
-  "version": "0.0.0+20220421230153"
+  "version": "0.0.0+20220421230153",
+  "build": {
+    "libArchive": false
+  }
 }
