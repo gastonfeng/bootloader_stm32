@@ -852,7 +852,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             FirmataStream->flush();
             break;
         case CB_GET_RTE_VERSION:
-            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(pb_rte_info), (uint8_t *) &rteConst);
+            sendSysex(FirmataStream, CB_GET_RTE_VERSION, sizeof(pb_rte_data), (uint8_t *) &rteConst);
             break;
 
 #ifndef THIS_IS_BOOTLOADER
@@ -1961,7 +1961,7 @@ int mFirmata::goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
 int mFirmata::read_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    int res = pb_encode(&stream, pb_rte_info_fields, &rte_data);
+    int res = pb_encode(&stream, pb_rte_data_fields, &rte_data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_data encode error: %s", error);
@@ -1985,7 +1985,7 @@ int mFirmata::write_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (pb_field_iter_begin(&iter, pb_rte_info_fields, &rte_data))
+    if (pb_field_iter_begin(&iter, pb_rte_data_fields, &rte_data))
         ok = true;
     if (!ok) {
         logger.error("write_rte_data: %d", cmd.param);
@@ -2000,7 +2000,7 @@ int mFirmata::write_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             logger.error("write_rte_data: %d", cmd.param);
         }
     }
-    int res = pb_encode(&stream, pb_rte_info_fields, &rte_data);
+    int res = pb_encode(&stream, pb_rte_data_fields, &rte_data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("write_rte_data encode error: %s", error);
@@ -2131,7 +2131,7 @@ int mFirmata::write_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
-    if (pb_field_iter_begin(&iter, pb_rte_info_fields, &rte.data))
+    if (pb_field_iter_begin(&iter, pb_rte_data_fields, &rte.data))
         ok = true;
     if (!ok) {
         logger.error("write_rte_info: %d", cmd.param);
@@ -2146,7 +2146,7 @@ int mFirmata::write_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             logger.error("write_rte_info: %d", cmd.param);
         }
     }
-    int res = pb_encode(&stream, pb_rte_info_fields, &rte.data);
+    int res = pb_encode(&stream, pb_rte_data_fields, &rte.data);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("write_rte_info encode error: %s", error);
