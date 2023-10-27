@@ -50,6 +50,15 @@
 #undef read
 #undef close
 #undef bind
+using peer_t = struct {
+    int socket{};
+    struct sockaddr_in addres{};
+
+    /* The same for the receiving message. */
+    char receiving_buffer[ETH_MAX_PAYLOAD]{};
+    int current_receiving_byte{};
+    u32 last_tick;
+};
 
 class socketFirmata : public nStream, public smodule {
 
@@ -117,7 +126,6 @@ public:
 
     void report();
 
-    int connect_server(const char *host, int port);
 
     int tx_max_size() override {
         return ETH_MAX_PAYLOAD;
@@ -128,6 +136,9 @@ private:
     mFirmata firm;
 
     void check_socket();
+
+    int close_client_connection(peer_t *client);
+
 };
 
 #endif

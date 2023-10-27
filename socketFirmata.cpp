@@ -55,15 +55,7 @@
 #if !(defined( windows_x86) || defined( MACOSX))
 extern "C" const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt);
 #endif
-using peer_t = struct {
-    int socket{};
-    struct sockaddr_in addres{};
 
-    /* The same for the receiving message. */
-    char receiving_buffer[ETH_MAX_PAYLOAD]{};
-    int current_receiving_byte{};
-    u32 last_tick;
-};
 peer_t connection_list[MAX_CLIENTS]{};
 peer_t *cur_peer{};
 u16 rxinx{};
@@ -198,6 +190,7 @@ int socketFirmata::start_listen_socket(int *sock) {
     return 0;
 }
 #endif
+
 void socketFirmata::shutdown_properly(int code) {
 
     closesocket(listen_sock);
@@ -260,6 +253,7 @@ int socketFirmata::handle_new_connection() {
             i.addres = client_addr;
             i.current_receiving_byte = 0;
             i.last_tick = Rtos::ticks();
+            data.client_count++;
             return 0;
         }
     }
@@ -271,11 +265,12 @@ int socketFirmata::handle_new_connection() {
     return -1;
 }
 
-int close_client_connection(peer_t *client) {
+int socketFirmata::close_client_connection(peer_t *client) {
     logger.debug("Close client socket for %s.\n", peer_get_addres_str(client));
     closesocket(client->socket);
     client->socket = -1;
     client->current_receiving_byte = 0;
+    data.client_count--;
     return 0;
 }
 
@@ -283,6 +278,7 @@ int socketFirmata::handle_received_message() {
     while (available()) {
         firm.loop(this);
     }
+    data.rx_count++;
     return 0;
 }
 
@@ -306,6 +302,7 @@ int socketFirmata::loop() {
 #ifdef USE_LWIP
     lwip_socket_thread_init();
 #endif
+    data.state++;
     if (start_listen_socket(&listen_sock) != 0)
         return -2;
 
@@ -325,18 +322,21 @@ int socketFirmata::loop() {
             if (i.socket > high_sock)
                 high_sock = i.socket;
         }
-
+        data.state = 3;
         int activity = select(high_sock + 1, &read_fds, &write_fds, &except_fds, nullptr);
+        data.state = 4;
 
         switch (activity) {
             case -1:
                 logger.error("select()");
                 shutdown_properly(EXIT_FAILURE);
+                data.state = -1;
                 break;
             case 0:
                 // you should never get here
                 logger.error("select() returns 0.\n");
                 shutdown_properly(EXIT_FAILURE);
+                data.state = -1;
                 break;
             default:
 
@@ -350,10 +350,13 @@ int socketFirmata::loop() {
                 }
 
                 for (auto &i: connection_list) {
+                    data.state = 5;
                     if (i.socket != -1 && FD_ISSET(i.socket, &read_fds) && receive_from_peer(&i) != 0) {
                         close_client_connection(&i);
+                        data.state = 6;
                         continue;
                     }
+                    data.state = 7;
 
                     if (i.socket != -1 && FD_ISSET(i.socket, &except_fds)) {
                         logger.error("Exception client fd.\n");
@@ -382,6 +385,7 @@ void socketFirmata::report() {
 #endif
 
 int socketFirmata::begin(u32 tick) {
+    data.state++;
     Rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
     return 0;
 
@@ -400,6 +404,7 @@ int socketFirmata::dev_test(u32 tick) {
     return 0;
 }
 #endif
+
 int socketFirmata::available_wait(int Delay) {
     return available();
 }

@@ -145,7 +145,6 @@ void disableI2CPins()
 }
 #endif
 
-
 void mFirmata::reportAnalogCallback(nStream *stream, byte analogPin, int value) {
 #if defined(RTE_APP) || defined(PLC)
     if (analogPin < (ANALOGVALUE_LENGTH))
@@ -943,8 +942,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_PLC_LOAD:
             len = 0;
             sendSysex(FirmataStream, CB_PLC_LOAD, 2, (byte *) &len);
-            rte.app_stop();
-            app.unload();
+            // rte.app_stop();
+            // app.unload();
             rte.load_app();
             break;
         case CB_PLC_REPAIR:
@@ -1037,7 +1036,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 const u16 *byte = (u16 *) &argv[i];
                 len = argv[i + 2];
                 index = *byte;
-                if (app.data.plc_curr_app) {
+                if (rte.data.state == pb_state_Started) {
                     ((plc_app_abi_t *) app.data.plc_curr_app)->dbg_set_force(index, len ? &argv[i + 3] : nullptr);
                 }
                 i += len + 3;
@@ -1047,7 +1046,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 
         case CB_CLEAR_V:
             len = -1;
-            if (app.data.plc_curr_app) {
+            if (rte.data.state == pb_state_Started) {
                 ((plc_app_abi_t *) app.data.plc_curr_app)->dbg_vars_reset(__IEC_DEBUG_FLAG);
                 logger.debug("monitor var reset.");
                 len = 0;
@@ -1062,7 +1061,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 for (int i = 0; i < argc; i += 2) {
                     const u16 *byte = (u16 *) &argv[i];
                     indexv = *byte;
-                    if (app.data.plc_curr_app) {
+                    if (rte.data.state == pb_state_Started) {
                         ((plc_app_abi_t *) app.data.plc_curr_app)->dbg_var_register(indexv);
                     }
                 }
@@ -1074,7 +1073,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case CB_GET_V: {
             int len = 0;
             data = (u8 *) malloc(FirmataStream->tx_max_size());
-            if (app.data.plc_curr_app) {
+            if (rte.data.state == pb_state_Started) {
                 void *b = nullptr;
                 ((plc_app_abi_t *) app.data.plc_curr_app)->dbg_data_get((u32 *) &data[0], (u32 *) &len, (void **) &b);
                 if (len < FirmataStream->tx_max_size())
