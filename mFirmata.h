@@ -210,8 +210,9 @@ public:
 
     int decodeByteStream(size_t bytec, const byte *bytev, byte *buf);
 
-    pb_msg msg;
+    pb_object msg;
 
+    byte sendBuffer[FIRMATA_BUFFER_SZ];
 private:
     int getPinState(byte pin);
 
@@ -279,7 +280,6 @@ private:
     int sysexBytesRead;
     byte dataBuffer[FIRMATA_BUFFER_SZ];
     byte dataBufferDecode[FIRMATA_BUFFER_SZ];
-    byte sendBuffer[FIRMATA_BUFFER_SZ];
 
     bool bufferDataAtPosition(nStream *stream, const uint8_t data, const size_t pos);
 

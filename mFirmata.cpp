@@ -99,6 +99,8 @@ cb_fm fm_cmd[] = {
         mFirmata::goto_boot,
         mFirmata::get_tsdb_info,
         mFirmata::get_module_info,
+        rte_soem::master_state,
+        rte_soem::read_reg
 };
 
 #ifdef USE_FIRMATA_WIRE
@@ -147,19 +149,14 @@ void disableI2CPins()
 
 void mFirmata::reportAnalogCallback(nStream *stream, byte analogPin, int value) {
 #if defined(RTE_APP) || defined(PLC)
-    if (analogPin < (ANALOGVALUE_LENGTH))
-    {
-        if (0 == value)
-        {
+    if (analogPin < (ANALOGVALUE_LENGTH)) {
+        if (0 == value) {
             bitClear(rte_data.firmata.analogInputsToReport, analogPin);
-        }
-        else
-        {
+        } else {
             bitSet(rte_data.firmata.analogInputsToReport, analogPin);
             // prevent during system reset or all analog pin values will be reported
             // which may report noise for unconnected analog pins
-            if (rte.data.state < pb_state_FLASH_FORMAT)
-            {
+            if (rte.data.state < pb_state_FLASH_FORMAT) {
                 // Send pin value immediately. This is helpful when connected via
                 // ethernet, wi-fi or bluetooth so pin states can be known upon
                 // reconnecting.
@@ -226,7 +223,7 @@ void detachServo(byte pin)
 
 void mFirmata::analogWriteCallback(nStream *, byte i, int val) {
 #if defined(RTE_APP) || defined(PLC)
-    auto v = (u16)val;
+    auto v = (u16) val;
     rte_data.XA[i] = v;
 #endif
 }
@@ -242,7 +239,7 @@ void mFirmata::stringCallback(nStream *Fs, char *myString) {
     }
     else
 #endif
-        sendString(Fs, "unknown input");
+    sendString(Fs, "unknown input");
 }
 
 int fill_dbg(const void *, int index, u8 *buf);
@@ -256,20 +253,16 @@ int mFirmata::loop(nStream *FirmataStream) {
 
 #ifndef FIRMATA_DISABLE_REPORT
 
-void mFirmata::report(nStream *FirmataStream)
-{
+void mFirmata::report(nStream *FirmataStream) {
     u32 currentMillis = Rtos::ticks();
 
-    if (currentMillis - previousMillis > rte_config.reportInterval)
-    {
+    if (currentMillis - previousMillis > rte_config.reportInterval) {
         previousMillis += rte_config.reportInterval;
         /* ANALOGREAD - do all analogReads() at the configured sampling interval */
         board.readAnalogValue(this, FirmataStream, rte_data.firmata.analogInputsToReport,
                               sizeof(rte_data.firmata.analogInputsToReport));
-        for (byte pin = 0; pin < IO_XI_NRS + IO_YO_NRS; pin++)
-        {
-            if (bitRead(rte_data.firmata.reportPINs, pin))
-            {
+        for (byte pin = 0; pin < IO_XI_NRS + IO_YO_NRS; pin++) {
+            if (bitRead(rte_data.firmata.reportPINs, pin)) {
                 outputPort(FirmataStream, pin, getPinState(pin), true);
             }
         }
@@ -985,49 +978,49 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef ARDUINO
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
-    case CB_SET_IP:
-        rte_config.lwip.ip = *(uint32_t *)argv;
-        ETH_LWIP::set_ip();
-        sendSysex(FirmataStream, CB_SET_IP, 4, (byte *)(&rte_config.lwip.ip));
-        break;
+            case CB_SET_IP:
+                rte_config.lwip.ip = *(uint32_t *)argv;
+                ETH_LWIP::set_ip();
+                sendSysex(FirmataStream, CB_SET_IP, 4, (byte *)(&rte_config.lwip.ip));
+                break;
 #endif
-    case CB_GET_IP:
-        sendSysex(FirmataStream, CB_GET_IP, 4, (byte *)(&rte_config.lwip.ip));
-        break;
-    case FM_GET_NET_BUF_STAT:
-    {
-        buffer = (byte *)malloc(13 * MEMP_MAX);
-        for (int i = 0; i < MEMP_MAX; i++)
-        {
-            *(u8 *)&buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
-            *(u8 *)&buffer[1 + 13 * i] = memp_pools[i]->stats->err;
-            *(u8 *)&buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
-            *(u8 *)&buffer[3 + 13 * i] = memp_pools[i]->stats->max;
-            *(u8 *)&buffer[4 + 13 * i] = memp_pools[i]->stats->used;
-            memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
-        }
-        sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *)buffer);
-        free(buffer);
-    }
-    break;
+            case CB_GET_IP:
+                sendSysex(FirmataStream, CB_GET_IP, 4, (byte *)(&rte_config.lwip.ip));
+                break;
+            case FM_GET_NET_BUF_STAT:
+            {
+                buffer = (byte *)malloc(13 * MEMP_MAX);
+                for (int i = 0; i < MEMP_MAX; i++)
+                {
+                    *(u8 *)&buffer[0 + 13 * i] = memp_pools[i]->stats->avail;
+                    *(u8 *)&buffer[1 + 13 * i] = memp_pools[i]->stats->err;
+                    *(u8 *)&buffer[2 + 13 * i] = memp_pools[i]->stats->illegal;
+                    *(u8 *)&buffer[3 + 13 * i] = memp_pools[i]->stats->max;
+                    *(u8 *)&buffer[4 + 13 * i] = memp_pools[i]->stats->used;
+                    memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
+                }
+                sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *)buffer);
+                free(buffer);
+            }
+            break;
 #endif
 #ifdef USE_FREERTOS
-    case CB_THREAD_INFO:
-    {
-        u32 len = FirmataStream->tx_max_size();
-        byte *buffer = (byte *)malloc(len);
-        pb_ostream_t ostream = pb_ostream_from_buffer(buffer, len);
-        int ret = pb_encode(&ostream, pb_thread_list_fields, &rte_thread);
-        if (!ret)
-        {
-            const char *error = PB_GET_ERROR(&ostream);
-            logger.error("CB_THREAD_INFO pb_encode error: %s", error);
-        }
+            case CB_THREAD_INFO:
+            {
+                u32 len = FirmataStream->tx_max_size();
+                byte *buffer = (byte *)malloc(len);
+                pb_ostream_t ostream = pb_ostream_from_buffer(buffer, len);
+                int ret = pb_encode(&ostream, pb_thread_list_fields, &rte_thread);
+                if (!ret)
+                {
+                    const char *error = PB_GET_ERROR(&ostream);
+                    logger.error("CB_THREAD_INFO pb_encode error: %s", error);
+                }
 
-        sendSysex(FirmataStream, CB_THREAD_INFO, ostream.bytes_written, buffer);
-        free(buffer);
-    }
-    break;
+                sendSysex(FirmataStream, CB_THREAD_INFO, ostream.bytes_written, buffer);
+                free(buffer);
+            }
+            break;
 #endif
 #endif
 #if defined(RTE_APP) || defined(PLC)
@@ -1859,9 +1852,9 @@ int mFirmata::read_rte_const(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
-    mf->msg.msg.rte_const = rteConst;
-    mf->msg.which_msg = pb_msg_rte_const_tag;
-    res = pb_encode(&stream, pb_msg_fields, &mf->msg);
+    mf->msg.object.rte_const = rteConst;
+    mf->msg.which_object = pb_object_rte_const_tag;
+    res = pb_encode(&stream, pb_object_fields, &mf->msg);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_const encode error: %s", error);
@@ -1897,7 +1890,7 @@ int mFirmata::write_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             logger.error("write_module: %d", cmd.param);
         }
     }
-    int ret = pb_encode(&stream, pb_msg_fields, &mf->msg);
+    int ret = pb_encode(&stream, pb_object_fields, &mf->msg);
     if (!ret) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("write_module encode error: %s", error);
@@ -2040,9 +2033,9 @@ int mFirmata::read_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
-    mf->msg.msg.rte_info = rte.data;
-    mf->msg.which_msg = pb_msg_rte_info_tag;
-    res = pb_encode(&stream, pb_msg_fields, &mf->msg);
+    mf->msg.object.rte_info = rte.data;
+    mf->msg.which_object = pb_object_rte_info_tag;
+    res = pb_encode(&stream, pb_object_fields, &mf->msg);
 
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
@@ -2060,7 +2053,7 @@ int mFirmata::read_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         smodule *module = smodule::modules[index];
         res = module->encode(&mf->msg, &stream);
     }
-    res = pb_encode(&stream, pb_msg_fields, &mf->msg);
+    res = pb_encode(&stream, pb_object_fields, &mf->msg);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_module %d encode error: %s", index, error);
@@ -2075,8 +2068,8 @@ int mFirmata::read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
     mf->msg.msg.ctrl = *inlineCtrl.data;
-    mf->msg.which_msg = pb_msg_ctrl_tag;
-    res = pb_encode(&stream, pb_msg_fields, &mf->msg);
+    mf->msg.which_msg = pb_object_ctrl_tag;
+    res = pb_encode(&stream, pb_object_fields, &mf->msg);
 
     if (!res)
     {

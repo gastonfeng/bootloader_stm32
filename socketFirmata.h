@@ -66,17 +66,17 @@ public:
 
     const char *name() final { return "socketFirmata"; }
 
-    int encode(pb_msg *msg, pb_ostream_t *stream) override {
-        msg->msg.skfm = data;
-        msg->which_msg = pb_msg_skfm_tag;
-        return pb_encode(stream, pb_msg_fields, msg);
+    int encode(pb_object *msg, pb_ostream_t *stream) override {
+        msg->object.skfm = data;
+        msg->which_object = pb_object_skfm_tag;
+        return pb_encode(stream, pb_object_fields, msg);
     }
 
     int iter(pb_field_iter_t *pS) override {
         return pb_field_iter_begin(pS, pb_skfm_info_fields, &data);
     }
 
-    int type() override { return pb_msg_skfm_tag; }
+    int type() override { return pb_object_skfm_tag; }
 
     pb_skfm_info data;
 
