@@ -100,7 +100,9 @@ cb_fm fm_cmd[] = {
         mFirmata::get_tsdb_info,
         mFirmata::get_module_info,
         rte_soem::master_state,
-        rte_soem::read_reg
+        rte_soem::read_reg,
+        rte_soem::write_reg,
+        rte_soem::set_slave_state
 };
 
 #ifdef USE_FIRMATA_WIRE
