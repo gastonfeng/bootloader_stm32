@@ -46,14 +46,13 @@ SerialFirmata::SerialFirmata() {
     }
 #endif
 }
-#ifdef ARDUINO_ARCH_STM32
-int min(int v1, int v2) {
+
+int MIN(int v1, int v2) {
     if (v1 < v2) {
         return v1;
     }
     return v2;
 }
-#endif
 bool SerialFirmata::handlePinMode(mFirmata *fm, byte pin, int mode) {
     // used for both HW and SW serial
     if (mode == PIN_MODE_SERIAL) {
@@ -253,14 +252,14 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                     if (serialIndex <= 0) {
                         serialIndex = -1;
                     } else {
-                        for (byte i = 0; i < min(serialIndex + 1, SERIAL_NRS); i++) {
+                        for (byte i = 0; i < MIN(serialIndex + 1, SERIAL_NRS); i++) {
                             if (rte_data.firmata.reportSerial[i] == portId) {
                                 serialIndexToSkip = i;
                                 break;
                             }
                         }
                         // shift elements over to fill space left by removed element
-                        for (byte i = serialIndexToSkip; i < min(serialIndex + 1, SERIAL_NRS); i++) {
+                        for (byte i = serialIndexToSkip; i < MIN(serialIndex + 1, SERIAL_NRS); i++) {
                             if (i < (SERIAL_NRS - 1)) {
                                 rte_data.firmata.reportSerial[i] = rte_data.firmata.reportSerial[i + 1];
                             }
@@ -421,7 +420,7 @@ void SerialFirmata::checkSerial(mFirmata *fm, nStream *FirmataStream) {
 #endif
 
         // loop through all reporting (READ_CONTINUOUS) serial ports
-        for (byte i = 0; i < min(serialIndex + 1, SERIAL_NRS); i++) {
+        for (byte i = 0; i < MIN(serialIndex + 1, SERIAL_NRS); i++) {
             portId = rte_data.firmata.reportSerial[i];
             bytesToRead = rte_data.firmata.serialBytesToRead[portId];
             serialPort = getPortFromId(portId);
