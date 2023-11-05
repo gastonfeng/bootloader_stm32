@@ -46,14 +46,14 @@ SerialFirmata::SerialFirmata() {
     }
 #endif
 }
-
+#ifdef ARDUINO_ARCH_STM32
 int min(int v1, int v2) {
     if (v1 < v2) {
         return v1;
     }
     return v2;
 }
-
+#endif
 bool SerialFirmata::handlePinMode(mFirmata *fm, byte pin, int mode) {
     // used for both HW and SW serial
     if (mode == PIN_MODE_SERIAL) {
