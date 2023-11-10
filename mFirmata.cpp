@@ -99,10 +99,12 @@ cb_fm fm_cmd[] = {
         mFirmata::goto_boot,
         mFirmata::get_tsdb_info,
         mFirmata::get_module_info,
+#ifdef USE_SOEM
         rte_soem::master_state,
         rte_soem::read_reg,
         rte_soem::write_reg,
         rte_soem::set_slave_state
+#endif
 };
 
 #ifdef USE_FIRMATA_WIRE
@@ -2069,8 +2071,8 @@ int mFirmata::read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 #ifdef USE_BKP_SRAM
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
-    mf->msg.msg.ctrl = *inlineCtrl.data;
-    mf->msg.which_msg = pb_object_ctrl_tag;
+    mf->msg.object.ctrl = *inlineCtrl.data;
+    mf->msg.which_object = pb_object_ctrl_tag;
     res = pb_encode(&stream, pb_object_fields, &mf->msg);
 
     if (!res)
