@@ -248,7 +248,7 @@ void mFirmata::stringCallback(nStream *Fs, char *myString) {
 
 int fill_dbg(const void *, int index, u8 *buf);
 
-int set_dbg(const void *, u32 index, byte *varp, int len);
+int set_dbg(const void *, unsigned int index, byte *varp, int len);
 
 int mFirmata::loop(nStream *FirmataStream) {
     processInput(FirmataStream);
@@ -258,7 +258,7 @@ int mFirmata::loop(nStream *FirmataStream) {
 #ifndef FIRMATA_DISABLE_REPORT
 
 void mFirmata::report(nStream *FirmataStream) {
-    u32 currentMillis = Rtos::ticks();
+    uint32_t currentMillis = Rtos::ticks();
 
     if (currentMillis - previousMillis > rte_config.reportInterval) {
         previousMillis += rte_config.reportInterval;
@@ -304,7 +304,7 @@ void mFirmata::outputPort(nStream *FirmataStream, byte portNumber, byte portValu
 #include <minwindef.h>
 #include <profileapi.h>
 #include <sysinfoapi.h>
-u32 ticks()
+uint32_t ticks()
 {
     static LARGE_INTEGER s_frequency;
     static BOOL s_use_qpc = QueryPerformanceFrequency(&s_frequency);
@@ -318,7 +318,7 @@ u32 ticks()
     //        return GetTickCount();
     //    }
 }
-void Delay(u32 ms)
+void Delay(uint32_t ms)
 {
     struct timespec interval
     {
@@ -336,7 +336,7 @@ int mFirmata::setValue(nStream *FirmataStream, int index, void *valBuf, u8 size)
     clr_flag(FM_WRITE_VALUE_REP);
     sendSysex(FirmataStream, FM_WRITE_VALUE, size + 4, (byte *) buf);
     free(buf);
-    u32 tick = Rtos::ticks() + 1000;
+    uint32_t tick = Rtos::ticks() + 1000;
     while (get_flag(FM_WRITE_VALUE_REP) == 0) {
         Rtos::Delay(1);
         if (Rtos::ticks() > tick)
@@ -369,7 +369,7 @@ int mFirmata::getValue(nStream *pStream, int index, u8 *value_buf, u16 len) {
     clr_flag(FM_READ_VALUE_REP);
     valueLen = 0;
     sendSysex(pStream, FM_READ_VALUE, 6, (byte *) buf);
-    u32 tick = Rtos::ticks() + 1000;
+    uint32_t tick = Rtos::ticks() + 1000;
     while (get_flag(FM_READ_VALUE_REP) == 0) {
         Rtos::Delay(1);
         if (Rtos::ticks() > tick)
@@ -389,7 +389,7 @@ int mFirmata::getBit(nStream *pStream, int index, u8 *value_buf, u16 len) {
     clr_flag(FM_READ_BIT_REP);
     valueLen = 0;
     sendSysex(pStream, FM_READ_BIT, 6, (byte *) buf);
-    u32 tick = Rtos::ticks() + 1000;
+    uint32_t tick = Rtos::ticks() + 1000;
     while (get_flag(FM_READ_BIT_REP) == 0) {
         Rtos::Delay(1);
         if (Rtos::ticks() > tick)
@@ -493,7 +493,7 @@ void mFirmata::marshaller_sendSysex(nStream *FirmataStream, uint8_t command, siz
     FirmataStream->flush();
 }
 
-// u32 s = 0;
+// uint32_t s = 0;
 
 void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec, byte *bytev, bool _crc_en) {
     crc_en = _crc_en || crc_en;
@@ -802,14 +802,14 @@ mFirmata::mFirmata() {
 void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc, byte *argv) {
     int index;
     int state;
-    u32 start, end;
-    u32 indexv;
+    uint32_t start, end;
+    uint32_t indexv;
     short len;
     u8 *data;
     size_t key_len;
     byte *buffer;
     struct {
-        u32 build;
+        uint32_t build;
         char name[8];
     } info{};
     // logger.debug("sysexCallback: %d argc=%d,argv=%p", command, argc, argv);
@@ -1011,7 +1011,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef USE_FREERTOS
             case CB_THREAD_INFO:
             {
-                u32 len = FirmataStream->tx_max_size();
+                uint32_t len = FirmataStream->tx_max_size();
                 byte *buffer = (byte *)malloc(len);
                 pb_ostream_t ostream = pb_ostream_from_buffer(buffer, len);
                 int ret = pb_encode(&ostream, pb_thread_list_fields, &rte_thread);
@@ -1072,7 +1072,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             data = (u8 *) malloc(FirmataStream->tx_max_size());
             if (rte.data.state == pb_state_Started) {
                 void *b = nullptr;
-                ((plc_app_abi_t *) app.data.plc_curr_app)->dbg_data_get((u32 *) &data[0], (u32 *) &len, (void **) &b);
+                ((plc_app_abi_t *) app.data.plc_curr_app)->dbg_data_get((uint32_t *) &data[0], (uint32_t *) &len, (void **) &b);
                 if (len < FirmataStream->tx_max_size())
                     memcpy(&data[4], b, len);
                 else
@@ -1190,7 +1190,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
             case FM_READ_KEY_BYTES:
                 data = (u8 *)malloc(256);
-                len = kvdb.get((const char *)argv, (char *)data + 4, 256, (u32 *)data);
+                len = kvdb.get((const char *)argv, (char *)data + 4, 256, (uint32_t *)data);
                 sendSysex(FirmataStream, FM_READ_KEY_BYTES, len + 4, (byte *)data);
                 free(data);
                 break;
@@ -1241,9 +1241,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 if (argc == 13)
                 {
                     u8 db = argv[0];
-                    start = *(u32 *)&argv[1];
-                    end = *(u32 *)&argv[1 + 4];
-                    state = (int)*(u32 *)&argv[1 + 8];
+                    start = *(uint32_t *)&argv[1];
+                    end = *(uint32_t *)&argv[1 + 4];
+                    state = (int)*(uint32_t *)&argv[1 + 8];
                     TSDB *tsdb = TSDB::db(db);
                     if (tsdb)
                     {
@@ -1258,9 +1258,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 if (argc == 13)
                 {
                     u8 db = argv[0];
-                    start = *(u32 *)&argv[1];
-                    end = *(u32 *)&argv[1 + 4];
-                    state = (int)*(u32 *)&argv[1 + 8];
+                    start = *(uint32_t *)&argv[1];
+                    end = *(uint32_t *)&argv[1 + 4];
+                    state = (int)*(uint32_t *)&argv[1 + 8];
                     TSDB *tsdb = TSDB::db(db);
                     if (tsdb)
                     {
@@ -1278,7 +1278,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 //     u8 db = argv[0];
                 //     TSDB *tsdb = TSDB::db(db);
                 //     if (tsdb) {
-                //         tlen = tsdb->query_read((u32 *) &tbuf[1], (fdb_time_t *) &tbuf[6],
+                //         tlen = tsdb->query_read((uint32_t *) &tbuf[1], (fdb_time_t *) &tbuf[6],
                 //                                 (int *) (tbuf + 10),
                 //                                 tbuf + 14, buf_sz - 14);
                 //     }
@@ -1302,7 +1302,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 TSDB *tsdb = TSDB::db(db);
                 if (tsdb)
                 {
-                    tlen = tsdb->query_read_by_id(*(u32 *)&argv[1], (u32 *)&tbuf[2],
+                    tlen = tsdb->query_read_by_id(*(uint32_t *)&argv[1], (uint32_t *)&tbuf[2],
                                                   (fdb_time_t *)&tbuf[6],
                                                   (int *)(tbuf + 10),
                                                   tbuf + 14, buf_sz - 14);
@@ -1359,9 +1359,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 if (block == 0)
                 {
                     {
-                        u32 object = *(u32 *)&argv[4];
-                        u32 data_address = *(u32 *)&argv[8];
-                        u32 data_len = *(u32 *)&argv[12];
+                        uint32_t object = *(uint32_t *)&argv[4];
+                        uint32_t data_address = *(uint32_t *)&argv[8];
+                        uint32_t data_len = *(uint32_t *)&argv[12];
 
                         dev = mem_block::mems[object];
                         if (!dev)
@@ -1429,9 +1429,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 int block = *(int *)&argv[0];
                 if (block == 0)
                 {
-                    u32 object = *(u32 *)&argv[4];
-                    u32 data_address = *(u32 *)&argv[8];
-                    u32 data_len = *(u32 *)&argv[12];
+                    uint32_t object = *(uint32_t *)&argv[4];
+                    uint32_t data_address = *(uint32_t *)&argv[8];
+                    uint32_t data_len = *(uint32_t *)&argv[12];
                     dev = mem_block::mems[object];
                     if (!dev)
                     {
@@ -1449,7 +1449,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                             blocksize = (FIRMATA_BUFFER_SZ * 7 / 8 - 16) & (~0x3);
                         }
 
-                        *(u32 *)&tbuf[8] = blocksize;
+                        *(uint32_t *)&tbuf[8] = blocksize;
                         sendSysex(FirmataStream, FM_GET_DATA_BLOCK, 12, tbuf);
                         free(tbuf);
                         break;
@@ -1461,13 +1461,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     {
                         byte *tbuf = (byte *)malloc(blocksize + 16);
                         *(int *)&tbuf[0] = block;
-                        *(u32 *)&tbuf[4] = dev->Read(0, blocksize * (block - 1), blocksize, &tbuf[8]);
-                        if (*(u32 *)&tbuf[4] < blocksize)
+                        *(uint32_t *)&tbuf[4] = dev->Read(0, blocksize * (block - 1), blocksize, &tbuf[8]);
+                        if (*(uint32_t *)&tbuf[4] < blocksize)
                         {
                             dev->Shutdown();
                             dev = nullptr;
                         }
-                        sendSysex(FirmataStream, FM_GET_DATA_BLOCK, *(u32 *)&tbuf[4] + 8, tbuf);
+                        sendSysex(FirmataStream, FM_GET_DATA_BLOCK, *(uint32_t *)&tbuf[4] + 8, tbuf);
                         free(tbuf);
                         break;
                     }
@@ -1487,9 +1487,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             break;
         case FM_GET_LOC_TAB:
-            u32 l_index;
+            uint32_t l_index;
             if (argc == 4) {
-                l_index = *(u32 *) &argv[0];
+                l_index = *(uint32_t *) &argv[0];
                 if (app.data.plc_curr_app && l_index < ((plc_app_abi_t *) app.data.plc_curr_app)->l_sz) {
                     plc_loc_tbl_t loc = ((plc_app_abi_t *) app.data.plc_curr_app)->l_tab[l_index];
                     len = (int) sizeof(plc_loc_dsc_t) + loc->a_size + loc->v_size;
@@ -1509,7 +1509,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case FM_SET_LOC_TAB:
             if (argc == 5) {
-                l_index = *(u32 *) &argv[0];
+                l_index = *(uint32_t *) &argv[0];
                 if (app.data.plc_curr_app && l_index < ((plc_app_abi_t *) app.data.plc_curr_app)->l_sz) {
                     sendSysex(FirmataStream, FM_SET_LOC_TAB, sizeof(plc_loc_tbl_t),
                               (byte *) &((plc_app_abi_t *) app.data.plc_curr_app)->l_tab[l_index]);
@@ -1531,7 +1531,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case FM_GET_DBG:
             len = 0;
             if (argc == 4) {
-                l_index = *(u32 *) &argv[0];
+                l_index = *(uint32_t *) &argv[0];
                 if (app.data.plc_curr_app &&
                     l_index < ((plc_app_abi_t *) app.data.plc_curr_app)->data->size_dbgvardsc) {
                     len = (int) fill_dbg(((plc_app_abi_t *) app.data.plc_curr_app)->data->dbgvardsc, (int) l_index,
@@ -1543,7 +1543,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case FM_SET_DBG:
             len = 0;
             if (argc > 5) {
-                l_index = *(u32 *) argv;
+                l_index = *(uint32_t *) argv;
                 if (app.data.plc_curr_app &&
                     l_index < ((plc_app_abi_t *) app.data.plc_curr_app)->data->size_dbgvardsc) {
                     set_dbg(((plc_app_abi_t *) app.data.plc_curr_app)->data->dbgvardsc, l_index, &argv[4],
@@ -1570,14 +1570,14 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             indexv = 0;
             len = 0;
             if (argc == 6) {
-                indexv = *(u32 *) argv;
+                indexv = *(uint32_t *) argv;
                 len = *(u16 *) &argv[4];
             }
             sendSysex(FirmataStream, FM_READ_MEM, len, (byte *) indexv);
             break;
         case FM_WRITE_MEM:
             if (argc > 6) {
-                indexv = *(u32 *) argv;
+                indexv = *(uint32_t *) argv;
                 len = *(u16 *) &argv[4];
                 for (int i = 0; i < len; ++i) {
                     *((uint8_t *) indexv + i) = argv[6 + i];
@@ -1592,13 +1592,13 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             len = *(u16 *) &argv[6];
             if ((argc == 8 && argv[0] <= REGION_HOLDER) && (len < FirmataStream->tx_max_size())) {
                 region = argv[0];
-                indexv = *(u32 *) &argv[1];
+                indexv = *(uint32_t *) &argv[1];
                 typ = argv[5];
                 // byte *buffer;
                 // buffer = (byte *) malloc(len * 4 + 10);
                 sendBuffer[0] = region;
                 sendBuffer[1] = typ;
-                *(u32 *) &sendBuffer[2] = indexv;
+                *(uint32_t *) &sendBuffer[2] = indexv;
                 const char *p;
                 switch (region) {
                     default:
@@ -1635,7 +1635,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
         case FM_WRITE_VALUE:
             if (argc > 7) {
                 region = argv[0];
-                indexv = *(u32 *) &argv[1];
+                indexv = *(uint32_t *) &argv[1];
                 len = *(u16 *) &argv[5];
                 char *p;
                 switch (region) {
@@ -1678,12 +1678,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             indexv = 0;
             len = 0;
             if (argc == 6) {
-                indexv = *(u32 *) argv;
+                indexv = *(uint32_t *) argv;
                 len = *(u16 *) &argv[4];
             }
             if (len > 0) {
                 byte *buffer = (byte *) malloc(len / 8 + 6);
-                *(u32 *) argv = indexv;
+                *(uint32_t *) argv = indexv;
                 buffer[4] = len;
                 for (int i = 0; i < len; i++) {
                     u8 b = rte_data.X[indexv + i];
@@ -1695,7 +1695,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
         case FM_WRITE_BIT:
             if (argc > 6) {
-                indexv = *(u32 *) argv;
+                indexv = *(uint32_t *) argv;
                 len = *(u16 *) &argv[4];
                 if (len < (argc - 6)) {
                     for (int i = 0; i < len; i++) {
@@ -1823,8 +1823,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             case FM_LFS_LS:
                 if (argc > 8)
                 {
-                    u32 since = *(u32 *)argv;
-                    u32 size = *(u32 *)&argv[4];
+                    uint32_t since = *(uint32_t *)argv;
+                    uint32_t size = *(uint32_t *)&argv[4];
                     len = kfs.dir_buf(FM_LFS_LS, (const char *)&argv[8], since, size, this, FirmataStream);
                 }
                 break;

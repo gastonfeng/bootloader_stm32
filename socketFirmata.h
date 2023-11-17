@@ -57,7 +57,7 @@ using peer_t = struct {
     /* The same for the receiving message. */
     char receiving_buffer[ETH_MAX_PAYLOAD]{};
     int current_receiving_byte{};
-    u32 last_tick;
+    uint32_t last_tick;
 };
 
 class socketFirmata : public nStream, public smodule {
@@ -80,15 +80,15 @@ public:
 
     pb_skfm_info data;
 
-    int begin(u32 tick) override;
+    int begin(uint32_t tick) override;
 
-    int run(u32 tick) override;
+    int run(uint32_t tick) override;
 
 #ifdef __PLATFORMIO_BUILD_DEBUG__
-    int dev_test(u32 tick) override;
+    int dev_test(uint32_t tick) override;
 #endif
 
-    int diag(u32 tick) override;
+    int diag(uint32_t tick) override;
 
 
     int write(u8 c) override;

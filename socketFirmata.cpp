@@ -384,23 +384,23 @@ void socketFirmata::report() {
 
 #endif
 
-int socketFirmata::begin(u32 tick) {
+int socketFirmata::begin(uint32_t tick) {
     data.state++;
     Rtos::create_thread_run("socketFirmata", 1024, PriorityNormal, (void *) &socketFirmata::thread, this);
     return 0;
 
 }
 
-int socketFirmata::run(u32 tick) {
+int socketFirmata::run(uint32_t tick) {
     return 0;
 }
 
-int socketFirmata::diag(u32 tick) {
+int socketFirmata::diag(uint32_t tick) {
     return 0;
 }
 
 #ifdef __PLATFORMIO_BUILD_DEBUG__
-int socketFirmata::dev_test(u32 tick) {
+int socketFirmata::dev_test(uint32_t tick) {
     return 0;
 }
 #endif

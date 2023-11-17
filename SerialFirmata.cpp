@@ -88,8 +88,8 @@ bool SerialFirmata::handleSysex(mFirmata *fm, nStream *FirmataStream, byte comma
                 if (argc != 6) {
                     break;
                 }
-                u32 baud;
-                baud = *(u32 *) &argv[1];
+                uint32_t baud;
+                baud = *(uint32_t *) &argv[1];
                 if ((baud > 115200) || (baud < 9600)) {
                     return false;
                 }

@@ -89,7 +89,7 @@ static const int PIN_MODE_IGNORE = 0x7F;  // pin configured to be ignored by dig
 static const int TOTAL_PIN_MODES = 13;
 
 using u16 = unsigned short;
-using u32 = uint32_t;
+using uint32_t = uint32_t;
 struct i2c_device_info {
     byte addr;
     int reg;
@@ -226,8 +226,8 @@ private:
      */
     void setPinState(byte pin, int state);
 
-    u32 previousMillis = 0;
-    // u32 analogInputsToReport = 0;
+    uint32_t previousMillis = 0;
+    // uint32_t analogInputsToReport = 0;
     int queryIndex = -1;
 
     void outputPort(nStream *FirmataStream, byte portNumber, byte portValue, byte forceSend);
@@ -255,9 +255,9 @@ private:
 
     u8 valueBuf[8]{};
     char valueLen{};
-    u32 last_tick{};
+    uint32_t last_tick{};
     bool use_sn;
-    u32 sn;
+    uint32_t sn;
     int blocksize;
 
     void marshaller_sendSysex(nStream *FirmataStream, uint8_t command, size_t bytec, uint8_t *bytev);
