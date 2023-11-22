@@ -111,7 +111,7 @@ enum {
     CB_SET_IP,
     CB_RESET,
     CB_YMODEM,
-    CB_THREAD_INFO,
+    CB_NO_USE,
     CB_SET_FORCE,
     CB_SET_V,
     CB_GET_V,
