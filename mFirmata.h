@@ -137,7 +137,7 @@ enum {
     CB_GET_TSL,
     CB_GET_TSL_BY_ID,
     CB_TSL_CLEAR,
-    FM_SOEM_SCAN,
+    FM_SOEM,
     CB_SET_PLC_FILE,
     CB_CPU_USAGE,
 

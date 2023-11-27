@@ -99,12 +99,6 @@ cb_fm fm_cmd[] = {
         mFirmata::goto_boot,
         mFirmata::get_tsdb_info,
         mFirmata::get_module_info,
-#ifdef USE_SOEM
-        rte_soem::master_state,
-        rte_soem::read_reg,
-        rte_soem::write_reg,
-        rte_soem::set_slave_state
-#endif
 };
 
 #ifdef USE_FIRMATA_WIRE
@@ -836,6 +830,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 logger.error("parse protobuf error:%s", error);
             }
         }
+            break;
+        case FM_SOEM:
+            soem.process(this, FirmataStream, argc, argv);
             break;
         case ARE_YOU_THERE:
 #if defined(RTE_APP) || defined(PLC)
