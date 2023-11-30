@@ -11,6 +11,7 @@
 
 #include <mem_block.h>
 #include "firmata.pb.h"
+#include "../../nanopb-src/firmata.pb.h"
 
 #define firmwareVersionString "Firmata"
 static const int FIRMWARE_MAJOR_VERSION = 3;
@@ -96,94 +97,7 @@ struct i2c_device_info {
     byte bytes;
     byte stopTX;
 };
-enum {
-    CB_GET_LOG_NUMBER = 0x0,
-    CB_GET_LOG,
-    CB_GET_REMAIN_MEM,
-    CB_GET_RTE_VERSION,
-    CB_GET_BOOT_VERSION,
-    CB_PLC_START,
-    CB_PLC_STOP,
-    CB_GET_RTC,
-    CB_SET_RTC,
-    CB_GET_IP,
 
-    CB_SET_IP,
-    CB_RESET,
-    CB_YMODEM,
-    CB_NO_USE,
-    CB_SET_FORCE,
-    CB_SET_V,
-    CB_GET_V,
-    CB_SET_SERIAL_RX,
-    CB_SET_SERIAL_TX_HIGH,
-    CB_SET_SERIAL_TX_LOW,
-
-    FM_GET_TASK_NRS,
-    FM_GET_TASK_NAME,
-    FM_GET_TASK_DETAIL,
-    FM_GET_PLC_STATE,
-    REPORT_PLC_MD5,
-    CB_PLC_LOAD,
-    CB_PLC_REPAIR,
-    CB_CLEAR_V,
-    CB_READ_KEY,
-    CB_WRITE_KEY,
-
-    CB_RM_KEY,
-    CB_SET_TSL_RANGE,
-    CB_SET_TSL_START,
-    CB_SET_TSL_STATUS,
-    CB_GET_TSL,
-    CB_GET_TSL_BY_ID,
-    CB_TSL_CLEAR,
-    FM_SOEM,
-    CB_SET_PLC_FILE,
-    CB_CPU_USAGE,
-
-    FM_REMOVE_FILE,
-    CB_WIFI_LIST,
-    CB_WIFI_SET_PASS,
-    CB_GOTO_IAP,
-    FM_PUT_DATA_BLOCK,
-    FM_GET_LOC_SIZE,
-    FM_GET_LOC_TAB,
-    FM_SET_LOC_TAB,
-    FM_GET_DBG_SIZE,
-    FM_GET_DBG,
-    FM_SET_DBG,
-    FM_GET_CPU_SN,
-    FM_GET_PLC_INFO,
-    FM_FLASH_CLEAR,
-    FM_READ_LOC,
-    FM_WRITE_LOC,
-    FM_LOG_SET_LEVEL,
-    FM_READ_MEM,
-    FM_WRITE_MEM,
-    FM_READ_VALUE,
-    FM_READ_VALUE_REP,
-    FM_WRITE_VALUE,
-    FM_WRITE_VALUE_REP,
-    FM_READ_BIT,
-    FM_READ_BIT_REP,
-    FM_WRITE_BIT,
-    FM_WRITE_BIT_REP,
-    FM_GET_NET_BUF_STAT,
-    FM_GET_LOCATION,
-    FM_SET_LOCATION,
-    FM_LIST_KEY,
-    FM_READ_KEY_BYTES,
-    FM_WRITE_KEY_BYTES,
-    FM_FLASH_BOOT,
-    FM_IOT_LOGIN,
-    FM_INFO_SERIAL_RX,
-    FM_INFO_SERIAL_TX,
-    FM_LFS_LS,
-    FM_GET_DATA_BLOCK,
-    FM_GET_SERIAL_INFO,
-    FM_PROTOBUF,
-    FM_LAST
-};
 enum {
     IOT_LOGIN_OK = 0x55
 } iot_enum;
@@ -249,7 +163,7 @@ private:
 
     int set_flag(u16 cmd);
 
-    u8 respose[FM_LAST / 8 + 1]{};
+    u8 respose[pb_firmata_cmd_FM_LAST / 8 + 1]{};
 
     int getBit(nStream *pStream, int index, u8 *value_buf, u16 len);
 

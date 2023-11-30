@@ -139,6 +139,8 @@ private:
 
     int close_client_connection(peer_t *client);
 
+    int tx_count;
+
 };
 
 #endif
