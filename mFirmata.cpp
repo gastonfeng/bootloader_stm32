@@ -917,12 +917,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #if defined(RTE_APP) || defined(PLC)
             case pb_firmata_cmd_CB_PLC_START:
-                rte.app_start();
+                rte.app_resume();
                 len = 0;
                 sendSysex(FirmataStream, pb_firmata_cmd_CB_PLC_START, 2, (byte *) &len);
                 break;
             case pb_firmata_cmd_CB_PLC_STOP:
-                rte.app_stop();
+                rte.app_supsund();
                 len = 0;
                 sendSysex(FirmataStream, pb_firmata_cmd_CB_PLC_STOP, 2, (byte *) &len);
                 break;
@@ -936,12 +936,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             case pb_firmata_cmd_CB_PLC_LOAD:
                 len = 0;
                 sendSysex(FirmataStream, pb_firmata_cmd_CB_PLC_LOAD, 2, (byte *) &len);
-                // rte.app_stop();
+                // rte.app_supsund();
                 // app.unload();
                 rte.load_app();
                 break;
             case pb_firmata_cmd_CB_PLC_REPAIR:
-                rte.app_stop();
+                rte.app_supsund();
                 app.unload();
                 len = 0;
                 sendSysex(FirmataStream, pb_firmata_cmd_CB_PLC_REPAIR, 2, (byte *) &len);
