@@ -831,9 +831,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
         }
             break;
+#ifdef USE_SOEM
         case pb_firmata_cmd_FM_SOEM:
             soem.process(this, FirmataStream, argc, argv);
             break;
+#endif
         case ARE_YOU_THERE:
 #if defined(RTE_APP) || defined(PLC)
             // logger.disable(logger_t::LOGGER_SERIAL);
@@ -956,10 +958,10 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #if defined(USE_RTC) || defined(USE_PCF8563)
-            case CB_GET_RTC:
-                sendSysex(FirmataStream, CB_GET_RTC, sizeof(pb_rtc_info), (byte *)&rtc.data);
+        case pb_firmata_cmd_CB_GET_RTC:
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_GET_RTC, sizeof(pb_rtc_info), (byte *) &rtc.data);
                 break;
-            case CB_SET_RTC:
+        case pb_firmata_cmd_CB_SET_RTC:
             {
                 tm new_time{};
 
@@ -972,7 +974,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 new_time.tm_sec = argv[6];
                 new_time.tm_wday = argv[7];
                 rtc.set_time(&new_time);
-                sendSysex(FirmataStream, CB_SET_RTC, 2, (byte *)&len);
+                sendSysex(FirmataStream, pb_firmata_cmd_CB_SET_RTC, 2, (byte *) &len);
             }
             break;
 #endif
@@ -1065,17 +1067,17 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
 #ifdef ARDUINO
-            case CB_SET_SERIAL_RX:
+        case pb_firmata_cmd_CB_SET_SERIAL_RX:
 
                 // port = *(uint16_t *) argv;
                 //            kSerial::get_serial(port)->set_rx();
                 break;
-            case CB_SET_SERIAL_TX_HIGH:
+        case pb_firmata_cmd_CB_SET_SERIAL_TX_HIGH:
 
                 // port1 = *(uint16_t *) argv;
                 //            kSerial::get_serial(port1)->set_high();
                 break;
-            case CB_SET_SERIAL_TX_LOW:
+        case pb_firmata_cmd_CB_SET_SERIAL_TX_LOW:
 
                 // port2 = *(uint16_t *) argv;
                 //            kSerial::get_serial(port2)->set_low();
@@ -1132,10 +1134,10 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 
 #ifdef USE_KVDB_LFS
-            case FM_LIST_KEY:
-                kfs.dir_buf(FM_LIST_KEY, (const char *)&argv[8], 0, 16, this, FirmataStream);
+        case pb_firmata_cmd_FM_LIST_KEY:
+            kfs.dir_buf(pb_firmata_cmd_FM_LIST_KEY, (const char *) &argv[8], 0, 16, this, FirmataStream);
                 break;
-            case CB_READ_KEY:
+        case pb_firmata_cmd_CB_READ_KEY:
                 size_t vlen, name_len;
                 name_len = strlen((const char *)argv);
                 byte *value_crk;
@@ -1164,16 +1166,16 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     vlen = name_len + 4;
                     *(short *)value_crk = pb_event_KV_VALUE_ILLEGAL;
                 }
-                sendSysex(FirmataStream, CB_READ_KEY, vlen, (byte *)value_crk);
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_READ_KEY, vlen, (byte *) value_crk);
                 free(value_crk);
                 break;
-            case FM_READ_KEY_BYTES:
+        case pb_firmata_cmd_FM_READ_KEY_BYTES:
                 data = (u8 *)malloc(256);
                 len = kvdb.get((const char *)argv, (char *)data + 4, 256, (uint32_t *)data);
-                sendSysex(FirmataStream, FM_READ_KEY_BYTES, len + 4, (byte *)data);
+            sendSysex(FirmataStream, pb_firmata_cmd_FM_READ_KEY_BYTES, len + 4, (byte *) data);
                 free(data);
                 break;
-            case CB_WRITE_KEY:
+        case pb_firmata_cmd_CB_WRITE_KEY:
                 key_len = strlen((const char *)argv);
                 int rw;
                 rw = argc - key_len - 2;
@@ -1197,20 +1199,20 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         *(short *)value = pb_event_KV_VALUE_ILLEGAL;
                     }
                 }
-                sendSysex(FirmataStream, CB_WRITE_KEY, vlen, (byte *)value);
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_WRITE_KEY, vlen, (byte *) value);
                 free(value);
                 break;
-            case FM_WRITE_KEY_BYTES:
+        case pb_firmata_cmd_FM_WRITE_KEY_BYTES:
                 key_len = strlen((const char *)argv);
                 uint32_t type;
                 type = *(uint32_t *)(argv + key_len + 1);
                 len = kvdb.set((const char *)argv, (const char *)(argv + key_len + 1 + 4),
                                (int)(argc - key_len - 1 - 4), type);
-                sendSysex(FirmataStream, FM_WRITE_KEY_BYTES, 2, (byte *)&len);
+            sendSysex(FirmataStream, pb_firmata_cmd_FM_WRITE_KEY_BYTES, 2, (byte *) &len);
                 break;
-            case CB_RM_KEY:
+        case pb_firmata_cmd_CB_RM_KEY:
                 kvdb.remove((const char *)argv);
-                sendSysex(FirmataStream, CB_RM_KEY, 0, argv);
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_RM_KEY, 0, argv);
                 break;
 #endif
 #ifdef USE_TSDB
@@ -1541,8 +1543,8 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
 #ifdef ARDUINO_ARCH_STM32
-            case FM_GET_CPU_SN:
-                sendSysex(FirmataStream, FM_GET_CPU_SN, 12, (byte *)rte_data.sn);
+        case pb_firmata_cmd_FM_GET_CPU_SN:
+            sendSysex(FirmataStream, pb_firmata_cmd_FM_GET_CPU_SN, 12, (byte *) rte_data.sn);
                 break;
 #endif
         case pb_firmata_cmd_FM_READ_MEM:
@@ -1754,7 +1756,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             }
             break;
 #ifdef ARDUINO_ARCH_STM32
-            case FM_INFO_SERIAL_RX:
+        case pb_firmata_cmd_FM_INFO_SERIAL_RX:
             {
                 kSerial *serial = kSerial::get_serial(argv[0]);
                 if (nullptr == serial)
@@ -1770,11 +1772,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     memcpy(buffer + 4, Rtos::queue_buf(serial->_serial.rx_buff), serial->data.rx_buf_size);
                     len = serial->data.rx_buf_size + 4;
                 }
-                sendSysex(FirmataStream, FM_INFO_SERIAL_RX, len, buffer);
+                sendSysex(FirmataStream, pb_firmata_cmd_FM_INFO_SERIAL_RX, len, buffer);
                 free(buffer);
             }
             break;
-            case FM_INFO_SERIAL_TX:
+        case pb_firmata_cmd_FM_INFO_SERIAL_TX:
             {
                 kSerial *serial = kSerial::get_serial(argv[0]);
                 if (nullptr == serial)
@@ -1792,7 +1794,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     memcpy(buffer + 4, serial->_serial.tx_buff, serial->_serial.tx_head);
                     len = serial->data.tx_buf_size + 4;
                 }
-                sendSysex(FirmataStream, FM_INFO_SERIAL_TX, len, buffer);
+                sendSysex(FirmataStream, pb_firmata_cmd_FM_INFO_SERIAL_TX, len, buffer);
                 free(buffer);
             }
             break;
