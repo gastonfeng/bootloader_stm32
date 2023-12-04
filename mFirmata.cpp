@@ -1544,7 +1544,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #ifdef ARDUINO_ARCH_STM32
         case pb_firmata_cmd_FM_GET_CPU_SN:
-            sendSysex(FirmataStream, pb_firmata_cmd_FM_GET_CPU_SN, 12, (byte *) rte_data.sn);
+            sendSysex(FirmataStream, pb_firmata_cmd_FM_GET_CPU_SN, 12, (byte *) rte.data.sn);
                 break;
 #endif
         case pb_firmata_cmd_FM_READ_MEM:
