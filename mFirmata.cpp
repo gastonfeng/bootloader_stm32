@@ -981,16 +981,16 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifdef ARDUINO
 #ifdef USE_LWIP
 #ifdef USE_IP_MODIFY
-            case CB_SET_IP:
+        case pb_firmata_cmd_CB_SET_IP:
                 rte_config.lwip.ip = *(uint32_t *)argv;
                 ETH_LWIP::set_ip();
-                sendSysex(FirmataStream, CB_SET_IP, 4, (byte *)(&rte_config.lwip.ip));
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_SET_IP, 4, (byte *) (&rte_config.lwip.ip));
                 break;
 #endif
-            case CB_GET_IP:
-                sendSysex(FirmataStream, CB_GET_IP, 4, (byte *)(&rte_config.lwip.ip));
+        case pb_firmata_cmd_CB_GET_IP:
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_GET_IP, 4, (byte *) (&rte_config.lwip.ip));
                 break;
-            case FM_GET_NET_BUF_STAT:
+        case pb_firmata_cmd_FM_GET_NET_BUF_STAT:
             {
                 buffer = (byte *)malloc(13 * MEMP_MAX);
                 for (int i = 0; i < MEMP_MAX; i++)
@@ -1002,7 +1002,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                     *(u8 *)&buffer[4 + 13 * i] = memp_pools[i]->stats->used;
                     memcpy(&buffer[5 + 13 * i], memp_pools[i]->stats->name, 8);
                 }
-                sendSysex(FirmataStream, FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *)buffer);
+                sendSysex(FirmataStream, pb_firmata_cmd_FM_GET_NET_BUF_STAT, 13 * MEMP_MAX, (byte *) buffer);
                 free(buffer);
             }
             break;
@@ -1801,21 +1801,22 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #endif
 #endif
 #ifdef USE_LFS
-            case FM_LFS_LS:
+        case pb_firmata_cmd_FM_LFS_LS:
                 if (argc > 8)
                 {
                     uint32_t since = *(uint32_t *)argv;
                     uint32_t size = *(uint32_t *)&argv[4];
-                    len = kfs.dir_buf(FM_LFS_LS, (const char *)&argv[8], since, size, this, FirmataStream);
+                    len = kfs.dir_buf(pb_firmata_cmd_FM_LFS_LS, (const char *) &argv[8], since, size, this,
+                                      FirmataStream);
                 }
                 break;
-            case FM_REMOVE_FILE:
+        case pb_firmata_cmd_FM_REMOVE_FILE:
                 len = -1;
                 if (argc > 1)
                 {
                     len = kfs.unlink((const char *)argv);
                 }
-                sendSysex(FirmataStream, FM_REMOVE_FILE, 2, (byte *)&len);
+            sendSysex(FirmataStream, pb_firmata_cmd_FM_REMOVE_FILE, 2, (byte *) &len);
                 break;
 #endif
 #ifndef THIS_IS_BOOTLOADER
@@ -2061,7 +2062,7 @@ int mFirmata::read_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_ctrl encode error: %s", error);
     }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    mf->sendSysex(pStream, pb_firmata_cmd_FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
 #endif
     return 0;
 }
@@ -2099,7 +2100,7 @@ int mFirmata::write_rte_ctrl(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("write_rte_info encode error: %s", error);
     }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
+    mf->sendSysex(pStream, pb_firmata_cmd_FM_PROTOBUF, stream.bytes_written, mf->sendBuffer);
 #endif
     return 0;
 }
