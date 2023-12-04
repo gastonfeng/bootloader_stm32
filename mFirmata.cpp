@@ -853,9 +853,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 #ifndef THIS_IS_BOOTLOADER
         case SAMPLING_INTERVAL:
             if (argc > 1) {
-                rte_data.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
-                if (rte_data.samplingInterval < rte_config.MINIMUM_SAMPLING_INTERVAL) {
-                    rte_data.samplingInterval = rte_config.MINIMUM_SAMPLING_INTERVAL;
+                rte.data.samplingInterval = (byte) (argv[0] + (argv[1] << 7));
+                if (rte.data.samplingInterval < rte_config.MINIMUM_SAMPLING_INTERVAL) {
+                    rte.data.samplingInterval = rte_config.MINIMUM_SAMPLING_INTERVAL;
                 }
             } else {
                 // sendString("Not enough data");
@@ -915,7 +915,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 break;
 #endif
         case pb_firmata_cmd_CB_GET_REMAIN_MEM:
-            sendSysex(FirmataStream, pb_firmata_cmd_CB_GET_REMAIN_MEM, 2, (byte * ) & rte_data.remain_mem);
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_GET_REMAIN_MEM, 2, (byte *) &rte.data.remain_mem);
             break;
 #if defined(RTE_APP) || defined(PLC)
             case pb_firmata_cmd_CB_PLC_START:
