@@ -1202,7 +1202,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #ifdef USE_TSDB
-            case CB_SET_TSL_RANGE:
+        case pb_firmata_cmd_CB_SET_TSL_RANGE:
                 tsl_query q;
                 memset(&q, 0, sizeof(q));
                 if (argc == 13)
@@ -1217,9 +1217,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         tsdb->query(start, end, (fdb_tsl_status)(state), &q);
                     }
                 }
-                sendSysex(FirmataStream, CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *)&q);
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_SET_TSL_RANGE, sizeof(tsl_query), (byte *) &q);
                 break;
-            case CB_SET_TSL_STATUS:
+        case pb_firmata_cmd_CB_SET_TSL_STATUS:
 
                 len = -1;
                 if (argc == 13)
@@ -1234,7 +1234,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                         len = tsdb->set_status(start, end, (fdb_tsl_status)(state));
                     }
                 }
-                sendSysex(FirmataStream, CB_SET_TSL_STATUS, 2, (byte *)&len);
+            sendSysex(FirmataStream, pb_firmata_cmd_CB_SET_TSL_STATUS, 2, (byte *) &len);
                 break;
                 // case CB_GET_TSL: {
                 // char *tbuf;
@@ -1257,7 +1257,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 // free(tbuf);
                 // }
                 // break;
-            case CB_GET_TSL_BY_ID:
+        case pb_firmata_cmd_CB_GET_TSL_BY_ID:
             {
                 char *tbuf;
                 int tlen;
@@ -1283,11 +1283,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 {
                     tlen += 14;
                 }
-                sendSysex(FirmataStream, CB_GET_TSL_BY_ID, tlen, (byte *)tbuf);
+                sendSysex(FirmataStream, pb_firmata_cmd_CB_GET_TSL_BY_ID, tlen, (byte *) tbuf);
                 free(tbuf);
             }
             break;
-            case CB_TSL_CLEAR:
+        case pb_firmata_cmd_CB_TSL_CLEAR:
             {
                 short len = 0;
                 key_len = strlen((const char *)argv);
@@ -1297,7 +1297,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
                 TSDB *tsdb = TSDB::db(db);
                 if (tsdb)
                 {
-                    sendSysex(FirmataStream, CB_TSL_CLEAR, 2, (byte *)&len);
+                    sendSysex(FirmataStream, pb_firmata_cmd_CB_TSL_CLEAR, 2, (byte *) &len);
                     state = tsdb->clear();
                 }
             }
@@ -2107,7 +2107,7 @@ int mFirmata::get_tsdb_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
         const char *error = PB_GET_ERROR(stream);
         logger.error("get_tsdb_info encode error: %s", error);
     }
-    mf->sendSysex(pStream, FM_PROTOBUF, stream->bytes_written, mf->sendBuffer);
+    mf->sendSysex(pStream, pb_firmata_cmd_FM_PROTOBUF, stream->bytes_written, mf->sendBuffer);
 #endif
     return 0;
 }
