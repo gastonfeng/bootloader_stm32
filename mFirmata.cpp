@@ -1785,12 +1785,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
 
 int mFirmata::read_rte_const(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
-    logger.debug("read_rte_const");
+//    logger.debug("read_rte_const");
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     mf->msg.object.rte_const = rteConst;
     mf->msg.which_object = pb_object_rte_const_tag;
     res = pb_encode(&stream, pb_object_fields, &mf->msg);
-    logger.debug("read_rte_const res=%d", res);
+//    logger.debug("read_rte_const res=%d", res);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_const encode error: %s", error);
@@ -1888,10 +1888,10 @@ int mFirmata::goto_boot(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 }
 
 int mFirmata::read_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    logger.debug("read_rte_data");
+//    logger.debug("read_rte_data");
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int res = pb_encode(&stream, pb_rte_data_fields, &rte_data);
-    logger.debug("read_rte_data res: %d", res);
+//    logger.debug("read_rte_data res: %d", res);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_data encode error: %s", error);
@@ -1901,10 +1901,10 @@ int mFirmata::read_rte_data(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 }
 
 int mFirmata::read_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
-    logger.debug("read_rte_holder");
+//    logger.debug("read_rte_holder");
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int res = pb_encode(&stream, pb_rte_holder_fields, &rte_config);
-    logger.debug("read_rte_holder res: %d", res);
+//    logger.debug("read_rte_holder res: %d", res);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_holder encode error: %s", error);
@@ -1971,12 +1971,12 @@ int mFirmata::write_rte_holder(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
 int mFirmata::read_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
-    logger.debug("read_rte_info");
+//    logger.debug("read_rte_info");
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     mf->msg.object.rte_info = rte.data;
     mf->msg.which_object = pb_object_rte_info_tag;
     res = pb_encode(&stream, pb_object_fields, &mf->msg);
-    logger.debug("read_rte_info res: %d", res);
+//    logger.debug("read_rte_info res: %d", res);
     if (!res) {
         const char *error = PB_GET_ERROR(&stream);
         logger.error("read_rte_info encode error: %s", error);
@@ -1987,7 +1987,7 @@ int mFirmata::read_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
 
 int mFirmata::read_module(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     int res = 0;
-    logger.debug("read_module");
+//    logger.debug("read_module");
     pb_ostream_t stream = pb_ostream_from_buffer(mf->sendBuffer, FIRMATA_BUFFER_SZ);
     int index = cmd.param;
     if (index < (rte.data.max_level)) {
