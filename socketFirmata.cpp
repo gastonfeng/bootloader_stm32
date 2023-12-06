@@ -385,9 +385,9 @@ void socketFirmata::flush() {
     while (totalSent < len) {
 
       int sent = send(cur_peer->socket, (const char *)txbuf.data() + totalSent,
-                      len - totalSent, MSG_DONTWAIT);
+                      len - totalSent, 0);
       if (sent < 0) {
-        logger.error("send error\n");
+          logger.error("send error : %s \n", strerror(errno));
         break;
       }
       totalSent += sent;
@@ -405,7 +405,7 @@ void socketFirmata::report() { firm.report(this); }
 
 int socketFirmata::begin(uint32_t tick) {
   data.state++;
-  Rtos::create_thread_run("socketFirmata", 1024, PriorityNormal,
+    Rtos::create_thread_run("socketFirmata", 1536, PriorityNormal,
                           (void *)&socketFirmata::thread, this);
   return 0;
 }
