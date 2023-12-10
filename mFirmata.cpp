@@ -1769,9 +1769,9 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command, uint16_t argc
             break;
 #endif
 #ifndef THIS_IS_BOOTLOADER
-        case pb_firmata_cmd_FM_GET_SERIAL_INFO:
-            kSerial::get_info(this, FirmataStream, command, argc, argv);
-            break;
+        // case pb_firmata_cmd_FM_GET_SERIAL_INFO:
+        //     kSerial::get_info(this, FirmataStream, command, argc, argv);
+        //     break;
 #endif
         default: {
             short len = -1;
