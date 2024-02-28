@@ -3,8 +3,8 @@
 #include "SerialFirmata.h"
 #include "firmata.pb.h"
 #include "hwboard.h"
-#include "lib/nanopb/pb.h"
-#include "lib/nanopb/pb_decode.h"
+#include "pb.h"
+#include "pb_decode.h"
 #include <cassert>
 #include <pb_encode.h>
 #include <plc_rte.h>
