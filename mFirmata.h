@@ -16,7 +16,7 @@
 #define firmwareVersionString "Firmata"
 static const int FIRMWARE_MAJOR_VERSION = 3;
 static const int FIRMWARE_MINOR_VERSION = 0;
-static const int FIRMWARE_BUGFIX_VERSION = BUILD_NUMBER;
+static const int FIRMWARE_BUGFIX_VERSION = 0;
 
 /* Version numbers for the protocol.  The protocol is still changing, so these
  * version numbers are important.
