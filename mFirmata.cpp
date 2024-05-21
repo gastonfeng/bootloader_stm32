@@ -29,7 +29,6 @@
 
 #include "inline_ctrl.h"
 #include "rte_soem.h"
-#include "rust_core/rust_core.h"
 
 #ifdef USE_TSDB
 
@@ -1328,7 +1327,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command,
                         state &= ~0x3;
                         // logger.info("block 0 file = %s ,address=0x%x ,size= %d", &argv[16],
                         // data_address, data_len);
-                        rte_event(pb_event_APP_FLASH, true);
+                        rte.event(pb_event_APP_FLASH, true);
                     }
                 }
             } else if (block == -1) {
@@ -1337,7 +1336,7 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command,
                         state = pb_event_DEVICE_SHUTDOWN_ERR;
                     } else {
                         state = 1;
-                        rte_event(pb_event_APP_FLASH, false);
+                        rte.event(pb_event_APP_FLASH, false);
                         // logger.info("recv end.");
                         dev = nullptr;
                     }
@@ -1732,11 +1731,11 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command,
                     len = 4;
                     *(int *) buffer = pb_event_NO_DEVICE;
                 } else {
-                    buffer = (byte *) malloc(serial->data.rx_buf_size + 16);
+                    buffer = (byte *) malloc(serial->data.rx_buf->size + 16);
                     *(int *) buffer = serial->data.rx_count;
                     memcpy(buffer + 4, Rtos::queue_buf(serial->_serial.rx_buff),
-                           serial->data.rx_buf_size);
-                    len = serial->data.rx_buf_size + 4;
+                           serial->data.rx_buf->size);
+                    len = serial->data.rx_buf->size + 4;
                 }
                 sendSysex(FirmataStream, pb_firmata_cmd_FM_INFO_SERIAL_RX, len, buffer);
                 free(buffer);
@@ -1749,12 +1748,12 @@ void mFirmata::sysexCallback(nStream *FirmataStream, byte command,
                     len = 4;
                     *(int *) buffer = pb_event_NO_DEVICE;
                 } else {
-                    buffer = (byte *) malloc(serial->data.tx_buf_size + 16);
-                    *(int *) buffer = serial->data.tx_count;
-                    memcpy(buffer + 4, serial->_serial.tx_buff + serial->_serial.tx_head,
-                           serial->data.tx_buf_size - serial->_serial.tx_head);
-                    memcpy(buffer + 4, serial->_serial.tx_buff, serial->_serial.tx_head);
-                    len = serial->data.tx_buf_size + 4;
+//                    buffer = (byte *) malloc(serial->data.tx_buf->size + 16);
+//                    *(int *) buffer = serial->data.tx_count;
+//                    memcpy(buffer + 4, serial->_serial.tx_buff + serial->_serial.tx_head,
+//                           serial->data.tx_buf.size - serial->_serial.tx_head);
+//                    memcpy(buffer + 4, serial->_serial.tx_buff, serial->_serial.tx_head);
+//                    len = serial->data.tx_buf_size + 4;
                 }
                 sendSysex(FirmataStream, pb_firmata_cmd_FM_INFO_SERIAL_TX, len, buffer);
                 free(buffer);
@@ -2084,7 +2083,7 @@ int mFirmata::write_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
     pb_field_iter_t iter;
     bool ok = false;
     pb_ostream_t *stream = mf->SysexStream(pStream, pb_firmata_cmd_FM_PROTOBUF);
-    if (pb_field_iter_begin(&iter, pb_rte_data_fields, &rte.data))
+    if (pb_field_iter_begin(&iter, pb_rte_fields, &rte.data))
         ok = true;
     if (!ok) {
         logger.error("write_rte_info: %d", cmd.param);
@@ -2099,7 +2098,7 @@ int mFirmata::write_rte_info(mFirmata *mf, nStream *pStream, pb_cmd cmd) {
             logger.error("write_rte_info: %d", cmd.param);
         }
     }
-    int res = pb_encode(stream, pb_rte_data_fields, &rte.data);
+    int res = pb_encode(stream, pb_rte_fields, &rte.data);
     if (!res) {
         const char *error = PB_GET_ERROR(stream);
         logger.error("write_rte_info encode error: %s", error);
