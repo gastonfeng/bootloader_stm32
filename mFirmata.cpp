@@ -469,8 +469,8 @@ void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec,
     crc_en = _crc_en || crc_en;
     if (lock)
         Rtos::mutex_lock(lock);
-    if (FirmataStream->lock)
-        Rtos::mutex_lock(FirmataStream->lock);
+    if (FirmataStream->tx_lock)
+        Rtos::mutex_lock(FirmataStream->tx_lock);
     //    if (s != 0)
     //        logger.error("sendSysex:%p c=%p", s, Rtos::pthread_self());
     //    s = Rtos::pthread_self();
@@ -485,8 +485,8 @@ void mFirmata::sendSysex(nStream *FirmataStream, byte command, uint16_t bytec,
     }
     crc_en = false;
     //    s = 0;
-    if (FirmataStream->lock)
-        Rtos::mutex_unlock(FirmataStream->lock);
+    if (FirmataStream->tx_lock)
+        Rtos::mutex_unlock(FirmataStream->tx_lock);
     if (lock)
         Rtos::mutex_unlock(lock);
 }
